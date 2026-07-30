@@ -1,0 +1,39 @@
+name: agromagnat
+description: "Agromagnat — yerdan dasturxongacha, vositachisiz."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management — Riverpod, as fixed in CLAUDE.md.
+  flutter_riverpod: ^2.6.1
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # Design system: the three font roles come from google_fonts.
+  google_fonts: ^6.2.1
+
+  # Networking — wired to the real API in Prompt 11.
+  dio: ^5.7.0
+
+  # Local storage: a draft listing must survive an app restart on weak internet.
+  shared_preferences: ^2.3.5
+
+  intl: ^0.20.2
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
