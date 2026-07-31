@@ -107,7 +107,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 298 tests
+flutter test          # 304 tests
 flutter analyze       # clean
 ```
 
@@ -172,6 +172,5 @@ is first asked for, which is the hardest kind of iOS problem to find late.
 
 1. Push notifications — a reply that arrives while the app is closed is
    invisible until it is opened. FCM is in the stack and unwired on the client
-2. Photo upload retry — the listing publishes offline now, but photos that
-   fail after it goes live are gone
-3. Photos in a chat, and older history when a conversation is scrolled up
+2. Photos in a chat, and older history when a conversation is scrolled up
+3. Russian — every string is in one file for exactly this

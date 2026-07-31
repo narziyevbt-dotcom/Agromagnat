@@ -102,8 +102,12 @@ class DraftState {
 }
 
 class DraftController extends StateNotifier<DraftState> {
-  DraftController(this._repository, this._picker, {this.onQueue})
-      : super(const DraftState());
+  DraftController(
+    this._repository,
+    this._picker, {
+    this.onQueue,
+    this.onQueuePhotos,
+  }) : super(const DraftState());
 
   final ListingRepository _repository;
   final PhotoPicker _picker;
@@ -113,6 +117,13 @@ class DraftController extends StateNotifier<DraftState> {
   /// setup does, and what the app did before the outbox existed.
   final Future<void> Function(Map<String, dynamic> body, List<String> photos)?
       onQueue;
+
+  /// Where photos go when the listing published and the upload did not.
+  ///
+  /// The listing is live either way; without this the files are gone and the
+  /// seller is told to add them "later" with nothing in the app that can.
+  final Future<void> Function(String listingId, List<String> paths, String title)?
+      onQueuePhotos;
 
   /// The API's ceiling. Matches MAX_PHOTOS in listings.service.ts.
   static const int maxPhotos = 5;
@@ -419,12 +430,26 @@ class DraftController extends StateNotifier<DraftState> {
         uploaded: state.draft.photos.length,
       );
     } on Object {
+      final queued = onQueuePhotos != null;
+      if (queued) {
+        await onQueuePhotos!(
+          listing.id,
+          [for (final photo in state.draft.photos) photo.path],
+          listing.title,
+        );
+      }
+
       state = state.copyWith(
         submitting: false,
         published: listing,
-        photoFailure: editingId == null
-            ? "E'lon joylandi, lekin rasmlar yuklanmadi. Keyinroq qo'shishingiz mumkin"
-            : "O'zgarishlar saqlandi, lekin yangi rasmlar yuklanmadi",
+        // Two different sentences, because they ask for two different things.
+        // "Add them later" when nothing will retry is an instruction; "they
+        // will go up by themselves" when something will is a reassurance.
+        photoFailure: queued
+            ? "Rasmlar navbatda — internet paydo bo'lishi bilan o'zi yuklanadi"
+            : editingId == null
+                ? "E'lon joylandi, lekin rasmlar yuklanmadi. Keyinroq qo'shishingiz mumkin"
+                : "O'zgarishlar saqlandi, lekin yangi rasmlar yuklanmadi",
       );
     }
     return true;
@@ -465,6 +490,9 @@ final draftControllerProvider =
     onQueue: (body, photos) => ref
         .read(outboxControllerProvider.notifier)
         .enqueue(body: body, photoPaths: photos),
+    onQueuePhotos: (listingId, paths, title) => ref
+        .read(outboxControllerProvider.notifier)
+        .enqueuePhotos(listingId: listingId, paths: paths, title: title),
   );
 
   final target = ref.watch(editTargetProvider);

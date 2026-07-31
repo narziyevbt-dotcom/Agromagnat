@@ -245,6 +245,13 @@ abstract final class AppStrings {
 
   static String queuedCount(int count) => "$count ta e'lon navbatda";
 
+  static String queuedPhotoCount(int count) => "$count ta rasm navbatda";
+
+  /// Both at once. Two banners stacked on the home screen would push the
+  /// listings themselves below the fold.
+  static String queuedBoth(int listings, int photos) =>
+      "$listings ta e'lon, $photos ta rasm navbatda";
+
   /// Warned about only near the end. A listing auto-expires after 14 days and
   /// a seller who was not told simply stops getting calls.
   static String expiresInDays(int days) =>

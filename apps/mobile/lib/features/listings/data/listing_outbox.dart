@@ -145,3 +145,149 @@ class ListingOutbox {
 
   Future<void> clear() async => _cache?.remove(_key);
 }
+
+/// Photos for a listing that is already live.
+///
+/// Kept apart from [OutboxEntry] because the two are at different stages: this
+/// one has a server id and only needs its files uploading. Folding them into
+/// one queue would mean an entry that is half sent, and "half sent" is the
+/// state that eventually posts a listing twice.
+@immutable
+class PhotoJob {
+  const PhotoJob({
+    required this.id,
+    required this.listingId,
+    required this.paths,
+    required this.queuedAt,
+    this.title = '',
+    this.attempts = 0,
+  });
+
+  final String id;
+  final String listingId;
+  final List<String> paths;
+  final DateTime queuedAt;
+
+  /// Only for the banner — a queue that says "3 ta rasm" without saying which
+  /// listing is a queue nobody can act on.
+  final String title;
+
+  final int attempts;
+
+  List<DraftPhoto> get photos => [
+        for (final path in paths) DraftPhoto(path: path, sizeBytes: 0),
+      ];
+
+  PhotoJob withAttempt() => PhotoJob(
+        id: id,
+        listingId: listingId,
+        paths: paths,
+        queuedAt: queuedAt,
+        title: title,
+        attempts: attempts + 1,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'listingId': listingId,
+        'paths': paths,
+        'queuedAt': queuedAt.toIso8601String(),
+        'title': title,
+        'attempts': attempts,
+      };
+
+  static PhotoJob? fromJson(dynamic json) {
+    if (json is! Map) {
+      return null;
+    }
+    final id = json['id'];
+    final listingId = json['listingId'];
+    final queuedAt = DateTime.tryParse(json['queuedAt'] as String? ?? '');
+
+    if (id is! String || listingId is! String || queuedAt == null) {
+      return null;
+    }
+    return PhotoJob(
+      id: id,
+      listingId: listingId,
+      paths: [
+        for (final path in (json['paths'] as List? ?? const [])) path.toString(),
+      ],
+      queuedAt: queuedAt,
+      title: json['title'] as String? ?? '',
+      attempts: (json['attempts'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+/// Photos waiting to go up on a listing that already exists.
+///
+/// Publishing and uploading are two requests, and on EDGE the second is the
+/// one that dies: the listing goes live and its photos do not. Before this the
+/// photos were simply gone, and the seller was told to add them "later" with
+/// nothing in the app that could.
+class PhotoOutbox {
+  PhotoOutbox(this._cache);
+
+  final JsonCache? _cache;
+
+  static const String _key = 'outbox_photos';
+
+  /// Lower than the listing queue's five. A listing is the seller's typing and
+  /// worth pushing at; a photo is a file the OS may already have deleted out
+  /// of its cache directory, and retrying that forever is battery for nothing.
+  static const int maxAttempts = 3;
+
+  List<PhotoJob> read() {
+    final entry = _cache?.read<List<PhotoJob>>(
+      _key,
+      (json) => [
+        for (final row in (json as List)) ?PhotoJob.fromJson(row),
+      ],
+    );
+    return entry?.value ?? const [];
+  }
+
+  Future<void> _write(List<PhotoJob> jobs) async {
+    await _cache?.write(_key, [for (final job in jobs) job.toJson()]);
+  }
+
+  Future<PhotoJob> add({
+    required String listingId,
+    required List<String> paths,
+    required DateTime now,
+    String title = '',
+  }) async {
+    final job = PhotoJob(
+      id: 'ph-${now.microsecondsSinceEpoch}',
+      listingId: listingId,
+      paths: paths,
+      queuedAt: now,
+      title: title,
+    );
+
+    // One job per listing: a second attempt at the same photos replaces the
+    // first rather than queueing them twice.
+    await _write([
+      for (final existing in read())
+        if (existing.listingId != listingId) existing,
+      job,
+    ]);
+    return job;
+  }
+
+  Future<void> remove(String id) async {
+    await _write([for (final job in read()) if (job.id != id) job]);
+  }
+
+  Future<void> markAttempted(String id) async {
+    await _write([
+      for (final job in read()) if (job.id == id) job.withAttempt() else job,
+    ]);
+  }
+
+  List<PhotoJob> sendable() =>
+      [for (final job in read()) if (job.attempts < maxAttempts) job];
+
+  Future<void> clear() async => _cache?.remove(_key);
+}

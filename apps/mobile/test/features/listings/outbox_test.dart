@@ -56,12 +56,25 @@ ResponseBody _json(Object body, {int status = 200}) => ResponseBody.fromString(
 void main() {
   late JsonCache cache;
   late ListingOutbox outbox;
+  late PhotoOutbox photoOutbox;
   late Map<String, dynamic> createdRow;
+  late Directory tempDir;
+
+  /// A real file on disk: the upload path opens it, so a made-up path fails
+  /// before the request is even built and would test the wrong branch.
+  String realPhoto(String name) {
+    final file = File('${tempDir.path}/$name')
+      ..writeAsBytesSync(List<int>.filled(64, 0));
+    return file.path;
+  }
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     cache = JsonCache(await SharedPreferences.getInstance());
     outbox = ListingOutbox(cache);
+    photoOutbox = PhotoOutbox(cache);
+    tempDir = Directory.systemTemp.createTempSync('outbox_test');
+    addTearDown(() => tempDir.deleteSync(recursive: true));
     createdRow = ((jsonDecode(
       File('test/fixtures/listings_page.json').readAsStringSync(),
     ) as Map)['items'] as List)
@@ -74,6 +87,9 @@ void main() {
     )..httpClientAdapter = adapter;
     return ApiListingRepository(ApiClient(dio: dio), cache: cache);
   }
+
+  OutboxController outboxController(ApiListingRepository repo) =>
+      OutboxController(outbox, repo, photos: photoOutbox);
 
   DraftController draftController(
     ApiListingRepository repo,
@@ -98,7 +114,7 @@ void main() {
     test('queues instead of losing the listing', () async {
       final adapter = _Adapter((_) => _json(createdRow));
       final repo = repository(adapter);
-      final controller = OutboxController(outbox, repo);
+      final controller = outboxController(repo);
       final draft = draftController(repo, controller);
 
       // Reported as success. The seller typed this once, in the sun, on a
@@ -112,11 +128,12 @@ void main() {
     test('survives the app being killed', () async {
       final adapter = _Adapter((_) => _json(createdRow));
       final repo = repository(adapter);
-      final controller = OutboxController(outbox, repo);
+      final controller = outboxController(repo);
       await draftController(repo, controller).submit();
 
       // A fresh controller reading the same disk — what a cold start does.
-      final reopened = OutboxController(ListingOutbox(cache), repo);
+      final reopened =
+          OutboxController(ListingOutbox(cache), repo, photos: photoOutbox);
 
       expect(reopened.state.pending, 1);
       expect(reopened.state.entries.single.title, 'Urgut pomidori');
@@ -125,7 +142,7 @@ void main() {
     test('keeps the photos with it', () async {
       final adapter = _Adapter((_) => _json(createdRow));
       final repo = repository(adapter);
-      final controller = OutboxController(outbox, repo);
+      final controller = outboxController(repo);
 
       final picker = FakePhotoPicker(galleryResults: [photo('a'), photo('b')]);
       final draft = DraftController(
@@ -150,7 +167,7 @@ void main() {
     test('an invalid listing is still rejected, not queued', () async {
       final adapter = _Adapter((_) => _json(createdRow));
       final repo = repository(adapter);
-      final controller = OutboxController(outbox, repo);
+      final controller = outboxController(repo);
 
       final draft = DraftController(
         repo,
@@ -172,7 +189,7 @@ void main() {
     test('sends the queue once the signal comes back', () async {
       final adapter = _Adapter((_) => _json(createdRow));
       final repo = repository(adapter);
-      final controller = OutboxController(outbox, repo);
+      final controller = outboxController(repo);
       await draftController(repo, controller).submit();
 
       adapter.offline = false;
@@ -183,7 +200,7 @@ void main() {
     test('still offline leaves everything queued', () async {
       final adapter = _Adapter((_) => _json(createdRow));
       final repo = repository(adapter);
-      final controller = OutboxController(outbox, repo);
+      final controller = outboxController(repo);
       await draftController(repo, controller).submit();
 
       expect(await controller.flush(), 0);
@@ -194,7 +211,7 @@ void main() {
         () async {
       final adapter = _Adapter((_) => _json(createdRow));
       final repo = repository(adapter);
-      final controller = OutboxController(outbox, repo);
+      final controller = outboxController(repo);
 
       for (var i = 0; i < 3; i++) {
         await draftController(repo, controller).submit();
@@ -213,7 +230,7 @@ void main() {
         (_) => _json({'message': ['title kamida 3 ta belgi']}, status: 400),
       );
       final repo = repository(adapter);
-      final controller = OutboxController(outbox, repo);
+      final controller = outboxController(repo);
       await draftController(repo, controller).submit();
 
       adapter.offline = false;
@@ -231,7 +248,7 @@ void main() {
       expect(adapter.posts, postsBefore);
     });
 
-    test('a listing whose photos fail is still done', () async {
+    test('a listing whose photos fail is still done, and they queue', () async {
       final adapter = _Adapter((options) {
         if (options.path.contains('/photos')) {
           return _json({'message': 'nope'}, status: 500);
@@ -239,7 +256,7 @@ void main() {
         return _json(createdRow);
       });
       final repo = repository(adapter);
-      final controller = OutboxController(outbox, repo);
+      final controller = outboxController(repo);
 
       final picker = FakePhotoPicker(galleryResults: [photo('a')]);
       final draft = DraftController(
@@ -260,14 +277,109 @@ void main() {
       adapter.offline = false;
       await controller.flush();
 
-      // The listing is live. A photo file the OS cleared while the entry
-      // waited is not a reason to send the listing a second time.
+      // The listing is live — sending it again is the one thing that must not
+      // happen — and the photos are not dropped on the floor either.
       expect(controller.state.pending, 0);
+      expect(controller.state.pendingPhotos, 1);
     });
 
     test('nothing queued is a no-op', () async {
       final adapter = _Adapter((_) => _json(createdRow))..offline = false;
-      final controller = OutboxController(outbox, repository(adapter));
+      final controller = outboxController(repository(adapter));
+
+      expect(await controller.flush(), 0);
+      expect(adapter.posts, 0);
+    });
+  });
+
+  group('photos for a listing that is already live', () {
+    test('go up when the signal comes back', () async {
+      final adapter = _Adapter((_) => _json(createdRow))..offline = false;
+      final repo = repository(adapter);
+      final controller = outboxController(repo);
+
+      await controller.enqueuePhotos(
+        listingId: 'lst-1',
+        paths: [realPhoto('a.jpg')],
+        now: DateTime(2026, 7, 31, 12),
+      );
+      expect(controller.state.pendingPhotos, 1);
+
+      await controller.flush();
+      expect(controller.state.pendingPhotos, 0);
+    });
+
+    test('survive the app being killed', () async {
+      final controller = outboxController(repository(_Adapter((_) => _json(createdRow))));
+      await controller.enqueuePhotos(
+        listingId: 'lst-1',
+        paths: ['/tmp/a.jpg', '/tmp/b.jpg'],
+        title: 'Urgut pomidori',
+        now: DateTime(2026, 7, 31, 12),
+      );
+
+      final reopened = PhotoOutbox(cache).read();
+      expect(reopened.single.paths, hasLength(2));
+      expect(reopened.single.title, 'Urgut pomidori');
+    });
+
+    test('a second attempt at the same listing replaces the first', () async {
+      final controller = outboxController(repository(_Adapter((_) => _json(createdRow))));
+
+      for (var i = 0; i < 3; i++) {
+        await controller.enqueuePhotos(
+          listingId: 'lst-1',
+          paths: ['/tmp/a.jpg'],
+          now: DateTime(2026, 7, 31, 12, i),
+        );
+      }
+
+      // Otherwise a seller who retries three times uploads the same photo
+      // three times.
+      expect(PhotoOutbox(cache).read(), hasLength(1));
+    });
+
+    test('a deleted listing drops its photos instead of retrying forever',
+        () async {
+      final adapter = _Adapter(
+        (_) => _json({'message': 'topilmadi'}, status: 404),
+      )..offline = false;
+      final controller = outboxController(repository(adapter));
+
+      await controller.enqueuePhotos(
+        listingId: 'lst-gone',
+        paths: [realPhoto('a.jpg')],
+        now: DateTime(2026, 7, 31, 12),
+      );
+      await controller.flush();
+
+      expect(controller.state.pendingPhotos, 0);
+    });
+
+    test('a file the OS cleared is given up on after three tries', () async {
+      final adapter = _Adapter(
+        (_) => _json({'message': 'nope'}, status: 500),
+      )..offline = false;
+      final controller = outboxController(repository(adapter));
+
+      await controller.enqueuePhotos(
+        listingId: 'lst-1',
+        paths: ['/tmp/a.jpg'],
+        now: DateTime(2026, 7, 31, 12),
+      );
+
+      for (var i = 0; i < PhotoOutbox.maxAttempts; i++) {
+        await controller.flush();
+      }
+      final before = adapter.posts;
+      await controller.flush();
+
+      expect(adapter.posts, before);
+    });
+
+    test('nothing queued at all is still a no-op', () async {
+      final adapter = _Adapter((_) => _json(createdRow))..offline = false;
+      final controller = outboxController(repository(adapter));
 
       expect(await controller.flush(), 0);
       expect(adapter.posts, 0);

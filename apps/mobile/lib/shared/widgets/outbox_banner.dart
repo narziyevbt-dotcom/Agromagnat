@@ -45,7 +45,7 @@ class OutboxBanner extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppStrings.queuedCount(outbox.pending),
+                  _headline(outbox),
                   style: AppTypography.body(size: 13, weight: FontWeight.w600),
                 ),
                 Text(
@@ -84,6 +84,19 @@ class OutboxBanner extends ConsumerWidget {
     );
   }
 
+  /// Says what is actually waiting. A banner that counts listings while the
+  /// queue holds only photos is a banner that reads as a bug.
+  String _headline(OutboxState outbox) {
+    if (outbox.pending == 0) {
+      return AppStrings.queuedPhotoCount(outbox.pendingPhotos);
+    }
+    if (outbox.pendingPhotos == 0) {
+      return AppStrings.queuedCount(outbox.pending);
+    }
+    return AppStrings.queuedBoth(outbox.pending, outbox.pendingPhotos);
+  }
+
+  /// Asked first: this is the seller's own typing and there is no undo.
   Future<void> _discard(
     BuildContext context,
     WidgetRef ref,

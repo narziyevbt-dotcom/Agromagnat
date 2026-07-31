@@ -49,10 +49,34 @@ Three rules it enforces:
 - **A refused body is counted, not deleted.** After `maxAttempts` (5) it stops
   being retried and the banner turns and says a person needs to look at it. It
   is still the seller's work; the app does not get to throw it away.
-- **A listing whose photos fail is still done.** The listing is live. A photo
-  the OS cleared out of its cache directory while the entry waited is not a
-  reason to post the listing a second time — a duplicate is worse than a
-  missing picture.
+- **A listing whose photos fail is still done.** The listing is live, so it
+  comes off the queue either way — posting it twice is the one thing that must
+  not happen. The photos move to the photo queue below rather than being
+  dropped.
+
+## Photos for a listing that is already live
+
+Publishing and uploading are two requests, and on EDGE the second is the one
+that dies: the listing goes live and its photos do not. That used to end with
+*"keyinroq qo'shishingiz mumkin"* — an instruction, with nothing in the app
+that could carry it out.
+
+`PhotoOutbox` is a second queue, keyed on a listing id that already exists. It
+is deliberately not the same queue: an entry that is half-sent is exactly the
+state that eventually posts a listing twice.
+
+- **One job per listing.** A seller who retries three times uploads the photo
+  once, not three times.
+- **Three attempts, not five.** A listing is the seller's typing and worth
+  pushing at; a photo is a file the OS may already have cleared out of its
+  cache directory, and retrying that forever is battery for nothing.
+- **A 404 drops the job.** The listing was deleted here or on another device.
+  Uploading at it forever helps nobody.
+
+The message changes with it. "Add them later" when nothing will retry is an
+instruction; *"Rasmlar navbatda — internet paydo bo'lishi bilan o'zi
+yuklanadi"* when something will is a reassurance, and only one of the two is
+ever true.
 
 ## It says "queued", not "published"
 
@@ -71,7 +95,7 @@ does not exist yet.
 
 ## Tests
 
-17 tests — `outbox_test.dart` drives the queue over an adapter that can be
+23 tests — `outbox_test.dart` drives both queues over an adapter that can be
 switched offline mid-test, `outbox_banner_test.dart` covers what the seller
 sees.
 
@@ -79,14 +103,11 @@ The ones worth having: it survives the app being killed (a second controller
 reading the same disk), an invalid listing is still rejected rather than
 queued, flushing stops at the first dead request, a refused body is given up
 on after five tries, one unreadable row does not cost the seller the listing
-beside it, and backing out of the delete dialog is not a way to lose a
-listing.
+beside it, backing out of the delete dialog is not a way to lose a listing,
+and a photo job for a deleted listing is dropped rather than retried forever.
 
 ## Not done yet
 
-- **Photo upload retry.** If the listing posts and its photos do not, the
-  photos are gone. The queue exists now, so this is a smaller change than it
-  was — but the entry is removed once the listing is live.
 - **No editing from the queue.** A stuck entry can be deleted, not corrected —
   the seller has to type it again. Reopening it in the posting form means
   rebuilding a draft from a stored body, which is the rehydration this design
