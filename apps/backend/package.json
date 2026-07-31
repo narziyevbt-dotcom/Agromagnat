@@ -20,6 +20,7 @@
     "seed:demo": "ts-node -r tsconfig-paths/register src/database/seeds/demo-seed.ts",
     "price:snapshot": "ts-node -r tsconfig-paths/register src/database/seeds/snapshot-prices.ts",
     "sms:check": "ts-node -r tsconfig-paths/register src/ops/sms-check.ts",
+    "gateway:check": "ts-node -r tsconfig-paths/register src/ops/gateway-check.ts",
     "seed:demo:clean": "ts-node -r tsconfig-paths/register src/database/seeds/demo-seed.ts --clean",
     "seed:admin": "ts-node -r tsconfig-paths/register src/database/seeds/make-admin.ts"
   },

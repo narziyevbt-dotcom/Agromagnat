@@ -39,7 +39,7 @@ Biri yetkaza olmasa, keyingisi sinaladi.
 ### Sozlash
 
 1. <https://gateway.telegram.org> — kiring va token oling
-2. O'z raqamingizga yuborish **bepul** — sinash uchun shundan boshlang
+2. **Balansni to'ldiring.** Bu qadamni o'tkazib yubormang — pastga qarang
 3. `.env`:
 
 ```bash
@@ -47,6 +47,39 @@ TELEGRAM_GATEWAY_TOKEN=<token>
 TELEGRAM_GATEWAY_SENDER=          # ixtiyoriy, tasdiqlangan kanal nomi
 TELEGRAM_GATEWAY_TTL=300
 ```
+
+### Tekshirish
+
+```bash
+cd apps/backend
+
+npm run gateway:check                        # token qabul qilinadimi (bepul)
+npm run gateway:check +998901234567          # bu raqamga yetadimi (bepul)
+npm run gateway:check +998901234567 --send   # haqiqiy kod yuboradi
+```
+
+Birinchi ikkitasi **pul sarflamaydi**. `--send` esa yuboradi — lekin **o'z
+raqamingizga yuborish bepul**, shuning uchun birinchi haqiqiy sinovni o'zingizga
+qiling.
+
+### ⚠️ Balans tugasa
+
+Bu eng chalg'ituvchi holat, va biz uni sinov paytida uchratdik.
+
+Balansi bo'sh akkaunt **har bir raqamga** `BALANCE_NOT_ENOUGH` deb javob
+beradi — hatto Telegram'i bor raqamga ham. Tashqaridan bu "bu odamda Telegram
+yo'q" degandek ko'rinadi.
+
+Kod endi ikkalasini ajratadi:
+
+| Holat | Log darajasi | Ma'nosi |
+|---|---|---|
+| `BALANCE_NOT_ENOUGH` | **ERROR** | Kanal hamma uchun o'lik. Balansni to'ldiring |
+| `ACCESS_TOKEN_INVALID` | **ERROR** | Token yoki jo'natuvchi noto'g'ri |
+| `PHONE_NUMBER_NOT_FOUND` | debug | Oddiy holat — bu odam SMS oladi |
+
+Agar buni ajratmasak, balans tugagani "odamlarda Telegram yo'q ekan" degan
+xulosa ostida yashirinardi — va buni faqat SMS hisobi kelganda bilib olardik.
 
 ### Eskizsiz ishga tushirish
 

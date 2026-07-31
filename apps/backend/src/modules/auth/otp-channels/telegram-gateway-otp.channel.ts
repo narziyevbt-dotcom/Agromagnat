@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import type { TelegramGatewayConfig } from '../../../config/configuration';
+import { classify, explain } from './gateway-errors';
 import { OtpChannel, OtpRecipient } from './otp-channel';
 
 const BASE_URL = 'https://gatewayapi.telegram.org';
@@ -58,6 +59,7 @@ export class TelegramGatewayOtpChannel implements OtpChannel {
 
     const requestId = ability?.result?.request_id;
     if (!ability?.ok || !requestId) {
+      this.report(ability?.error, recipient.phone);
       throw new Error(
         `Telegram cannot reach ${maskPhone(recipient.phone)}: ${describe(ability)}`,
       );
@@ -76,6 +78,7 @@ export class TelegramGatewayOtpChannel implements OtpChannel {
     });
 
     if (!sent?.ok) {
+      this.report(sent?.error, recipient.phone);
       throw new Error(`Telegram Gateway refused the code: ${describe(sent)}`);
     }
 
@@ -83,6 +86,23 @@ export class TelegramGatewayOtpChannel implements OtpChannel {
     this.logger.log(
       `Code delivered to ${maskPhone(recipient.phone)} over Telegram (${status})`,
     );
+  }
+
+  /**
+   * An unreachable number is routine and belongs at debug; an empty account is
+   * an outage of this whole channel and belongs where somebody will see it.
+   * Logging both the same way is how "the SMS bill tripled" becomes the first
+   * anybody hears of it.
+   */
+  private report(error: string | undefined, phone: string): void {
+    const fault = classify(error);
+    const message = `${explain(fault, error)} (${maskPhone(phone)})`;
+
+    if (fault === 'account' || fault === 'config') {
+      this.logger.error(message);
+    } else {
+      this.logger.debug(message);
+    }
   }
 
   private async post(path: string, body: Record<string, unknown>): Promise<GatewayReply> {
