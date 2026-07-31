@@ -150,18 +150,75 @@ describe('Auth (e2e)', () => {
         .expect(401);
     });
 
-    it('refresh rotates the pair and burns the old refresh token', async () => {
+    it('refresh rotates the pair', async () => {
       const rotated = await request(app.getHttpServer())
         .post('/api/auth/refresh')
         .send({ refreshToken })
         .expect(200);
 
       expect(rotated.body.refreshToken).not.toBe(refreshToken);
+      refreshToken = rotated.body.refreshToken;
+    });
+
+    /**
+     * Two tabs whose access tokens expire in the same second both present the
+     * same refresh token. Before the grace window the loser was treated as a
+     * thief and the account was signed out everywhere — for opening two tabs.
+     */
+    it('serves a second use of a just-rotated token instead of killing the session', async () => {
+      const first = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .send({ refreshToken })
+        .expect(200);
+
+      const second = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .send({ refreshToken })
+        .expect(200);
+
+      expect(second.body.refreshToken).not.toBe(first.body.refreshToken);
+
+      // The winner's token still works: nothing was revoked.
+      await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .send({ refreshToken: first.body.refreshToken })
+        .expect(200);
+    });
+
+    it('burns the old token once the grace window has passed', async () => {
+      const rotated = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .send({ refreshToken })
+        .expect(200);
+
+      // Standing in for sixty seconds of clock. Deleting the grace marker is
+      // exactly what its TTL does, and it keeps the test instant.
+      await redis.delByPattern('auth:rotated:*');
 
       await request(app.getHttpServer())
         .post('/api/auth/refresh')
         .send({ refreshToken })
         .expect(401);
+
+      // A replay is a compromise: everything the account holds goes, including
+      // the pair that was legitimately issued a moment ago.
+      await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .send({ refreshToken: rotated.body.refreshToken })
+        .expect(401);
+
+      // Leave a live session behind for the logout test that follows.
+      await redis.del(`otp:rate:${phone}`);
+      await request(app.getHttpServer())
+        .post('/api/auth/request-otp')
+        .send({ phone })
+        .expect(200);
+      refreshToken = (
+        await request(app.getHttpServer())
+          .post('/api/auth/verify-otp')
+          .send({ phone, code: '000000' })
+          .expect(200)
+      ).body.refreshToken;
     });
 
     it('PATCH /api/auth/me updates the name and location', async () => {

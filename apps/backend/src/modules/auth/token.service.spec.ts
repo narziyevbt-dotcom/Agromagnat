@@ -77,25 +77,62 @@ describe('TokenService', () => {
     expect(second.refreshToken).not.toBe(first.refreshToken);
   });
 
-  it('refuses to reuse a rotated refresh token', async () => {
+  /** The grace marker expires by TTL in Redis; here it is dropped by hand. */
+  const graceWindowPasses = () => {
+    for (const key of [...keys]) {
+      if (key.startsWith('auth:rotated:')) keys.delete(key);
+    }
+  };
+
+  it('serves a reuse inside the grace window rather than killing the session', async () => {
+    // Two tabs refreshing in the same second present the same token. The loser
+    // is not a thief, and treating it as one signs a person out of every
+    // device for the crime of opening a second tab.
+    const first = await service.issuePair(USER);
+    const winner = await service.rotate(first.refreshToken, lookup);
+    const loser = await service.rotate(first.refreshToken, lookup);
+
+    expect(loser.refreshToken).not.toBe(winner.refreshToken);
+
+    // And the winner's own token is untouched.
+    await expect(service.rotate(winner.refreshToken, lookup)).resolves.toBeDefined();
+  });
+
+  it('refuses to reuse a rotated refresh token once the grace window has passed', async () => {
     const first = await service.issuePair(USER);
     await service.rotate(first.refreshToken, lookup);
+    graceWindowPasses();
 
     await expect(service.rotate(first.refreshToken, lookup)).rejects.toThrow(
       UnauthorizedException,
     );
   });
 
-  it('treats a replay as a compromise and kills every live session', async () => {
+  it('treats a late replay as a compromise and kills every live session', async () => {
     const sessionA = await service.issuePair(USER);
     const sessionB = await service.issuePair(USER);
     await service.rotate(sessionA.refreshToken, lookup);
+    graceWindowPasses();
 
     // Replaying the consumed token must take the unrelated session down too.
     await expect(service.rotate(sessionA.refreshToken, lookup)).rejects.toThrow(
       UnauthorizedException,
     );
     await expect(service.rotate(sessionB.refreshToken, lookup)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('closes the grace window on logout', async () => {
+    // Otherwise a token rotated seconds before logout could still be exchanged
+    // for a fresh pair after it — a hole in the one operation meant to shut
+    // the session down.
+    const first = await service.issuePair(USER);
+    const second = await service.rotate(first.refreshToken, lookup);
+
+    await service.revoke(second.refreshToken);
+
+    await expect(service.rotate(first.refreshToken, lookup)).rejects.toThrow(
       UnauthorizedException,
     );
   });

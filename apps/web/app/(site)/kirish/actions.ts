@@ -1,8 +1,9 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { ApiError, requestOtp, verifyOtp } from '@/lib/api';
+import { ApiError, requestOtp, signInWithGoogle, verifyOtp } from '@/lib/api';
 import { setSession } from '@/lib/session';
+import { t } from '@/lib/strings';
 
 export interface AuthState {
   step: 'phone' | 'code';
@@ -53,6 +54,28 @@ export async function sendCode(_prev: AuthState, formData: FormData): Promise<Au
   }
 }
 
+/**
+ * Sends the code again to a number already on screen.
+ *
+ * Separate from `sendCode` because the code step has no phone field to
+ * resubmit — and because the backend counts these against the same three-per-
+ * ten-minutes budget, so the error it returns has to reach the user rather
+ * than silently doing nothing.
+ */
+export async function resendCode(phone: string): Promise<AuthState> {
+  try {
+    const result = await requestOtp(phone);
+    return { step: 'code', phone, expiresIn: result.expiresIn };
+  } catch (error) {
+    return {
+      step: 'code',
+      phone,
+      error:
+        error instanceof ApiError ? error.message : "SMS yuborilmadi. Qayta urinib ko'ring",
+    };
+  }
+}
+
 export async function confirmCode(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const phone = String(formData.get('phone') ?? '');
   const code = String(formData.get('code') ?? '').replace(/\D/g, '');
@@ -82,5 +105,38 @@ export async function confirmCode(_prev: AuthState, formData: FormData): Promise
   }
 
   // Outside the try so the redirect signal is never caught by it.
+  redirect(destination);
+}
+
+/**
+ * Signs in with the ID token Google handed the browser.
+ *
+ * The token is verified on the backend, never here — a signature checked by
+ * the same process that would act on it is not a check at all. What this does
+ * is the part that must stay server-side either way: turning the returned pair
+ * into httpOnly cookies the page's own script cannot read.
+ *
+ * No phone is asked for. A buyer who only ever browses never needs one, and an
+ * SMS charged at that moment buys us nothing; the phone is collected later, at
+ * the first action that reaches another person.
+ */
+export async function googleSignInAction(
+  idToken: string,
+  next: string,
+): Promise<{ error: string } | void> {
+  const destination = safeNext(next);
+
+  try {
+    const tokens = await signInWithGoogle(idToken);
+    await setSession(tokens.accessToken, tokens.refreshToken);
+  } catch (error) {
+    if (isRedirectSignal(error)) {
+      throw error;
+    }
+    return {
+      error: error instanceof ApiError ? error.message : t.auth.googleFailed,
+    };
+  }
+
   redirect(destination);
 }

@@ -93,6 +93,26 @@ export const t = {
     finish: 'Tayyor',
     changeNumber: "Raqamni o'zgartirish",
     devHint: 'Test rejimi: kod 000000',
+    codeLabel: 'Tasdiqlash kodi',
+    or: 'yoki',
+    googleFailed: "Google orqali kirib bo'lmadi. Telefon raqam bilan urinib ko'ring",
+    logoutAll: 'Barcha qurilmalardan chiqish',
+    logoutAllHint: "Boshqa telefon yoki kompyuterda ochiq qolgan bo'lsa, hammasi yopiladi",
+  },
+
+  /** Attaching a phone to an account that signed in with Google. */
+  phoneGate: {
+    title: 'Telefon raqamingizni tasdiqlang',
+    subtitle:
+      "E'lon joylash, yozishish va saqlash uchun telefon raqam kerak — xaridorlar siz bilan shu orqali bog'lanadi",
+    codeTitle: 'Kodni kiriting',
+    codeSubtitle: 'raqamiga yuborilgan 6 xonali kodni kiriting',
+    submit: 'Kod yuborish',
+    confirm: 'Tasdiqlash',
+    done: 'Raqam tasdiqlandi',
+    why: 'Nima uchun kerak?',
+    whyBody:
+      "Agromagnat'da har bir sotuvchi haqiqiy odam. Tasdiqlangan raqam firibgarlikni to'xtatadi va xaridor sizga qo'ng'iroq qila oladi. Raqamingiz faqat siz e'lon joylaganingizda ko'rinadi.",
   },
 
   addListing: {
@@ -184,6 +204,7 @@ export const t = {
     error: 'Xatolik yuz berdi',
     retry: 'Qayta urinish',
     cancel: 'Bekor qilish',
+    confirm: 'Tasdiqlash',
     close: 'Yopish',
     save: 'Saqlash',
     from: 'dan',

@@ -42,11 +42,25 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /**
+     * The backend's machine-readable code, when it sends one. A 403 that means
+     * "verify your phone" has to be told apart from a 403 that means "this is
+     * not yours": the first opens the verification sheet, the second is an
+     * error message. Matching on the Uzbek prose would break the first time
+     * somebody rewords it.
+     */
+    readonly code?: string,
   ) {
     super(message);
     this.name = 'ApiError';
   }
 }
+
+/** The code the API sends when an action needs a verified phone. */
+export const PHONE_REQUIRED = 'PHONE_VERIFICATION_REQUIRED';
+
+export const needsPhone = (error: unknown): boolean =>
+  error instanceof ApiError && error.code === PHONE_REQUIRED;
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
@@ -100,7 +114,12 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new ApiError(extractMessage(payload, response.status), response.status);
+    const code = (payload as { error?: unknown } | null)?.error;
+    throw new ApiError(
+      extractMessage(payload, response.status),
+      response.status,
+      typeof code === 'string' ? code : undefined,
+    );
   }
 
   return payload as T;
@@ -307,6 +326,28 @@ export const logout = (refreshToken: string, token?: string) =>
 
 export const getMe = (token: string) =>
   apiFetch<CurrentUser>('/auth/me', { token, revalidate: 0 });
+
+/** Exchanges a Google ID token for a session. The account may have no phone. */
+export const signInWithGoogle = (idToken: string) =>
+  apiFetch<AuthTokens>('/auth/google', { method: 'POST', body: { idToken } });
+
+/** Attaching a phone to an account that already exists — not a login. */
+export const requestPhoneCode = (phone: string, token: string) =>
+  apiFetch<{ sent: boolean; expiresIn: number }>('/auth/phone/request', {
+    method: 'POST',
+    body: { phone },
+    token,
+  });
+
+export const confirmPhoneCode = (phone: string, code: string, token: string) =>
+  apiFetch<AuthTokens>('/auth/phone/verify', {
+    method: 'POST',
+    body: { phone, code },
+    token,
+  });
+
+export const logoutEverywhere = (token: string) =>
+  apiFetch<void>('/auth/logout-all', { method: 'POST', token });
 
 /* -------------------------------------------------------------- reports */
 

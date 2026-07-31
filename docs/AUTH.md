@@ -69,8 +69,18 @@ public feed mark listings the caller has already favorited without demanding a l
 ## Tests
 
 - `otp.service.spec.ts` — issue, expiry, rate limit, attempt burn, single use
-- `token.service.spec.ts` — rotation, replay detection, blacklist
-- `auth.e2e-spec.ts` — 13 cases over the real stack, from request-otp to logout
+- `token.service.spec.ts` — rotation, the grace window, replay detection,
+  blacklist, and that logout closes the window
+- `auth.e2e-spec.ts` — the real stack, from request-otp to logout, including a
+  concurrent refresh that must not sign the account out
+- `phone-gate.e2e-spec.ts` — browsing allowed without a phone, every
+  participating action refused, verification attaching the identity and
+  reissuing the pair
+
+The web has no test runner yet. Everything above is backend; the sign-in screen,
+the gate redirects and the token renewal are covered by typecheck, build and a
+manual pass, which is not the same thing. It is the largest hole in the project's
+testing and it is tracked as such.
 
 ## Identity vs proof
 
@@ -104,6 +114,45 @@ message send for a check that is almost always true.
 It answers 403 with `error: "PHONE_VERIFICATION_REQUIRED"`. A machine-readable
 code, not just a message, because the client must tell "verify your phone"
 apart from "this is not yours" and open the verification sheet for one only.
+
+### What the web does with that 403
+
+`/telefon` — a route, not a modal. The refusal can arrive from a server action,
+a route handler or a full page load, and a URL is the only target all three can
+reach; it also survives a reload mid-flow, which a sheet held in React state
+does not. Every entry point carries `?next=` so verifying returns the person to
+the listing they were about to save.
+
+| Where | What happens |
+|---|---|
+| `/joylash` | Checked **before** the form renders. Photographing a crop, filling six fields and *then* being asked for a phone is how a seller gives up. Asked first, it is one step; asked after, it is a lost listing. |
+| Chat, profile edit | The action catches the code and redirects. |
+| Save (favourite) | A background fetch cannot redirect itself, so the proxy route hands back the code plus `verifyUrl`; the button rolls the heart back and navigates. |
+| `/profil` | A standing banner while the account has no verified phone — it sits above the actions because every one of them is refused until it is done. |
+
+`/telefon` also checks the account rather than the token: somebody who verified
+on their phone and then opened the link on a laptop still holds an access token
+that says otherwise, and sending them round the SMS loop again would cost money
+to tell them something we already know.
+
+### One screen for signing in and signing up
+
+There is no separate register page and there never was a reason for one: the
+site cannot know whether a number is new until the code is confirmed, so asking
+the visitor to declare it up front makes them guess at something we are about to
+find out anyway. `/kirish` offers Google first — one tap for anyone signed in on
+an Android phone, which is most of this market, and it costs us no SMS — then a
+divider, then the phone field.
+
+Google's own button is rendered rather than a lime pill in our design language.
+The branding *is* the trust signal: a home-made button next to the word Google
+is what a phishing page looks like, and Google's terms require their asset. It
+is the one place on the site where matching the design system would cost more
+than it buys. With `NEXT_PUBLIC_GOOGLE_CLIENT_ID` unset the button is absent
+entirely — a dead button that fails on tap is worse than one door.
+
+One Tap is deliberately **not** enabled. Signing in is a deliberate act on this
+site, not something to interrupt a browsing farmer with on a listing page.
 
 ### Two joins we deliberately refuse
 
@@ -162,7 +211,46 @@ one replica.
 Refresh tokens rotate on every use and the old one is revoked, so a stolen
 refresh token is single-use and its replay is detectable. `POST /auth/logout-all`
 revokes every one the account holds — the "sign out everywhere" a settings
-screen owes anybody who has lost a phone.
+screen owes anybody who has lost a phone. It is on `/profil`, behind one
+confirmation, not buried in settings: the moment somebody needs it is the moment
+they have just lost a phone.
+
+### The rotation grace window
+
+Single-use rotation and multiple tabs are in direct conflict. Two tabs whose
+access tokens expire in the same second both present the same refresh token;
+one wins, and the loser looks exactly like a thief replaying a stolen token.
+Taken literally, that signs the person out of every device for opening a second
+tab.
+
+So a rotated token is remembered for **60 seconds** under `auth:rotated:<user>:<jti>`.
+A second use inside that window is served with a fresh pair and nothing is
+revoked. A use after it is still treated as a compromise and still drops every
+session the account holds. Both `logout` and `logout-all` clear the grace keys,
+or the window would be a minute-long hole in the one operation whose purpose is
+closing the session.
+
+### Staying signed in (web)
+
+The access token lives 15 minutes, the refresh token 30 days. Nothing was
+spending the second to renew the first: once the short token expired every
+authenticated page saw a 401 and bounced to the login screen while a perfectly
+good refresh token sat in the next cookie along. In practice that meant signing
+in again a few times an hour, and each of those is another SMS.
+
+`apps/web/proxy.ts` renews it. It runs before the page and is the only place in
+the App Router where a cookie can still be written for a server-rendered
+request — a server component cannot set one, and by the time an action notices
+the 401 the page has already decided to redirect. It renews 120 seconds ahead of
+expiry so a slow render never straddles the boundary, clears both cookies on a
+401 so the next page is the signed-out one rather than a broken authenticated
+one, and does nothing at all when the API is unreachable: signing somebody out
+because a network blipped is worse than a page that briefly shows less.
+
+The `exp` claim is read without verifying the signature, deliberately. This
+decides whether to *ask the backend* for a new token, and the backend verifies
+for real; a forged `exp` buys an attacker one pointless refresh call with their
+own cookie.
 
 ## Production guards
 

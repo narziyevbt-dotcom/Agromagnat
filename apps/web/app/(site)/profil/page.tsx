@@ -6,7 +6,7 @@ import { formatPhone, initials } from '@/lib/format';
 import { getAccessToken } from '@/lib/session';
 import { t } from '@/lib/strings';
 import { MyListingRow } from './MyListingRow';
-import { SignOutButton } from './SignOutButton';
+import { SignOutButton, SignOutEverywhereButton } from './SignOutButton';
 
 export const metadata: Metadata = {
   title: t.profile.title,
@@ -46,7 +46,9 @@ export default async function ProfilePage() {
           </span>
           <div className="min-w-0">
             <h1 className="truncate text-xl text-white">{user.name ?? 'Foydalanuvchi'}</h1>
-            <p className="numeric text-sm text-white/75">{formatPhone(user.phone)}</p>
+            <p className="numeric truncate text-sm text-white/75">
+              {formatPhone(user.phone) || user.email}
+            </p>
             {user.isVerified && (
               <p className="mt-0.5 text-xs font-medium text-turquoise">
                 ✓ {t.listing.verified}
@@ -61,6 +63,28 @@ export default async function ProfilePage() {
           <Stat label={t.profile.totalCalls} value={calls} />
         </dl>
       </section>
+
+      {/* The one thing standing between this account and the whole product.
+          It sits above the actions rather than beside them because every one
+          of those actions is refused until it is done. */}
+      {!user.phoneVerifiedAt && (
+        <Link
+          href="/telefon?next=/profil"
+          className="mt-4 flex items-center gap-3 rounded-2xl bg-saffron/10 p-4 ring-1 ring-saffron/30 transition-colors hover:bg-saffron/15"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-saffron/20 text-lg">
+            📱
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-ink">
+              {t.phoneGate.title}
+            </span>
+            <span className="mt-0.5 block text-sm text-ink-muted">
+              {t.phoneGate.subtitle}
+            </span>
+          </span>
+        </Link>
+      )}
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
@@ -95,6 +119,10 @@ export default async function ProfilePage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-10 border-t border-hairline pt-5">
+        <SignOutEverywhereButton />
       </section>
     </div>
   );

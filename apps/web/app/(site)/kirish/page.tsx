@@ -24,7 +24,13 @@ export default async function LoginPage({
 
   return (
     <div className="mx-auto flex max-w-7xl items-start justify-center px-4 py-10 sm:py-16">
-      <LoginForm next={safeNext} devMode={process.env.NODE_ENV !== 'production'} />
+      <LoginForm
+        next={safeNext}
+        devMode={process.env.NODE_ENV !== 'production'}
+        // Absent in a fresh checkout, and then the Google button simply is not
+        // there — a dead button that fails on tap is worse than one door.
+        googleClientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || null}
+      />
     </div>
   );
 }

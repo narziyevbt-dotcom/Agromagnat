@@ -1,8 +1,8 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { ApiError, openChat, sendMessage } from '@/lib/api';
-import { getAccessToken } from '@/lib/session';
+import { ApiError, needsPhone, openChat, sendMessage } from '@/lib/api';
+import { getAccessToken, phoneGatePath } from '@/lib/session';
 import type { ChatMessage } from '@/lib/types';
 
 /**
@@ -21,6 +21,13 @@ export async function openChatAction(listingId: string): Promise<{ error?: strin
   try {
     chatId = (await openChat(listingId, token)).id;
   } catch (error) {
+    // A Google account with no phone gets here. Sending it to the verification
+    // screen is the whole point of the gate — showing "403" would be true and
+    // useless. `redirect` throws, so it leaves the catch rather than falling
+    // through to the error return.
+    if (needsPhone(error)) {
+      redirect(phoneGatePath(`/e/${listingId}`));
+    }
     return {
       error: error instanceof ApiError ? error.message : 'Suhbatni ochib bo‘lmadi',
     };

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getCategories, getRegions } from '@/lib/api';
-import { isSignedIn } from '@/lib/session';
+import { getCategories, getMe, getRegions } from '@/lib/api';
+import { getAccessToken, phoneGatePath } from '@/lib/session';
 import { t } from '@/lib/strings';
 import { AddListingForm } from './AddListingForm';
 
@@ -11,14 +11,24 @@ export const metadata: Metadata = {
 };
 
 export default async function AddListingPage() {
-  if (!(await isSignedIn())) {
+  const token = await getAccessToken();
+  if (!token) {
     redirect('/kirish?next=/joylash');
   }
 
-  const [categories, regions] = await Promise.all([
+  const [categories, regions, me] = await Promise.all([
     getCategories().catch(() => []),
     getRegions().catch(() => []),
+    getMe(token).catch(() => null),
   ]);
+
+  // The gate is enforced by the API on submit, but finding out there is checked
+  // here first: photographing a crop, filling six fields and *then* being asked
+  // for a phone number is how a seller gives up. Asked before the work, it is
+  // one step; asked after, it is a lost listing.
+  if (me && !me.phoneVerifiedAt) {
+    redirect(phoneGatePath('/joylash'));
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-5 sm:py-8">

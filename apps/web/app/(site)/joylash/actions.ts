@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { ApiError, createListing, uploadListingPhotos } from '@/lib/api';
-import { getAccessToken } from '@/lib/session';
+import { ApiError, createListing, needsPhone, uploadListingPhotos } from '@/lib/api';
+import { getAccessToken, phoneGatePath } from '@/lib/session';
 
 export interface PublishState {
   error?: string;
@@ -85,6 +85,9 @@ export async function publishListing(
     const listing = await createListing(payload, token);
     listingId = listing.id;
   } catch (error) {
+    if (needsPhone(error)) {
+      redirect(phoneGatePath('/joylash'));
+    }
     return {
       error: error instanceof ApiError ? error.message : "E'lon joylanmadi",
     };

@@ -42,6 +42,19 @@ export function FavoriteButton({
       const response = await fetch(`/api/favorites/${listingId}`, {
         method: next ? 'POST' : 'DELETE',
       });
+
+      // A Google account with no phone yet. Roll the heart back first — the
+      // save genuinely did not happen — then take them to verification with
+      // this listing as the return address.
+      if (response.status === 403) {
+        const { verifyUrl } = (await response.json().catch(() => ({}))) as {
+          verifyUrl?: string;
+        };
+        setSaved(!next);
+        router.push(verifyUrl ?? `/telefon?next=/e/${listingId}`);
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('failed');
       }

@@ -153,7 +153,11 @@ export interface AuthTokens {
 
 export interface CurrentUser {
   id: string;
-  phone: string;
+  /** Null for an account that signed in with Google and has not verified one. */
+  phone: string | null;
+  /** Set once an OTP for that number succeeded — the gate reads this, not `phone`. */
+  phoneVerifiedAt: string | null;
+  email: string | null;
   name: string | null;
   role: 'user' | 'moderator' | 'admin';
   isBlocked: boolean;

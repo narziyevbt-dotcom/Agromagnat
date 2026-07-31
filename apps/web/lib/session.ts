@@ -1,4 +1,10 @@
 import { cookies } from 'next/headers';
+import {
+  ACCESS_COOKIE,
+  ACCESS_MAX_AGE,
+  REFRESH_COOKIE,
+  REFRESH_MAX_AGE,
+} from './cookies';
 
 /**
  * Tokens live in httpOnly cookies rather than localStorage.
@@ -7,11 +13,7 @@ import { cookies } from 'next/headers';
  * render a personalised page, and script on the page cannot read an httpOnly
  * cookie, so an XSS bug cannot walk off with a 30-day refresh token.
  */
-export const ACCESS_COOKIE = 'agm_at';
-export const REFRESH_COOKIE = 'agm_rt';
-
-const ACCESS_MAX_AGE = 15 * 60;
-const REFRESH_MAX_AGE = 30 * 24 * 60 * 60;
+export { ACCESS_COOKIE, REFRESH_COOKIE };
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -48,4 +50,17 @@ export async function clearSession(): Promise<void> {
 
 export async function isSignedIn(): Promise<boolean> {
   return (await getAccessToken()) !== undefined;
+}
+
+/**
+ * Where to send somebody the API refused for want of a verified phone.
+ *
+ * The path they were trying to use is carried along, so verifying returns them
+ * to the listing they were about to save rather than to the home page — the
+ * gate should feel like a step in what they were doing, not an interruption
+ * that loses their place.
+ */
+export function phoneGatePath(next: string): string {
+  const safe = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+  return `/telefon?next=${encodeURIComponent(safe)}`;
 }

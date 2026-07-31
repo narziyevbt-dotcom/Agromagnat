@@ -1,21 +1,63 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useActionState, useState, useTransition } from 'react';
+import { AuthSubmit, CodeField, PhoneField, ResendTimer } from '@/components/auth/fields';
+import { GoogleButton } from '@/components/auth/GoogleButton';
 import { formatPhone } from '@/lib/format';
 import { t } from '@/lib/strings';
-import { type AuthState, confirmCode, sendCode } from './actions';
+import { type AuthState, confirmCode, googleSignInAction, resendCode, sendCode } from './actions';
 
 const INITIAL: AuthState = { step: 'phone' };
 
-export function LoginForm({ next, devMode }: { next: string; devMode: boolean }) {
+/**
+ * One screen for signing in and signing up.
+ *
+ * There is no separate "register" page and there never was a reason for one:
+ * the site cannot know whether a number is new until the code is confirmed, so
+ * asking the visitor to declare it up front makes them guess at something we
+ * are about to find out anyway. Both doors — Google and phone — land in the
+ * same account model; only the proof differs.
+ */
+export function LoginForm({
+  next,
+  devMode,
+  googleClientId,
+}: {
+  next: string;
+  devMode: boolean;
+  googleClientId: string | null;
+}) {
   const [phoneState, submitPhone] = useActionState(sendCode, INITIAL);
   const [codeState, submitCode] = useActionState(confirmCode, INITIAL);
 
-  // Once a code has been sent, the code step owns the screen.
-  const onCodeStep = phoneState.step === 'code';
-  const phone = codeState.phone ?? phoneState.phone ?? '';
-  const error = onCodeStep ? codeState.error : phoneState.error;
+  // Set by "Raqamni o'zgartirish" and by a resend, which both need to override
+  // whichever step the last server response put us on.
+  const [editing, setEditing] = useState(false);
+  const [resent, setResent] = useState<AuthState | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const [busy, startTransition] = useTransition();
+
+  const onCodeStep = phoneState.step === 'code' && !editing;
+  const phone = resent?.phone ?? codeState.phone ?? phoneState.phone ?? '';
+  const error =
+    googleError ?? (onCodeStep ? (resent?.error ?? codeState.error) : phoneState.error);
+  const expiresIn = resent?.expiresIn ?? phoneState.expiresIn ?? 0;
+
+  const onGoogle = (idToken: string) => {
+    setGoogleError(null);
+    startTransition(async () => {
+      const result = await googleSignInAction(idToken, next);
+      if (result?.error) {
+        setGoogleError(result.error);
+      }
+    });
+  };
+
+  const onResend = () => {
+    startTransition(async () => {
+      setResent(await resendCode(phone));
+    });
+  };
 
   return (
     <div className="mx-auto w-full max-w-sm">
@@ -44,132 +86,43 @@ export function LoginForm({ next, devMode }: { next: string; devMode: boolean })
         <form action={submitCode} className="mt-6 space-y-4">
           <input type="hidden" name="phone" value={phone} />
           <input type="hidden" name="next" value={next} />
-          <CodeInput />
+          <CodeField />
           {devMode && <p className="text-xs text-ink-faint">{t.auth.devHint}</p>}
-          <SubmitButton label={t.auth.finish} />
+          <AuthSubmit label={t.auth.finish} />
+          <ResendTimer seconds={expiresIn} onResend={onResend} />
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="tap-target w-full text-center text-sm text-ink-muted hover:text-ink"
+          >
+            {t.auth.changeNumber}
+          </button>
         </form>
       ) : (
-        <form action={submitPhone} className="mt-6 space-y-4">
-          <PhoneInput defaultValue={phoneState.phone} />
-          <SubmitButton label={t.auth.continue} />
-        </form>
+        <>
+          {/* Google first: it is one tap for anyone signed in on an Android
+              phone, which is most of this market, and it costs us no SMS. */}
+          {googleClientId && (
+            <div className="mt-6 space-y-4">
+              <GoogleButton clientId={googleClientId} onCredential={onGoogle} disabled={busy} />
+              <div className="flex items-center gap-3 text-xs text-ink-faint">
+                <span className="h-px flex-1 bg-hairline" />
+                {t.auth.or}
+                <span className="h-px flex-1 bg-hairline" />
+              </div>
+            </div>
+          )}
+
+          <form
+            action={submitPhone}
+            onSubmit={() => setEditing(false)}
+            className="mt-4 space-y-4"
+          >
+            <PhoneField defaultValue={phone} />
+            <AuthSubmit label={t.auth.continue} />
+          </form>
+        </>
       )}
     </div>
-  );
-}
-
-/**
- * The +998 prefix is fixed and outside the field. It is the same for every user
- * in the country, and leaving it editable invites half-typed numbers.
- */
-function PhoneInput({ defaultValue }: { defaultValue?: string }) {
-  const [value, setValue] = useState(defaultValue?.replace('+998', '') ?? '');
-
-  const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(event.target.value.replace(/\D/g, '').slice(0, 9));
-  };
-
-  return (
-    <div>
-      <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-ink">
-        {t.auth.phoneLabel}
-      </label>
-      <div className="flex items-stretch overflow-hidden rounded-lg bg-surface ring-1 ring-hairline focus-within:ring-2 focus-within:ring-turquoise">
-        <span className="numeric flex items-center border-r border-hairline px-3 text-ink-muted">
-          +998
-        </span>
-        {/* Unnamed on purpose — the hidden field below is what gets submitted,
-            carrying the +998 prefix the user never has to type. */}
-        <input
-          id="phone"
-          type="tel"
-          inputMode="numeric"
-          autoComplete="tel-national"
-          autoFocus
-          required
-          value={value}
-          onChange={onChange}
-          placeholder="90 123 45 67"
-          className="numeric tap-target min-w-0 flex-1 bg-transparent px-3 text-lg tracking-wide outline-none"
-        />
-      </div>
-      <input type="hidden" name="phone" value={value ? `+998${value}` : ''} />
-    </div>
-  );
-}
-
-/** Six boxes that behave like one field: auto-advance, paste, backspace. */
-function CodeInput() {
-  const [digits, setDigits] = useState<string[]>(Array(6).fill(''));
-  const refs = useRef<Array<HTMLInputElement | null>>([]);
-
-  useEffect(() => {
-    refs.current[0]?.focus();
-  }, []);
-
-  const write = (index: number, raw: string) => {
-    const clean = raw.replace(/\D/g, '');
-    if (!clean) {
-      setDigits((prev) => prev.map((d, i) => (i === index ? '' : d)));
-      return;
-    }
-
-    setDigits((prev) => {
-      const next = [...prev];
-      // A pasted code fills forward from the box it landed in.
-      for (let i = 0; i < clean.length && index + i < 6; i += 1) {
-        next[index + i] = clean[i];
-      }
-      return next;
-    });
-
-    const landing = Math.min(index + clean.length, 5);
-    refs.current[landing]?.focus();
-  };
-
-  const onKeyDown = (index: number) => (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Backspace' && !digits[index] && index > 0) {
-      refs.current[index - 1]?.focus();
-    }
-  };
-
-  return (
-    <div>
-      <span className="mb-1.5 block text-sm font-medium text-ink">SMS kod</span>
-      <div className="flex gap-2" role="group" aria-label="SMS kod">
-        {digits.map((digit, index) => (
-          <input
-            key={index}
-            ref={(element) => {
-              refs.current[index] = element;
-            }}
-            type="text"
-            inputMode="numeric"
-            autoComplete={index === 0 ? 'one-time-code' : 'off'}
-            maxLength={6}
-            value={digit}
-            aria-label={`${index + 1}-raqam`}
-            onChange={(event) => write(index, event.target.value)}
-            onKeyDown={onKeyDown(index)}
-            className="numeric h-14 w-full rounded-lg bg-surface text-center text-xl font-bold text-ink ring-1 ring-hairline outline-none focus:ring-2 focus:ring-turquoise"
-          />
-        ))}
-      </div>
-      <input type="hidden" name="code" value={digits.join('')} />
-    </div>
-  );
-}
-
-function SubmitButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
-
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="tap-target w-full rounded-lg bg-lime px-4 py-3 text-base font-semibold text-forest transition-colors hover:bg-lime-dark disabled:opacity-60"
-    >
-      {pending ? t.common.loading : label}
-    </button>
   );
 }

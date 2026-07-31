@@ -1,8 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { ApiError, apiFetch } from '@/lib/api';
-import { getAccessToken } from '@/lib/session';
+import { redirect } from 'next/navigation';
+import { ApiError, apiFetch, needsPhone } from '@/lib/api';
+import { getAccessToken, phoneGatePath } from '@/lib/session';
 
 export interface ProfileState {
   ok?: boolean;
@@ -41,6 +42,9 @@ export async function updateProfileAction(
     revalidatePath('/profil');
     return { ok: true };
   } catch (error) {
+    if (needsPhone(error)) {
+      redirect(phoneGatePath('/dashboard/sozlamalar'));
+    }
     return {
       error: error instanceof ApiError ? error.message : 'Saqlab bo‘lmadi',
     };

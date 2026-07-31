@@ -42,6 +42,18 @@ export interface TokenPair {
 type ExpiresIn = JwtSignOptions['expiresIn'];
 
 /**
+ * How long a just-rotated refresh token still counts as an honest mistake.
+ *
+ * Single-use rotation and multiple tabs are in direct conflict: two tabs whose
+ * access tokens expire in the same second both present the same refresh token,
+ * one wins, and without this the loser looks exactly like a thief replaying a
+ * stolen token — so we would sign the person out of every device for opening
+ * two tabs. Sixty seconds is long enough to cover that race and short enough
+ * that a real stolen token is still caught the moment it is used again.
+ */
+const ROTATION_GRACE_SECONDS = 60;
+
+/**
  * Issues, rotates and revokes JWTs.
  *
  * Refresh tokens are single-use: rotating one revokes it. If a revoked token is
@@ -101,10 +113,18 @@ export class TokenService {
 
     const active = await this.redis.raw.get(this.activeKey(payload.sub, payload.jti));
     if (!active) {
-      // Either already rotated or explicitly revoked. Treat a replay as a
-      // compromise and invalidate every outstanding session for this user.
-      await this.revokeAll(payload.sub);
-      throw new UnauthorizedException('Sessiya muddati tugagan, qaytadan kiring');
+      // Not active. Either this token was rotated moments ago by another tab —
+      // which is not an attack — or it is a genuine replay of a token that has
+      // been dead for a while.
+      const recentlyRotated = await this.redis.raw.exists(
+        this.rotatedKey(payload.sub, payload.jti),
+      );
+      if (!recentlyRotated) {
+        // Treat a replay as a compromise and invalidate every outstanding
+        // session for this user.
+        await this.revokeAll(payload.sub);
+        throw new UnauthorizedException('Sessiya muddati tugagan, qaytadan kiring');
+      }
     }
 
     const user = await lookupUser(payload.sub);
@@ -113,6 +133,15 @@ export class TokenService {
     }
 
     await this.redis.del(this.activeKey(payload.sub, payload.jti));
+    // Remembered briefly so the loser of a race gets a working pair instead of
+    // being signed out of every device. See the note on ROTATION_GRACE_SECONDS.
+    await this.redis.raw.set(
+      this.rotatedKey(payload.sub, payload.jti),
+      '1',
+      'EX',
+      ROTATION_GRACE_SECONDS,
+    );
+
     return this.issuePair(user);
   }
 
@@ -121,6 +150,11 @@ export class TokenService {
     const payload = await this.verifyRefresh(refreshToken).catch(() => null);
     if (payload) {
       await this.redis.del(this.activeKey(payload.sub, payload.jti));
+      // Grace keys go too. Without this, a token rotated seconds before logout
+      // could still be exchanged for a fresh pair after it — a minute-long
+      // hole in the one operation whose whole purpose is closing the session.
+      // Other devices are unaffected: their own active keys are untouched.
+      await this.redis.delByPattern(`auth:rotated:${payload.sub}:*`);
     }
     if (accessToken) {
       await this.blacklistAccess(accessToken);
@@ -128,7 +162,11 @@ export class TokenService {
   }
 
   async revokeAll(userId: string): Promise<void> {
+    // Both families, or the grace window becomes a hole: a token rotated in the
+    // last minute would still be accepted right after "sign out everywhere",
+    // which is precisely the request this is answering.
     await this.redis.delByPattern(`auth:refresh:${userId}:*`);
+    await this.redis.delByPattern(`auth:rotated:${userId}:*`);
   }
 
   /**
@@ -160,6 +198,10 @@ export class TokenService {
 
   private activeKey(userId: string, jti: string): string {
     return `auth:refresh:${userId}:${jti}`;
+  }
+
+  private rotatedKey(userId: string, jti: string): string {
+    return `auth:rotated:${userId}:${jti}`;
   }
 
   private blacklistKey(accessToken: string): string {

@@ -121,7 +121,11 @@ export const MONTHS_SHORT = [
 ];
 
 /** "+998 90 123-45-67" from "+998901234567". */
-export function formatPhone(phone: string): string {
+export function formatPhone(phone: string | null | undefined): string {
+  if (!phone) {
+    // An account signed in with Google has no phone until it verifies one.
+    return '';
+  }
   const match = /^\+998(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(phone);
   return match ? `+998 ${match[1]} ${match[2]}-${match[3]}-${match[4]}` : phone;
 }
