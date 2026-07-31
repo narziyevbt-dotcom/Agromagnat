@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import { t } from '@/lib/strings';
+import { usePoll } from '@/lib/usePoll';
 import type { ChatMessage, MessagePage } from '@/lib/types';
 import { sendMessageAction } from '../actions';
 
@@ -10,11 +11,17 @@ import { sendMessageAction } from '../actions';
  * How often the open thread asks for new messages.
  *
  * Polling, not a socket. The audience is on intermittent mobile data where a
- * dropped connection is the normal case, and a six-second poll that always
- * recovers beats a socket that silently stops delivering. The request is also
- * trimmed to messages newer than the last one seen — see the route handler.
+ * dropped connection is the normal case, and a poll that always recovers beats
+ * a socket that silently stops delivering. The request is also trimmed to
+ * messages newer than the last one seen — see the route handler.
+ *
+ * Two numbers rather than one: five seconds while messages are arriving, drifting
+ * out to thirty when they are not. A fixed six-second interval was 600 requests
+ * an hour whether or not anybody was typing, and on a quiet thread every one of
+ * them came back empty. See `lib/usePoll.ts`.
  */
-const POLL_INTERVAL_MS = 6_000;
+const POLL_BASE_MS = 5_000;
+const POLL_MAX_MS = 30_000;
 
 interface Props {
   chatId: string;
@@ -73,42 +80,25 @@ export function ChatThread({
     }
   }, [messages]);
 
-  // Poll while the tab is in front. A backgrounded thread is not being read, and
-  // waking a phone radio every six seconds for nothing is how an app earns a
-  // reputation for eating data.
-  useEffect(() => {
-    let cancelled = false;
+  const poll = useCallback(async (): Promise<boolean> => {
+    const since = sinceRef.current;
 
-    const poll = async () => {
-      if (document.hidden) {
-        return;
-      }
-      const since = sinceRef.current;
+    const response = await fetch(
+      `/api/chats/${chatId}/messages${since ? `?since=${encodeURIComponent(since)}` : ''}`,
+    );
+    if (!response.ok) {
+      return false;
+    }
+    const page = (await response.json()) as MessagePage;
+    // The API answers newest first; the thread reads oldest to newest.
+    merge([...page.items].reverse(), 'end');
 
-      try {
-        const response = await fetch(
-          `/api/chats/${chatId}/messages${since ? `?since=${encodeURIComponent(since)}` : ''}`,
-        );
-        if (!response.ok || cancelled) {
-          return;
-        }
-        const page = (await response.json()) as MessagePage;
-        // The API answers newest first; the thread reads oldest to newest.
-        merge([...page.items].reverse(), 'end');
-      } catch {
-        // A failed poll is not worth surfacing — the next one is six seconds away.
-      }
-    };
-
-    const timer = setInterval(poll, POLL_INTERVAL_MS);
-    document.addEventListener('visibilitychange', poll);
-
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', poll);
-    };
+    // The return value is what keeps an active conversation feeling instant:
+    // every message found resets the delay to the floor.
+    return page.items.length > 0;
   }, [chatId, merge]);
+
+  const pollNow = usePoll(poll, { baseMs: POLL_BASE_MS, maxMs: POLL_MAX_MS });
 
   // Follow the conversation down as it grows.
   useEffect(() => {
@@ -139,6 +129,11 @@ export function ChatThread({
     setSending(true);
     const result = await sendMessageAction(chatId, text, clientId);
     setSending(false);
+
+    // Sending is the clearest sign a reply is coming, and it is the one signal
+    // the poller cannot see for itself — an idle thread that had drifted out to
+    // thirty seconds drops back to five the moment somebody types into it.
+    pollNow();
 
     setMessages((current) =>
       current.map((message) =>

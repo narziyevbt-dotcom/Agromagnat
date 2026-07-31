@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { Check, Handshake, Loader2, X } from 'lucide-react';
 import {
   createOfferAction,
@@ -8,6 +8,7 @@ import {
   respondToOfferAction,
 } from '@/app/(site)/xabarlar/offer-actions';
 import type { Offer } from '@/lib/types';
+import { usePoll } from '@/lib/usePoll';
 
 /**
  * Price negotiation, above the message thread.
@@ -47,14 +48,22 @@ export function OfferPanel({
   // A deal made on the other device, or by the counterpart while this tab sat
   // open, has to appear here — the thread polls, so this does too, but far less
   // often because an offer is a rare event next to a message.
-  useEffect(() => {
-    const timer = setInterval(() => {
-      void loadOffersAction(chatId).then((state) => {
-        if (state.offers) setOffers(state.offers);
-      });
-    }, 20_000);
-    return () => clearInterval(timer);
-  }, [chatId]);
+  //
+  // Backed off like the thread, and starting slower: a fixed twenty seconds was
+  // 180 requests an hour for something that happens a handful of times in the
+  // life of a conversation. On a quiet chat this settles at two a minute.
+  usePoll(
+    async () => {
+      const state = await loadOffersAction(chatId);
+      if (!state.offers) return false;
+      setOffers(state.offers);
+      // "Something happened" here means a *pending* offer — a settled list is
+      // the steady state, and treating it as news would pin the delay at the
+      // floor for the rest of the conversation.
+      return state.offers.some((offer) => offer.status === 'pending');
+    },
+    { baseMs: 20_000, maxMs: 60_000 },
+  );
 
   const run = (action: () => Promise<{ offers?: Offer[]; error?: string }>) => {
     setError(null);

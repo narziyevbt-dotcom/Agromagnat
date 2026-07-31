@@ -4,6 +4,11 @@ Numbers, not impressions. Everything here was measured — nothing is estimated.
 
 ## How to reproduce
 
+The polling numbers below come from Playwright counting requests against a real
+open conversation (`measure-chat.mjs` in the session scratchpad, reproduced in
+this document's history) — Lighthouse only sees the first few seconds of a page,
+which is exactly why the chat's real cost went unnoticed for so long.
+
 ```bash
 # backend + web on real Postgres and Redis
 cd apps/backend && npm run start:prod
@@ -36,13 +41,14 @@ the desktop numbers are not recorded here.
 | `/kirish` | 98 | 1.7 s | 1.7 s | 110 ms | 0.006 | 164 KB |
 | `/joylash` | 98 | 1.7 s | 1.7 s | 130 ms | 0.001 | 170 KB |
 | `/dashboard/analitika` | 98 | 1.6 s | 1.6 s | 140 ms | 0.017 | 156 KB |
+| `/xabarlar/[id]` | 98 | 1.6 s | 1.6 s | 120 ms | 0.002 | 163 KB |
 | **`/dashboard`** | **83** | 1.6 s | 1.6 s | **620 ms** | 0.005 | **273 KB** |
 | **`/dashboard/narxlar`** | **82** | 1.7 s | 1.7 s | **700 ms** | 0 | **271 KB** |
 
 JS is transfer size, compressed, whole page load. Google's thresholds: LCP
 under 2.5 s is good, TBT under 200 ms is good, CLS under 0.1 is good.
 
-**Six of eight pages are healthy.** The two dashboard pages that draw a chart
+**Seven of nine pages are healthy.** The two dashboard pages that draw a chart
 are not, and the gap is entirely the chart.
 
 ## Run-to-run variance is real
@@ -82,6 +88,40 @@ A dynamic import fires on mount, so splitting a component out moves its download
 later without removing it, and adds a round trip. The visibility gate is the
 part that does the work.
 
+## The chat's cost is not its page load
+
+`/xabarlar/[id]` scores 98. It was still the most expensive page on the site,
+because the number that matters there is not how fast it loads but what it does
+for the next hour.
+
+Measured in a real browser against the real API, with a real conversation open:
+
+| | Messages | Offers | Total |
+|---|---|---|---|
+| Before | 600/h (fixed 6 s) | 160/h (fixed 20 s) | **760/h** |
+| After | 120/h | 60/h | **~180/h** steady state |
+
+At a thousand people with a thread open, that is the difference between 760,000
+and 180,000 requests an hour — and on the other side of it, mobile data this
+audience buys by the megabyte.
+
+Nearly all of the old traffic was wasted: on a conversation where nobody is
+typing, every one of those 600 polls came back empty.
+
+`lib/usePoll.ts` grows the delay across empty answers and snaps it back to the
+floor the moment anything happens — a message arrives, the person sends one, or
+they return to the tab. An active conversation never slows down, because an
+active conversation keeps resetting it.
+
+**The cost, measured rather than assumed:** after a full back-off to the 30 s
+ceiling, a reply appeared **16.0 s** after it was sent. That is the price of the
+saving, it is bounded by the ceiling, and any activity at all removes it.
+
+A detail worth keeping: `reset()` originally only lowered the delay *number*,
+leaving the thirty-second timeout already in flight to run to completion — so
+sending a message did nothing until that timer fired. It now reschedules. The
+test caught it; nothing else would have.
+
 ## Where the dashboard's blocking time actually comes from
 
 Not the chart. The framework chunk:
@@ -104,8 +144,8 @@ it means fewer client components on that page, not smaller ones.
   dashboard is for, so it has not been made unilaterally.
 - **No Lighthouse in CI.** Nothing stops a regression. Given the variance above,
   a useful check needs three runs and a median, which is not free.
-- **Not measured at all:** `/xabarlar` (the chat, which polls), `/sotuvchi/[id]`,
-  the admin panel, and any page with a real photograph in the hero — `hero.jpg`
+- **Not measured at all:** `/sotuvchi/[id]`, the admin panel, and any page with
+  a real photograph in the hero — `hero.jpg`
   has never been supplied, so the landing page has so far only ever been
   measured with the SVG fallback. A real photograph will change its LCP, and
   probably not for the better.

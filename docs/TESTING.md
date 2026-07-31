@@ -3,7 +3,7 @@
 ```bash
 cd apps/backend && npm test        # 155 unit
 cd apps/backend && npm run test:e2e # 173 against real Postgres + Redis
-cd apps/web     && npm test         # 61 unit + component
+cd apps/web     && npm test         # 70 unit + component
 ```
 
 CI runs all three on every push and pull request to `main`, and the deploy job
@@ -36,7 +36,7 @@ performance work.
 |---|---|
 | `apps/backend/src/**/*.spec.ts` | Unit — services in isolation, Redis and the database faked |
 | `apps/backend/test/*.e2e-spec.ts` | The real stack. Postgres and Redis are running; `SMS_PROVIDER=mock`, so the code is always `000000` |
-| `apps/web/test/*.test.ts(x)` | Vitest + jsdom. Server actions, the proxy, and components |
+| `apps/web/test/*.test.ts(x)` | Vitest + jsdom. Server actions, the proxy, hooks, and components |
 
 ## Conventions
 
@@ -58,6 +58,18 @@ happened not to contradict it. Create the rows the test needs, delete them in
 tells the next person nothing when it fails at 2am. `favorite-button.test.tsx`
 says *why* a background fetch cannot redirect itself; that is the part that is
 hard to rediscover.
+
+## Measuring, as opposed to testing
+
+Some things a unit test cannot see. The chat's real cost was 760 requests an
+hour from one open conversation, and every page-load metric said it was fine —
+Lighthouse only watches the first few seconds. That was found by driving a real
+browser with Playwright and counting requests over three minutes.
+
+When a change is about behaviour *over time* — polling, retries, background
+work — measure it against the running stack and write the number down in
+`docs/PERFORMANCE.md`. A test then locks in the logic; the measurement is what
+tells you the logic was worth having.
 
 ## Known gaps
 
