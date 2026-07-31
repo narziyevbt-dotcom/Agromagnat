@@ -141,6 +141,7 @@ export const t = {
     edit: 'Tahrirlash',
     delete: "O'chirish",
     markSold: 'Sotildi',
+    renew: 'Qayta joylash',
     confirmDelete: "E'lonni o'chirmoqchimisiz?",
   },
 

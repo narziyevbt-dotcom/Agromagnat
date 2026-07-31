@@ -7,7 +7,7 @@ import { useState, useTransition } from 'react';
 import { formatPrice, formatQuantity } from '@/lib/format';
 import { t } from '@/lib/strings';
 import type { Listing, ListingStatus } from '@/lib/types';
-import { deleteListingAction, markSoldAction } from './actions';
+import { deleteListingAction, markSoldAction, renewListingAction } from './actions';
 
 const STATUS_LABEL: Record<ListingStatus, string> = {
   draft: 'Qoralama',
@@ -94,6 +94,16 @@ export function MyListingRow({ listing }: { listing: Listing }) {
             className="rounded-md px-2 py-1.5 text-xs font-medium text-harvest ring-1 ring-hairline hover:bg-harvest/5 disabled:opacity-60"
           >
             {t.profile.markSold}
+          </button>
+        )}
+        {listing.status === 'expired' && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => run(() => renewListingAction(listing.id))}
+            className="rounded-md bg-lime px-2 py-1.5 text-xs font-semibold text-forest hover:bg-lime-dark disabled:opacity-60"
+          >
+            {t.profile.renew}
           </button>
         )}
         <button

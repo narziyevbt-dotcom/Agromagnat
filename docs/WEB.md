@@ -31,7 +31,7 @@ machinery once the catalogue outgrows one file.
 | `/sotuvchi/[id]` | SSR | A seller's listings |
 | `/kirish` | SSR | Phone + OTP login |
 | `/joylash` | SSR, auth | Post a listing — AI composer, photo panel, category-aware fields |
-| `/profil` | SSR, auth | Stats, own listings, sold/delete |
+| `/profil` | SSR, auth | Stats, own listings, sold/renew/delete |
 | `/sevimlilar` | SSR, auth | Saved listings |
 
 Uzbek URLs, not English. The audience reads them, and `/e/…` keeps listing links

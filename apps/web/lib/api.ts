@@ -193,6 +193,10 @@ export const deleteListing = (id: string, token: string) =>
 export const markListingSold = (id: string, token: string) =>
   apiFetch<Listing>(`/listings/${id}/sold`, { method: 'POST', token });
 
+/** Puts an expired listing back for another 14 days. Same row, same id. */
+export const renewListing = (id: string, token: string) =>
+  apiFetch<Listing>(`/listings/${id}/renew`, { method: 'POST', token });
+
 export const uploadListingPhotos = (id: string, files: FormData, token: string) =>
   apiFetch<unknown>(`/listings/${id}/photos`, { method: 'POST', body: files, token });
 
