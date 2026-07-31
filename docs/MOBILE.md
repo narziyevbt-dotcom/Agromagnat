@@ -17,6 +17,7 @@ one codebase. Uzbek UI throughout.
 | Voice-first posting — say it, form fills | built · [MOBILE-VOICE.md](MOBILE-VOICE.md) |
 | Real API — feed, auth, posting, AI | built · [MOBILE-API.md](MOBILE-API.md) |
 | Offline — cached feed, catalogue, details | built · [MOBILE-OFFLINE.md](MOBILE-OFFLINE.md) |
+| Queued posting — publish with no signal | built · [MOBILE-OUTBOX.md](MOBILE-OUTBOX.md) |
 | Messages | gated placeholder |
 
 Runs against the real API when one is configured, and on mock repositories
@@ -103,7 +104,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 227 tests
+flutter test          # 244 tests
 flutter analyze       # clean
 ```
 
@@ -149,16 +150,21 @@ cd apps/mobile
 flutter build ios --debug --no-codesign
 ```
 
-There is no platform-channel code of our own. The one native dependency is
-`flutter_secure_storage`, whose iOS side is a Keychain wrapper the package
-maintains — so the iOS build is expected to be a formality. **That expectation
-is unverified**: nobody has run it on a Mac, and a native plugin is exactly the
-kind of thing that surfaces a CocoaPods or deployment-target problem the first
-time it is compiled.
+There is no platform-channel code of our own. Four packages carry native code —
+`flutter_secure_storage` (Keychain), `image_picker`, `speech_to_text` and
+`shared_preferences` — all maintained upstream, so the iOS build is expected to
+be a formality. **That expectation is unverified**: nobody has run it on a Mac,
+and native plugins are exactly the kind of thing that surface a CocoaPods or
+deployment-target problem the first time they are compiled.
+
+`Info.plist` already carries the four usage descriptions those plugins require
+— camera, photo library, microphone, speech recognition — in Uzbek. Missing
+one does not fail the build; it crashes the app at the moment that permission
+is first asked for, which is the hardest kind of iOS problem to find late.
 
 ## Next
 
-1. Queued posting — a listing written with no signal is lost on submit, and
-   that is the remaining place the app fails the field it was built for
-2. My listings — edit, mark sold, retry a failed photo upload
+1. My listings — edit, mark sold, retry a failed photo upload
+2. Photo upload retry — the listing publishes offline now, but photos that
+   fail after it goes live are gone
 3. Messages

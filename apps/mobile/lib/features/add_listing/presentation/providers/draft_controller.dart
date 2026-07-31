@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../ai/domain/entities/ai_draft.dart';
 import '../../../listings/data/fixtures/catalog_fixtures.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../listings/data/photo_picker.dart';
+import '../../../listings/data/repositories/api_listing_repository.dart';
 import '../../../listings/domain/entities/category.dart';
 import '../../../listings/domain/entities/draft_photo.dart';
 import '../../../listings/domain/entities/listing.dart';
@@ -12,6 +14,7 @@ import '../../../listings/domain/entities/location.dart';
 import '../../../listings/domain/entities/units.dart';
 import '../../../listings/domain/repositories/listing_repository.dart';
 import '../../../listings/presentation/providers/listing_providers.dart';
+import '../../../listings/presentation/providers/outbox_providers.dart';
 
 @immutable
 class DraftState {
@@ -23,6 +26,7 @@ class DraftState {
     this.failure,
     this.uploaded = 0,
     this.photoFailure,
+    this.queued = false,
   });
 
   final ListingDraft draft;
@@ -47,6 +51,11 @@ class DraftState {
   /// send the seller to post it a second time.
   final String? photoFailure;
 
+  /// The listing went to the outbox instead of the server. Not a failure
+  /// either — it is written down and will go out — but the seller has to know
+  /// it is not visible yet.
+  final bool queued;
+
   DraftState copyWith({
     ListingDraft? draft,
     Map<String, String>? errors,
@@ -55,6 +64,7 @@ class DraftState {
     Object? failure = _unset,
     int? uploaded,
     Object? photoFailure = _unset,
+    bool? queued,
   }) {
     return DraftState(
       draft: draft ?? this.draft,
@@ -65,6 +75,7 @@ class DraftState {
       uploaded: uploaded ?? this.uploaded,
       photoFailure:
           photoFailure == _unset ? this.photoFailure : photoFailure as String?,
+      queued: queued ?? this.queued,
     );
   }
 
@@ -72,10 +83,17 @@ class DraftState {
 }
 
 class DraftController extends StateNotifier<DraftState> {
-  DraftController(this._repository, this._picker) : super(const DraftState());
+  DraftController(this._repository, this._picker, {this.onQueue})
+      : super(const DraftState());
 
   final ListingRepository _repository;
   final PhotoPicker _picker;
+
+  /// Where a listing goes when the phone has no signal. Null means there is
+  /// nowhere to put it and the submit simply fails — which is what the mock
+  /// setup does, and what the app did before the outbox existed.
+  final Future<void> Function(Map<String, dynamic> body, List<String> photos)?
+      onQueue;
 
   /// The API's ceiling. Matches MAX_PHOTOS in listings.service.ts.
   static const int maxPhotos = 5;
@@ -289,6 +307,19 @@ class DraftController extends StateNotifier<DraftState> {
     } on ListingValidationException catch (error) {
       state = state.copyWith(submitting: false, errors: error.errors);
       return false;
+    } on ApiException catch (error) {
+      // No signal, and there is somewhere to put it. The seller typed this
+      // once, in the sun, on a phone keyboard — they will not do it twice.
+      if (error.status == 0 && onQueue != null) {
+        await onQueue!(
+          ApiListingRepository.bodyFor(state.draft),
+          [for (final photo in state.draft.photos) photo.path],
+        );
+        state = state.copyWith(submitting: false, queued: true);
+        return true;
+      }
+      state = state.copyWith(submitting: false, failure: error.messageUz);
+      return false;
     } on Object {
       state = state.copyWith(
         submitting: false,
@@ -336,5 +367,8 @@ final draftControllerProvider =
   return DraftController(
     ref.watch(listingRepositoryProvider),
     ref.watch(photoPickerProvider),
+    onQueue: (body, photos) => ref
+        .read(outboxControllerProvider.notifier)
+        .enqueue(body: body, photoPaths: photos),
   );
 });

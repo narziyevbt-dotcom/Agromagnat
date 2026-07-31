@@ -109,6 +109,17 @@ abstract final class AppStrings {
   static const String offlineTitle = 'Internet yo‘q';
   static const String offlineRetry = 'Yangilash';
 
+  // Outbox
+  static const String queuedTitle = "E'lon navbatda";
+  static const String queuedHint =
+      "Internet paydo bo'lishi bilan o'zi joylanadi. Ilovani yopsangiz ham saqlanadi.";
+  static const String sendNow = 'Hozir yuborish';
+  static const String sending = 'Yuborilmoqda…';
+  static const String discardQueued = "O'chirish";
+  static const String queuedStuckHint =
+      "Bu e'lonni server qabul qilmadi. Uni o'chirib, qaytadan joylang.";
+  static const String discardQueuedTitle = "E'lonni o'chirasizmi?";
+
   // Voice / AI composer
   static const String composerTitle = 'Gapirib aytish';
   static const String composerHint =
@@ -175,4 +186,14 @@ abstract final class AppStrings {
   /// alone leaves a farmer to guess whether these prices are an hour or a week
   /// out of date, and they will guess generously.
   static String offlineSince(String ago) => 'Oxirgi ma\'lumot: $ago';
+
+  static String queuedCount(int count) => "$count ta e'lon navbatda";
+
+  /// Names the listing being deleted. A queue can hold more than one, and
+  /// "delete the queued listing?" does not say which.
+  static String discardQueuedBody(String title) =>
+      title.isEmpty ? discardQueuedFallback : '«$title» butunlay o\'chiriladi.';
+
+  static const String discardQueuedFallback =
+      "Bu e'lon butunlay o'chiriladi.";
 }

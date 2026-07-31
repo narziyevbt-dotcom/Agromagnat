@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/offline_banner.dart';
+import '../../../shared/widgets/outbox_banner.dart';
 import '../../../shared/widgets/state_views.dart';
 import '../../listings/domain/entities/category.dart';
 import '../../listings/domain/repositories/listing_repository.dart';
@@ -39,6 +40,7 @@ class HomeScreen extends ConsumerWidget {
         child: CustomScrollView(
           slivers: [
             const _HomeHeader(),
+            const SliverToBoxAdapter(child: OutboxBanner()),
             // Above the categories, not buried under the feed: it changes how
             // every price below it should be read.
             if (feed.valueOrNull?.cachedAt case final cachedAt?)

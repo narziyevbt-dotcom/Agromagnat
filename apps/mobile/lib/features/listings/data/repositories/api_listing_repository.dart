@@ -171,29 +171,38 @@ class ApiListingRepository implements ListingRepository {
   }
 
   @override
-  Future<Listing> create(ListingDraft draft) async {
+  Future<Listing> create(ListingDraft draft) => postBody(bodyFor(draft));
+
+  /// Exactly what `POST /listings` takes.
+  ///
+  /// Named and public because the outbox stores this rather than the draft: a
+  /// queued listing has to be replayable without looking its category up
+  /// again, and this is already the shape the server validates.
+  static Map<String, dynamic> bodyFor(ListingDraft draft) => {
+        'title': draft.title.trim(),
+        if (draft.description.trim().isNotEmpty)
+          'description': draft.description.trim(),
+        'categoryId': draft.category!.id,
+        'quantity': draft.quantity,
+        'quantityUnit': draft.quantityUnit!.wire,
+        'price': draft.price,
+        'priceUnit': draft.priceUnit!.wire,
+        'regionId': draft.region!.id,
+        'districtId': draft.district!.id,
+        if (draft.minOrder != null) 'minOrder': draft.minOrder,
+        if (draft.wholesalePrice != null) 'wholesalePrice': draft.wholesalePrice,
+        if (draft.harvestDate != null)
+          'harvestDate': _dateOnly(draft.harvestDate!),
+        'delivery': draft.delivery.wire,
+        if (draft.attributes.isNotEmpty) 'attributes': draft.attributes,
+      };
+
+  /// Posts a prepared body — a fresh submit or one replayed from the outbox.
+  Future<Listing> postBody(Map<String, dynamic> body) async {
     try {
       final listing = await _client.post(
         '/listings',
-        body: {
-          'title': draft.title.trim(),
-          if (draft.description.trim().isNotEmpty)
-            'description': draft.description.trim(),
-          'categoryId': draft.category!.id,
-          'quantity': draft.quantity,
-          'quantityUnit': draft.quantityUnit!.wire,
-          'price': draft.price,
-          'priceUnit': draft.priceUnit!.wire,
-          'regionId': draft.region!.id,
-          'districtId': draft.district!.id,
-          if (draft.minOrder != null) 'minOrder': draft.minOrder,
-          if (draft.wholesalePrice != null)
-            'wholesalePrice': draft.wholesalePrice,
-          if (draft.harvestDate != null)
-            'harvestDate': _dateOnly(draft.harvestDate!),
-          'delivery': draft.delivery.wire,
-          if (draft.attributes.isNotEmpty) 'attributes': draft.attributes,
-        },
+        body: body,
         decode: ListingMapper.listing,
       );
 

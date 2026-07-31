@@ -522,10 +522,60 @@ class _SubmitBar extends ConsumerWidget {
     }
 
     final result = ref.read(draftControllerProvider);
+
+    if (result.queued) {
+      // Written down, not live. Saying "joylandi" here would have the seller
+      // looking for it in the feed and posting it again when it is not there.
+      await _showQueued(context);
+      return;
+    }
+
     // The feed is stale the moment a listing joins it.
     ref.invalidate(homeFeedProvider);
-
     await _showPublished(context, result.published!.id, result.photoFailure);
+  }
+
+  Future<void> _showQueued(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.schedule_send_rounded,
+                size: 48,
+                color: AppColors.saffron,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(AppStrings.queuedTitle, style: AppTypography.heading(size: 20)),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                AppStrings.queuedHint,
+                textAlign: TextAlign.center,
+                style: AppTypography.body(size: 14, color: AppColors.inkMuted),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  child: const Text(AppStrings.navHome),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _showPublished(

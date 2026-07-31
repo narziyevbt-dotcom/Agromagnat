@@ -77,12 +77,12 @@ The interesting ones are the negatives: a filtered search is not served the
 unfiltered feed, a 500 is not papered over, a deleted listing does not linger,
 and a repository built without a cache still works — it simply does not cache.
 
+Writing works offline too: a listing published with no signal is queued to the
+same storage and sent when a signal returns — [MOBILE-OUTBOX.md](MOBILE-OUTBOX.md).
+
 ## Not done yet
 
-- **Queued posting.** A listing written with no signal is lost on submit. The
-  draft survives in memory only, and `shared_preferences` is already a
-  dependency for exactly this.
-- **Photo upload retry.** Same shape: the listing publishes, the photos do not,
+- **Photo upload retry.** The listing publishes, the photos do not,
   and there is no queue to finish them later.
 - **Cache eviction.** Listing details accumulate one key each and nothing ever
   removes them. Bounded in practice by how many listings one person opens, but

@@ -1,0 +1,93 @@
+# Queued posting — mobile
+
+A farmer finishes a listing in a field with no bars and taps publish. Before
+this slice the request timed out and the draft went with it. They typed it
+once, in the sun, on a phone keyboard, and they do not type it twice — they
+stop using the app.
+
+Now the listing is written to disk and sent when a signal comes back.
+
+## Only a dead network queues
+
+`ApiException.status == 0` — a timeout or an unreachable host. Everything else
+still fails in front of the seller while the form is open and fixable:
+
+- **A 400 is not queued.** The server will never accept that body. Queueing it
+  moves the failure to a moment when the form is gone and nobody can explain
+  what was wrong with it.
+- **Local validation is not queued either.** `submit()` validates first; a
+  draft with no price never reaches the network and never reaches the queue.
+
+## What is stored is the request, not the draft
+
+```dart
+static Map<String, dynamic> bodyFor(ListingDraft draft) => { … };
+Future<Listing> postBody(Map<String, dynamic> body) async { … }
+```
+
+`create()` is now those two composed, and the outbox holds the body.
+
+Storing the `ListingDraft` would mean rehydrating it on the way out —
+category, region and district looked up again from the catalogue. A category
+renamed while the listing sat in the queue would then fail the *rehydration*
+rather than the post, and the seller would lose a listing to a rename they
+never saw. The body is already the exact JSON `POST /listings` validates.
+
+Photos go with it as on-device paths, uploaded after the listing exists.
+
+## Sending
+
+`flush()` runs on launch, on `AppLifecycleState.resumed`, and on the banner's
+"Hozir yuborish". No connectivity listener: resume covers coming back from
+airplane mode, and a listener is another native plugin for the same outcome.
+
+Three rules it enforces:
+
+- **It stops at the first dead request.** Working through ten queued listings
+  while offline costs ten radio wakeups and tells you nothing the first one
+  did not.
+- **A refused body is counted, not deleted.** After `maxAttempts` (5) it stops
+  being retried and the banner turns and says a person needs to look at it. It
+  is still the seller's work; the app does not get to throw it away.
+- **A listing whose photos fail is still done.** The listing is live. A photo
+  the OS cleared out of its cache directory while the entry waited is not a
+  reason to post the listing a second time — a duplicate is worse than a
+  missing picture.
+
+## It says "queued", not "published"
+
+The success sheet after an offline submit reads *"E'lon navbatda — internet
+paydo bo'lishi bilan o'zi joylanadi"*, and `OutboxBanner` sits on **home**,
+not in the profile.
+
+That placement is the whole point. Somebody who taps publish, is told
+"joylandi", then finds nothing in the feed concludes it failed and posts it
+again. The duplicate is the failure mode the banner exists to prevent.
+
+`submit()` returns `true` for a queued listing — the seller's work is safe,
+which is what that return value means to the screen — but `state.published`
+stays null and `state.queued` is set, so nothing navigates to a listing that
+does not exist yet.
+
+## Tests
+
+17 tests — `outbox_test.dart` drives the queue over an adapter that can be
+switched offline mid-test, `outbox_banner_test.dart` covers what the seller
+sees.
+
+The ones worth having: it survives the app being killed (a second controller
+reading the same disk), an invalid listing is still rejected rather than
+queued, flushing stops at the first dead request, a refused body is given up
+on after five tries, one unreadable row does not cost the seller the listing
+beside it, and backing out of the delete dialog is not a way to lose a
+listing.
+
+## Not done yet
+
+- **Photo upload retry.** If the listing posts and its photos do not, the
+  photos are gone. The queue exists now, so this is a smaller change than it
+  was — but the entry is removed once the listing is live.
+- **No editing from the queue.** A stuck entry can be deleted, not corrected —
+  the seller has to type it again. Reopening it in the posting form means
+  rebuilding a draft from a stored body, which is the rehydration this design
+  deliberately avoids on the sending path.
