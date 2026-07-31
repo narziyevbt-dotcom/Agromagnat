@@ -147,7 +147,9 @@ abstract final class AppStrings {
   static const String deleteListingDone = "E'lon o'chirildi";
   static const String actionFailed = "Bajarilmadi — internetni tekshiring";
   static const String expiredHint =
-      "Muddati tugagan. Qaytadan joylasangiz yana ko'rinadi.";
+      "Muddati tugagan. Qayta joylasangiz yana 14 kun ko'rinadi.";
+  static const String renewListing = 'Qayta joylash';
+  static const String renewDone = "E'lon yana 14 kun faol";
   static const String blockedHint =
       "Bu e'lon qoidalarga mos kelmagani uchun to'xtatilgan.";
 

@@ -366,6 +366,26 @@ abstract final class ListingFixtures {
         callCount: 8,
         favoriteCount: 3,
       ),
+      // Older than the 14-day TTL, so it comes out expired. The seed set needs
+      // one: "Mening e'lonlarim" exists to show what the feed hides, and
+      // without an expired row that half of the screen is never seen while
+      // the app is developed on mocks.
+      _Seed(
+        id: 'lst-16',
+        title: "O'tgan mavsum kartoshkasi",
+        description: "Muddati tugagan e'lon — qayta joylash uchun.",
+        categoryId: 'cat-sabzavot',
+        regionId: 'reg-sam',
+        districtId: 'dis-urgut',
+        sellerId: 'sel-1',
+        quantity: 4,
+        quantityUnit: QuantityUnit.t,
+        price: 4200,
+        hoursAgo: 24 * 20,
+        viewCount: 210,
+        callCount: 14,
+        favoriteCount: 5,
+      ),
     ];
 
     return [
@@ -419,11 +439,18 @@ class _Seed {
   Listing toListing(DateTime now) {
     final createdAt = now.subtract(Duration(hours: hoursAgo));
 
+    final expiresAt = createdAt.add(const Duration(days: 14));
+
     return Listing(
       id: id,
       title: title,
       description: description,
-      status: ListingStatus.active,
+      // Derived, not declared: the backend expires listings by a cron over
+      // this same date, and a fixture that said "active" past its expiry
+      // would be a state the real system cannot produce.
+      status: expiresAt.isBefore(now)
+          ? ListingStatus.expired
+          : ListingStatus.active,
       quantity: quantity,
       quantityUnit: quantityUnit,
       price: price,
@@ -445,7 +472,7 @@ class _Seed {
       favoriteCount: favoriteCount,
       createdAt: createdAt,
       // Listings auto-expire 14 days after posting.
-      expiresAt: createdAt.add(const Duration(days: 14)),
+      expiresAt: expiresAt,
     );
   }
 }

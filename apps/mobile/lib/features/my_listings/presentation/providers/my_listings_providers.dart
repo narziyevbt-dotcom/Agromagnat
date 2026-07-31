@@ -65,6 +65,25 @@ class MyListingsNotifier extends StateNotifier<AsyncValue<Paginated<Listing>>> {
     }
   }
 
+  /// Puts an expired listing back on the market.
+  ///
+  /// Not optimistic, unlike the other two: the server decides the new expiry
+  /// date, and guessing it on the client would put a wrong "14 kun qoldi" on
+  /// screen for as long as the request takes.
+  Future<bool> renew(Listing listing) async {
+    final before = state.valueOrNull;
+    if (before == null) {
+      return false;
+    }
+
+    try {
+      _replace(before, await _repository.renew(listing.id));
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
   /// Deletes it. Returns false — and puts the row back — if it did not delete.
   Future<bool> remove(Listing listing) async {
     final before = state.valueOrNull;

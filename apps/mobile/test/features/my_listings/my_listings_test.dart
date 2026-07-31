@@ -165,6 +165,83 @@ void main() {
     });
   });
 
+  group('reposting', () {
+    Future<(Listing, MyListingsNotifier)> expired([ListingRepository? repo]) async {
+      final notifier = await loaded(repo ?? repository());
+      final listing = notifier.state.value!.items
+          .firstWhere((l) => l.status == ListingStatus.expired);
+      return (listing, notifier);
+    }
+
+    test('the seed set has an expired listing at all', () async {
+      // Without one, half of this screen is never seen while the app is
+      // developed on mocks.
+      final (listing, _) = await expired();
+      expect(listing.status, ListingStatus.expired);
+    });
+
+    test('puts it back under the same id', () async {
+      final repo = repository();
+      final (listing, notifier) = await expired(repo);
+
+      expect(await notifier.renew(listing), isTrue);
+
+      // The same row: links already shared in Telegram still resolve, and the
+      // views, favourites and chats stay attached.
+      final after = notifier.state.value!.items
+          .firstWhere((l) => l.id == listing.id);
+      expect(after.status, ListingStatus.active);
+      expect(after.id, listing.id);
+    });
+
+    test('it comes back to the feed', () async {
+      final repo = repository();
+      final (listing, notifier) = await expired(repo);
+
+      await notifier.renew(listing);
+
+      expect(
+        (await repo.search(const ListingQuery(limit: 100)))
+            .items
+            .map((l) => l.id),
+        contains(listing.id),
+      );
+    });
+
+    test('an active listing cannot be renewed', () async {
+      final repo = repository();
+      final notifier = await loaded(repo);
+      final active = notifier.state.value!.items
+          .firstWhere((l) => l.status == ListingStatus.active);
+
+      // Otherwise renewing buys a fresh 14 days at the top of the feed
+      // whenever you like.
+      expect(await notifier.renew(active), isFalse);
+    });
+
+    testWidgets('the button is only on an expired row', (tester) async {
+      final auth = MockAuthRepository(latency: Duration.zero);
+      await pumpApp(
+        tester,
+        const MyListingsScreen(),
+        auth: auth,
+        tokenStore: await signedIn(tester, auth),
+      );
+
+      final tiles = tester.widgetList<MyListingTile>(find.byType(MyListingTile));
+      for (final tile in tiles) {
+        final hasButton = find
+            .descendant(
+              of: find.byWidget(tile),
+              matching: find.text(AppStrings.renewListing),
+            )
+            .evaluate()
+            .isNotEmpty;
+        expect(hasButton, tile.listing.status == ListingStatus.expired);
+      }
+    });
+  });
+
   group('expiry', () {
     test('warns only in the last three days', () {
       final listing = ListingFixtures.build(testNow)

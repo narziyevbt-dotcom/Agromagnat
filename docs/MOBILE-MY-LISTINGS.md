@@ -51,6 +51,22 @@ on the market.
 The "Sotildi deb belgilash" button only exists on an active row. On a sold or
 expired one it could only ever return an error.
 
+## Reposting an expired listing
+
+"Qayta joylash" on an expired row calls `POST /listings/:id/renew` — a backend
+endpoint added for this, because the alternative on the client was to create a
+copy, and a copy strands the id already shared in Telegram along with the
+listing's views, its favourites and its conversations.
+
+Unlike mark-sold and delete it is **not** optimistic and **not** confirmed. Not
+optimistic because the server decides the new expiry date and guessing it would
+put a wrong "14 kun qoldi" on screen; not confirmed because it is the one
+action here that costs nothing to undo.
+
+The button only exists on an expired row. Renewing an active listing is refused
+by the API too — otherwise it is a way to buy a fresh fourteen days at the top
+of the feed whenever you like.
+
 ## Editing
 
 "Tahrirlash" reopens the **posting form** on the listing — the same
@@ -99,8 +115,9 @@ not save" — and the next thing that gets tapped is the same button again.
 
 ## Tests
 
-29 tests — `my_listings_test.dart` for the list and its two edits,
-`edit_listing_test.dart` for the form reopened on a listing.
+34 tests — `my_listings_test.dart` for the list and what can be done to a row,
+`edit_listing_test.dart` for the form reopened on a listing. The backend side
+has 6 more in `listings.service.spec.ts` plus three e2e cases.
 
 The ones worth having: a sold listing leaves the feed but stays in this list,
 a failed mark-sold reverts the row, a failed delete restores it in position,
@@ -124,6 +141,4 @@ that a post-frame callback would have left.
 - **Reordering photos.** The cover is whichever photo is first, and only new
   ones can be moved. Changing the order of photos already uploaded needs an
   endpoint the API does not have.
-- **Reposting an expired listing.** The copy tells the seller to post it again;
-  it should be one button.
 - **Editing offline.** Deliberate for now — see above.

@@ -10,7 +10,7 @@ import '../../../listings/presentation/widgets/listing_card.dart';
 import '../my_listings_screen.dart' show expiryNote;
 
 /// The seller's own listing: the same card a buyer sees, plus its status and
-/// the two things the seller can do to it.
+/// what can be done to it in that status.
 ///
 /// The buyer's card is reused rather than redrawn so that what the seller
 /// checks is literally what a buyer will see — a separate layout here would
@@ -22,6 +22,7 @@ class MyListingTile extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onMarkSold,
+    required this.onRenew,
     required this.onDelete,
     this.now,
     super.key,
@@ -31,6 +32,7 @@ class MyListingTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onMarkSold;
+  final VoidCallback onRenew;
   final VoidCallback onDelete;
 
   /// Injected so a test's "expires in 2 days" does not depend on the day it
@@ -95,12 +97,18 @@ class MyListingTile extends StatelessWidget {
                       onPressed: onEdit,
                       child: const Text(AppStrings.editListing),
                     ),
-                    // Only an active listing can be sold. Offering it on a
-                    // sold or expired one is a button that can only error.
+                    // Only an active listing can be sold, and only an expired
+                    // one can be renewed. Offering either anywhere else is a
+                    // button that can only return an error.
                     if (listing.status == ListingStatus.active)
                       TextButton(
                         onPressed: onMarkSold,
                         child: const Text(AppStrings.markSold),
+                      ),
+                    if (listing.status == ListingStatus.expired)
+                      FilledButton(
+                        onPressed: onRenew,
+                        child: const Text(AppStrings.renewListing),
                       ),
                     IconButton(
                       onPressed: onDelete,

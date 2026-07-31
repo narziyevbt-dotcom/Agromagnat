@@ -307,6 +307,19 @@ class ApiListingRepository implements ListingRepository {
   }
 
   @override
+  Future<Listing> renew(String id) async {
+    final listing = await _client.post(
+      '/listings/$id/renew',
+      decode: ListingMapper.listing,
+    );
+    if (listing == null) {
+      throw ListingNotFoundException(id);
+    }
+    await cache?.remove(_detailKey(id));
+    return listing;
+  }
+
+  @override
   Future<void> remove(String id) async {
     await _client.delete('/listings/$id');
     await cache?.remove(_detailKey(id));

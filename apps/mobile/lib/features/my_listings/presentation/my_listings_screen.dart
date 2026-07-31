@@ -96,6 +96,7 @@ class _MyListings extends ConsumerWidget {
                 ),
                 onEdit: () => _edit(context, ref, listing),
                 onMarkSold: () => _markSold(context, ref, listing),
+                onRenew: () => _renew(context, ref, listing),
                 onDelete: () => _delete(context, ref, listing),
               );
             },
@@ -165,6 +166,20 @@ class _MyListings extends ConsumerWidget {
     final ok = await ref.read(myListingsProvider.notifier).markSold(listing);
     if (context.mounted) {
       _say(context, ok ? AppStrings.markSoldDone : AppStrings.actionFailed);
+    }
+  }
+
+  /// Not confirmed, unlike sold and delete: putting a listing back is the one
+  /// action here that costs nothing to undo — the seller can mark it sold or
+  /// delete it a moment later.
+  Future<void> _renew(
+    BuildContext context,
+    WidgetRef ref,
+    Listing listing,
+  ) async {
+    final ok = await ref.read(myListingsProvider.notifier).renew(listing);
+    if (context.mounted) {
+      _say(context, ok ? AppStrings.renewDone : AppStrings.actionFailed);
     }
   }
 

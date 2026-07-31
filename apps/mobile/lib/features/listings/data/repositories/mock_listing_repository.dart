@@ -239,6 +239,25 @@ class MockListingRepository implements ListingRepository {
   }
 
   @override
+  Future<Listing> renew(String id) async {
+    await Future<void>.delayed(latency);
+
+    final index = _listings.indexWhere((listing) => listing.id == id);
+    if (index == -1) {
+      throw ListingNotFoundException(id);
+    }
+    if (_listings[index].status != ListingStatus.expired) {
+      throw const ListingValidationException({
+        'status': "Faqat muddati tugagan e'lonni qayta joylash mumkin",
+      });
+    }
+
+    final renewed = _listings[index].copyWith(status: ListingStatus.active);
+    _listings[index] = renewed;
+    return _withFavorite(renewed);
+  }
+
+  @override
   Future<void> remove(String id) async {
     await Future<void>.delayed(latency);
 

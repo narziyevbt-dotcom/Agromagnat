@@ -48,5 +48,8 @@ class DelegatingListingRepository implements ListingRepository {
   Future<Listing> markSold(String id) => inner.markSold(id);
 
   @override
+  Future<Listing> renew(String id) => inner.renew(id);
+
+  @override
   Future<void> remove(String id) => inner.remove(id);
 }

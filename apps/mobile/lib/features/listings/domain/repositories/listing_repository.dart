@@ -217,6 +217,13 @@ abstract interface class ListingRepository {
   /// Marks a listing sold. Returns it in its new state.
   Future<Listing> markSold(String id);
 
+  /// Puts an expired listing back on the market for another 14 days.
+  ///
+  /// The same listing, not a copy: it keeps its id, so links already shared in
+  /// Telegram still resolve, and it keeps its views, its favourites and the
+  /// conversations hanging off it. Only an expired one can be renewed.
+  Future<Listing> renew(String id);
+
   /// Deletes a listing the caller owns.
   Future<void> remove(String id);
 }

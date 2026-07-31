@@ -28,7 +28,7 @@ import { CreateListingDto, UpdateListingDto } from './dto/create-listing.dto';
 import { PaginatedListingsDto, QueryListingsDto } from './dto/query-listings.dto';
 import { ListingPhoto } from './entities/listing-photo.entity';
 import { Listing } from './entities/listing.entity';
-import { MAX_PHOTOS, ListingsService } from './listings.service';
+import { LISTING_TTL_DAYS, MAX_PHOTOS, ListingsService } from './listings.service';
 
 @ApiTags('listings')
 @Controller('listings')
@@ -98,6 +98,18 @@ export class ListingsController {
     @CurrentUser('sub') userId: string,
   ): Promise<void> {
     return this.listings.remove(id, userId);
+  }
+
+  @Post(':id/renew')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: `Put an expired listing back on the market for ${LISTING_TTL_DAYS} more days`,
+  })
+  renew(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('sub') userId: string,
+  ): Promise<Listing> {
+    return this.listings.renew(id, userId);
   }
 
   @Post(':id/sold')

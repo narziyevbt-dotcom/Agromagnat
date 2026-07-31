@@ -122,6 +122,9 @@ class _FailingListingRepository implements ListingRepository {
   Future<Listing> markSold(String id) => Future.error(const _Offline());
 
   @override
+  Future<Listing> renew(String id) => Future.error(const _Offline());
+
+  @override
   Future<void> remove(String id) => Future.error(const _Offline());
 }
 
