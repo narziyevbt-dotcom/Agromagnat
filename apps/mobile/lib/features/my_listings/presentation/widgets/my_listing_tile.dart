@@ -20,6 +20,7 @@ class MyListingTile extends StatelessWidget {
   const MyListingTile({
     required this.listing,
     required this.onTap,
+    required this.onEdit,
     required this.onMarkSold,
     required this.onDelete,
     this.now,
@@ -28,6 +29,7 @@ class MyListingTile extends StatelessWidget {
 
   final Listing listing;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
   final VoidCallback onMarkSold;
   final VoidCallback onDelete;
 
@@ -57,36 +59,56 @@ class MyListingTile extends StatelessWidget {
               AppSpacing.sm,
               AppSpacing.xs,
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _StatusPill(status: listing.status),
-                if (note != null) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  Flexible(
-                    child: Text(
-                      note,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.body(
-                        size: 12,
-                        color: AppColors.saffronDark,
+                Row(
+                  children: [
+                    _StatusPill(status: listing.status),
+                    if (note != null) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Flexible(
+                        child: Text(
+                          note,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.body(
+                            size: 12,
+                            color: AppColors.saffronDark,
+                          ),
+                        ),
                       ),
+                    ],
+                  ],
+                ),
+                // A Wrap, not a Row: three actions and a long Uzbek label do
+                // not fit across a 360dp phone, and the overflow stripe would
+                // land on the screen a seller uses most.
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    // Editable in any status. A wrong price on an expired
+                    // listing is exactly what wants fixing before it is posted
+                    // again.
+                    TextButton(
+                      onPressed: onEdit,
+                      child: const Text(AppStrings.editListing),
                     ),
-                  ),
-                ],
-                const Spacer(),
-                // Only an active listing can be sold. Offering it on a sold or
-                // expired one is a button that can only return an error.
-                if (listing.status == ListingStatus.active)
-                  TextButton(
-                    onPressed: onMarkSold,
-                    child: const Text(AppStrings.markSold),
-                  ),
-                IconButton(
-                  onPressed: onDelete,
-                  tooltip: AppStrings.deleteListing,
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  color: AppColors.danger,
+                    // Only an active listing can be sold. Offering it on a
+                    // sold or expired one is a button that can only error.
+                    if (listing.status == ListingStatus.active)
+                      TextButton(
+                        onPressed: onMarkSold,
+                        child: const Text(AppStrings.markSold),
+                      ),
+                    IconButton(
+                      onPressed: onDelete,
+                      tooltip: AppStrings.deleteListing,
+                      icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                      color: AppColors.danger,
+                    ),
+                  ],
                 ),
               ],
             ),

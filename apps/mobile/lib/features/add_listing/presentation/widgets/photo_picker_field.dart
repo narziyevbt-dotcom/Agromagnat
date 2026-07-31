@@ -21,18 +21,26 @@ class PhotoPickerField extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final photos = ref.watch(draftControllerProvider).draft.photos;
+    final state = ref.watch(draftControllerProvider);
+    final photos = state.draft.photos;
     final controller = ref.read(draftControllerProvider.notifier);
-    final slotsLeft = DraftController.maxPhotos - photos.length;
+    // Photos already on the listing being edited hold slots too — the API
+    // counts five in total, not five new ones.
+    final slotsLeft = controller.remainingPhotoSlots;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         FieldLabel(
           label: AppStrings.photos,
-          hint: photos.isEmpty
-              ? AppStrings.photosHint
-              : AppStrings.photosCoverHint,
+          hint: state.isEditing
+              // Existing photos are not shown here and cannot be removed yet;
+              // saying so is better than a strip that looks empty on a listing
+              // that has three.
+              ? AppStrings.photosEditHint(state.existingPhotos)
+              : photos.isEmpty
+                  ? AppStrings.photosHint
+                  : AppStrings.photosCoverHint,
         ),
         const SizedBox(height: AppSpacing.sm),
         SizedBox(

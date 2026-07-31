@@ -27,18 +27,38 @@ import 'widgets/voice_composer.dart';
 /// Which questions appear is decided entirely by the category's form spec —
 /// see docs/CATEGORY-FORMS.md. Nothing in this file knows what a tractor is.
 class AddListingScreen extends StatelessWidget {
-  const AddListingScreen({super.key});
+  const AddListingScreen({super.key, this.editing});
+
+  /// The listing being corrected, paired with its catalogue category.
+  ///
+  /// Passed in already resolved rather than fetched here: only the catalogue's
+  /// copy of a category carries the form spec, and a form that pops up empty
+  /// while it waits for one is worse than a list row that waits a moment
+  /// before opening.
+  final EditTarget? editing;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.addTitle)),
+      appBar: AppBar(
+        title: Text(
+          editing == null ? AppStrings.addTitle : AppStrings.editTitle,
+        ),
+      ),
       // A listing has to belong to a verified phone number, or the marketplace
       // fills with numbers nobody answers.
-      body: const SignInGate(
-        reason: AppStrings.signInRequiredAdd,
-        icon: Icons.add_circle_outline_rounded,
-        child: _Form(),
+      //
+      // The scope is what tells the draft controller it is opening on an
+      // existing listing. Overriding a provider here rather than writing to
+      // one from initState is the only way Riverpod allows, and it seeds the
+      // controller as it is built — no frame of empty form first.
+      body: ProviderScope(
+        overrides: [editTargetProvider.overrideWithValue(editing)],
+        child: const SignInGate(
+          reason: AppStrings.signInRequiredAdd,
+          icon: Icons.add_circle_outline_rounded,
+          child: _Form(),
+        ),
       ),
     );
   }
@@ -64,8 +84,14 @@ class _Form extends ConsumerWidget {
             children: [
               // Above everything, because one sentence can fill most of what
               // follows — including the category. Entirely skippable.
-              const VoiceComposer(),
-              const SizedBox(height: AppSpacing.xl),
+              //
+              // Absent when editing: the composer only fills fields that are
+              // empty, and on a listing that already exists they are all full.
+              // A mic that does nothing is worse than no mic.
+              if (!state.isEditing) ...[
+                const VoiceComposer(),
+                const SizedBox(height: AppSpacing.xl),
+              ],
 
               const FieldLabel(label: AppStrings.chooseCategory, required: true),
               const SizedBox(height: AppSpacing.sm),
@@ -499,7 +525,11 @@ class _SubmitBar extends ConsumerWidget {
                       ],
                     ],
                   )
-                : const Text(AppStrings.publish),
+                : Text(
+                    state.isEditing
+                        ? AppStrings.saveChanges
+                        : AppStrings.publish,
+                  ),
           ),
         ),
       ),
@@ -522,6 +552,19 @@ class _SubmitBar extends ConsumerWidget {
     }
 
     final result = ref.read(draftControllerProvider);
+
+    if (result.isEditing) {
+      // No sheet with a "view it" button: the seller came from a list they are
+      // going back to, and a modal celebrating a corrected price is noise.
+      ref.invalidate(homeFeedProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.photoFailure ?? AppStrings.changesSaved),
+        ),
+      );
+      Navigator.of(context).pop(true);
+      return;
+    }
 
     if (result.queued) {
       // Written down, not live. Saying "joylandi" here would have the seller

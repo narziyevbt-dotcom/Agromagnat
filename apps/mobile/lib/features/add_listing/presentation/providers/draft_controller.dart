@@ -27,6 +27,8 @@ class DraftState {
     this.uploaded = 0,
     this.photoFailure,
     this.queued = false,
+    this.editingId,
+    this.existingPhotos = 0,
   });
 
   final ListingDraft draft;
@@ -56,6 +58,17 @@ class DraftState {
   /// it is not visible yet.
   final bool queued;
 
+  /// Set when the form was opened on a listing that already exists. Null is a
+  /// new listing.
+  final String? editingId;
+
+  /// Photos already on the listing being edited. They count against the API's
+  /// five, so the picker has to know about them even though it cannot show
+  /// them.
+  final int existingPhotos;
+
+  bool get isEditing => editingId != null;
+
   DraftState copyWith({
     ListingDraft? draft,
     Map<String, String>? errors,
@@ -65,6 +78,8 @@ class DraftState {
     int? uploaded,
     Object? photoFailure = _unset,
     bool? queued,
+    String? editingId,
+    int? existingPhotos,
   }) {
     return DraftState(
       draft: draft ?? this.draft,
@@ -76,6 +91,8 @@ class DraftState {
       photoFailure:
           photoFailure == _unset ? this.photoFailure : photoFailure as String?,
       queued: queued ?? this.queued,
+      editingId: editingId ?? this.editingId,
+      existingPhotos: existingPhotos ?? this.existingPhotos,
     );
   }
 
@@ -97,6 +114,19 @@ class DraftController extends StateNotifier<DraftState> {
 
   /// The API's ceiling. Matches MAX_PHOTOS in listings.service.ts.
   static const int maxPhotos = 5;
+
+  /// Opens the form on a listing that already exists.
+  ///
+  /// [category] must come from the catalogue, not from `listing.category` —
+  /// only the catalogue's copy carries the form spec, and without one the form
+  /// renders nothing below the category row.
+  void beginEdit(Listing listing, ListingCategory category) {
+    state = DraftState(
+      draft: ListingDraft.fromListing(listing, category),
+      editingId: listing.id,
+      existingPhotos: listing.photos.length,
+    );
+  }
 
   void _edit(ListingDraft next) {
     // Errors are recomputed rather than kept: once a field is fixed its message
@@ -238,7 +268,8 @@ class DraftController extends StateNotifier<DraftState> {
 
   // --- photos ---------------------------------------------------------
 
-  int get remainingPhotoSlots => maxPhotos - state.draft.photos.length;
+  int get remainingPhotoSlots =>
+      maxPhotos - state.existingPhotos - state.draft.photos.length;
 
   Future<void> addFromCamera() async {
     if (remainingPhotoSlots <= 0) {
@@ -301,16 +332,25 @@ class DraftController extends StateNotifier<DraftState> {
 
     state = state.copyWith(submitting: true, errors: const {}, failure: null);
 
+    final editingId = state.editingId;
+
     final Listing listing;
     try {
-      listing = await _repository.create(state.draft);
+      listing = editingId == null
+          ? await _repository.create(state.draft)
+          : await _repository.update(editingId, state.draft);
     } on ListingValidationException catch (error) {
       state = state.copyWith(submitting: false, errors: error.errors);
       return false;
     } on ApiException catch (error) {
       // No signal, and there is somewhere to put it. The seller typed this
       // once, in the sun, on a phone keyboard — they will not do it twice.
-      if (error.status == 0 && onQueue != null) {
+      //
+      // An *edit* is never queued: the outbox replays creates, and a queued
+      // edit would have to be ordered against them. Telling the seller their
+      // correction is saved when it is sitting in a queue behind a listing
+      // that does not exist yet is worse than telling them it failed.
+      if (error.status == 0 && onQueue != null && editingId == null) {
         await onQueue!(
           ApiListingRepository.bodyFor(state.draft),
           [for (final photo in state.draft.photos) photo.path],
@@ -323,7 +363,9 @@ class DraftController extends StateNotifier<DraftState> {
     } on Object {
       state = state.copyWith(
         submitting: false,
-        failure: "E'lon joylanmadi. Internetni tekshirib, qayta urinib ko'ring",
+        failure: editingId == null
+            ? "E'lon joylanmadi. Internetni tekshirib, qayta urinib ko'ring"
+            : "O'zgarishlar saqlanmadi. Internetni tekshirib, qayta urinib ko'ring",
       );
       return false;
     }
@@ -348,13 +390,34 @@ class DraftController extends StateNotifier<DraftState> {
       state = state.copyWith(
         submitting: false,
         published: listing,
-        photoFailure:
-            "E'lon joylandi, lekin rasmlar yuklanmadi. Keyinroq qo'shishingiz mumkin",
+        photoFailure: editingId == null
+            ? "E'lon joylandi, lekin rasmlar yuklanmadi. Keyinroq qo'shishingiz mumkin"
+            : "O'zgarishlar saqlandi, lekin yangi rasmlar yuklanmadi",
       );
     }
     return true;
   }
 }
+
+/// A listing to edit, with the catalogue category that knows its questions.
+///
+/// The nested category on a listing carries no form spec, so the caller has to
+/// pair it with the catalogue's copy before the form can ask anything.
+@immutable
+class EditTarget {
+  const EditTarget(this.listing, this.category);
+
+  final Listing listing;
+  final ListingCategory category;
+}
+
+/// What the form was opened on. Null — the default — is a new listing.
+///
+/// Overridden in a ProviderScope around the edit screen rather than pushed in
+/// from a widget lifecycle: Riverpod forbids writing to a provider during
+/// build or initState, and seeding the controller as it is constructed also
+/// avoids a frame of empty form before the values arrive.
+final editTargetProvider = Provider<EditTarget?>((ref) => null);
 
 /// The seam where the real camera is swapped for a fake in tests — the
 /// platform channel behind `image_picker` does not exist under `flutter test`.
@@ -364,11 +427,17 @@ final photoPickerProvider = Provider<PhotoPicker>((ref) {
 
 final draftControllerProvider =
     StateNotifierProvider.autoDispose<DraftController, DraftState>((ref) {
-  return DraftController(
+  final controller = DraftController(
     ref.watch(listingRepositoryProvider),
     ref.watch(photoPickerProvider),
     onQueue: (body, photos) => ref
         .read(outboxControllerProvider.notifier)
         .enqueue(body: body, photoPaths: photos),
   );
-});
+
+  final target = ref.watch(editTargetProvider);
+  if (target != null) {
+    controller.beginEdit(target.listing, target.category);
+  }
+  return controller;
+}, dependencies: [editTargetProvider]);

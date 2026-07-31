@@ -7,10 +7,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/state_views.dart';
 import '../../add_listing/presentation/add_listing_screen.dart';
+import '../../add_listing/presentation/providers/draft_controller.dart';
 import '../../auth/presentation/widgets/sign_in_gate.dart';
 import '../../listings/domain/entities/listing.dart';
 import '../../listings/domain/entities/units.dart';
 import '../../listings/presentation/listing_detail_screen.dart';
+import '../../listings/presentation/providers/listing_providers.dart';
 import 'providers/my_listings_providers.dart';
 import 'widgets/my_listing_tile.dart';
 
@@ -92,6 +94,7 @@ class _MyListings extends ConsumerWidget {
                     builder: (_) => ListingDetailScreen(id: listing.id),
                   ),
                 ),
+                onEdit: () => _edit(context, ref, listing),
                 onMarkSold: () => _markSold(context, ref, listing),
                 onDelete: () => _delete(context, ref, listing),
               );
@@ -100,6 +103,46 @@ class _MyListings extends ConsumerWidget {
         );
       },
     );
+  }
+
+  /// Opens the posting form on an existing listing.
+  ///
+  /// The catalogue is read first because only its copy of a category carries
+  /// the form spec — the one nested in a listing does not, and a form opened
+  /// without it would show nothing but the category row.
+  Future<void> _edit(
+    BuildContext context,
+    WidgetRef ref,
+    Listing listing,
+  ) async {
+    final categories = await ref.read(categoriesProvider.future);
+    final category = categories
+        .where((candidate) => candidate.id == listing.category.id)
+        .firstOrNull;
+
+    if (!context.mounted) {
+      return;
+    }
+    if (category == null) {
+      // A category retired since the listing was posted. Saying so beats an
+      // empty form the seller cannot submit.
+      _say(context, AppStrings.editCategoryMissing);
+      return;
+    }
+
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => AddListingScreen(
+          editing: EditTarget(listing, category),
+        ),
+      ),
+    );
+
+    if ((saved ?? false) && context.mounted) {
+      // Refetched rather than patched from the returned listing: an edit can
+      // change what the row shows in more places than this screen tracks.
+      await ref.read(myListingsProvider.notifier).refresh();
+    }
   }
 
   Future<void> _markSold(

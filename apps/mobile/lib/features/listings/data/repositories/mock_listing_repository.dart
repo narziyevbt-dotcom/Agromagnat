@@ -162,6 +162,53 @@ class MockListingRepository implements ListingRepository {
   }
 
   @override
+  Future<Listing> update(String id, ListingDraft draft) async {
+    await Future<void>.delayed(latency);
+
+    final errors = draft.validate();
+    if (errors.isNotEmpty) {
+      throw ListingValidationException(errors);
+    }
+
+    final index = _listings.indexWhere((listing) => listing.id == id);
+    if (index == -1) {
+      throw ListingNotFoundException(id);
+    }
+
+    final before = _listings[index];
+    final updated = Listing(
+      id: before.id,
+      title: draft.title.trim(),
+      description:
+          draft.description.trim().isEmpty ? null : draft.description.trim(),
+      // An edit does not republish: a sold listing that is corrected stays
+      // sold, and an expired one stays expired.
+      status: before.status,
+      quantity: draft.quantity!,
+      quantityUnit: draft.quantityUnit!,
+      price: draft.price!,
+      priceUnit: draft.priceUnit!,
+      minOrder: draft.minOrder,
+      category: draft.category!,
+      region: draft.region!,
+      district: draft.district!,
+      seller: before.seller,
+      harvestDate: draft.harvestDate,
+      delivery: draft.delivery,
+      isPromoted: before.isPromoted,
+      viewCount: before.viewCount,
+      callCount: before.callCount,
+      favoriteCount: before.favoriteCount,
+      createdAt: before.createdAt,
+      expiresAt: before.expiresAt,
+      photos: before.photos,
+    );
+
+    _listings[index] = updated;
+    return _withFavorite(updated);
+  }
+
+  @override
   Future<Listing> markSold(String id) async {
     await Future<void>.delayed(latency);
 

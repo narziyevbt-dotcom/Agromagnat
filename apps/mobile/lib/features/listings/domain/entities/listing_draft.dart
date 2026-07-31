@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'category.dart';
 import 'category_form.dart';
 import 'draft_photo.dart';
+import 'listing.dart';
 import 'location.dart';
 import 'units.dart';
 
@@ -57,6 +58,42 @@ class ListingDraft {
   final List<DraftPhoto> photos;
 
   CategoryFormSpec? get spec => category?.form;
+
+  /// Reopens an existing listing in the posting form.
+  ///
+  /// [category] comes from the catalogue rather than from `listing.category`:
+  /// the category nested in a listing carries no form spec, and without one the
+  /// form has no questions to ask.
+  ///
+  /// Photos are deliberately empty. The ones already on the listing live on the
+  /// server and are not re-uploaded; [photos] here means "new files to add".
+  factory ListingDraft.fromListing(Listing listing, ListingCategory category) {
+    final spec = category.form;
+
+    return ListingDraft(
+      category: category,
+      title: listing.title,
+      description: listing.description ?? '',
+      quantity: listing.quantity,
+      quantityUnit: listing.quantityUnit,
+      price: listing.price,
+      priceUnit: listing.priceUnit,
+      region: listing.region,
+      district: listing.district,
+      minOrder: listing.minOrder,
+      wholesalePrice: listing.wholesalePrice,
+      harvestDate: listing.harvestDate,
+      delivery: listing.delivery,
+      // Anything the spec no longer declares is dropped rather than carried
+      // back: the category's questions can change between releases, and an
+      // answer to a question that is gone would be resubmitted invisibly.
+      attributes: {
+        for (final attribute in spec?.attributes ?? const [])
+          if (listing.attributes.containsKey(attribute.key))
+            attribute.key: listing.attributes[attribute.key]!,
+      },
+    );
+  }
 
   ListingDraft copyWith({
     Object? category = _unset,

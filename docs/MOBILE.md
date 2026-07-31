@@ -18,7 +18,7 @@ one codebase. Uzbek UI throughout.
 | Real API — feed, auth, posting, AI | built · [MOBILE-API.md](MOBILE-API.md) |
 | Offline — cached feed, catalogue, details | built · [MOBILE-OFFLINE.md](MOBILE-OFFLINE.md) |
 | Queued posting — publish with no signal | built · [MOBILE-OUTBOX.md](MOBILE-OUTBOX.md) |
-| My listings — status, mark sold, delete | built · [MOBILE-MY-LISTINGS.md](MOBILE-MY-LISTINGS.md) |
+| My listings — status, edit, mark sold, delete | built · [MOBILE-MY-LISTINGS.md](MOBILE-MY-LISTINGS.md) |
 | Messages | gated placeholder |
 
 Runs against the real API when one is configured, and on mock repositories
@@ -106,7 +106,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 259 tests
+flutter test          # 270 tests
 flutter analyze       # clean
 ```
 
@@ -169,8 +169,8 @@ is first asked for, which is the hardest kind of iOS problem to find late.
 
 ## Next
 
-1. Editing a listing — `PATCH /listings/:id` exists and nothing calls it, so a
-   wrong price means delete and retype
-2. Photo upload retry — the listing publishes offline now, but photos that
-   fail after it goes live are gone
-3. Messages
+1. Photo upload retry — the listing publishes offline now, but photos that
+   fail after it goes live are gone, and a photo already on a listing cannot
+   be removed
+2. Messages
+3. Reposting an expired listing in one tap

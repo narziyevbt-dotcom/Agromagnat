@@ -223,7 +223,26 @@ abstract final class ListingMapper {
         for (final entry in (json['photos'] as List? ?? const []))
           if (entry is Map) photo(entry),
       ],
+      wholesalePrice: number(json['wholesalePrice']),
+      attributes: attributeValues(json['attributes']),
     );
+  }
+
+  /// The category's own answers, as stored on a listing.
+  ///
+  /// Only strings and numbers survive: those are the two the form can render
+  /// and the two the backend's `Record<string, string | number>` declares.
+  /// Anything else is something a newer release wrote, and putting it in a
+  /// text field would let this build save it back mangled.
+  static Map<String, Object> attributeValues(dynamic json) {
+    if (json is! Map) {
+      return const {};
+    }
+    return {
+      for (final entry in json.entries)
+        if (entry.value is String || entry.value is num)
+          entry.key.toString(): entry.value as Object,
+    };
   }
 
   /// The API sends an icon name; the design has no icon set drawn yet, so the

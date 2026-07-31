@@ -30,6 +30,10 @@ class _StubbornRepository implements ListingRepository {
       _inner.mine(cursor: cursor, limit: limit);
 
   @override
+  Future<Listing> update(String id, ListingDraft draft) =>
+      _inner.update(id, draft);
+
+  @override
   Future<Listing> markSold(String id) =>
       failSold ? Future.error(Exception('offline')) : _inner.markSold(id);
 

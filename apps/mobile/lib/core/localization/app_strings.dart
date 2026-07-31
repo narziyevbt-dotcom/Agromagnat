@@ -131,6 +131,12 @@ abstract final class AppStrings {
   static const String statusDraft = 'Qoralama';
   static const String statusPending = 'Tekshiruvda';
   static const String statusBlocked = 'Bloklangan';
+  static const String editTitle = "E'lonni tahrirlash";
+  static const String editListing = 'Tahrirlash';
+  static const String saveChanges = 'Saqlash';
+  static const String changesSaved = "O'zgarishlar saqlandi";
+  static const String editCategoryMissing =
+      "Bu e'lon kategoriyasi topilmadi — tahrirlab bo'lmaydi";
   static const String markSold = 'Sotildi deb belgilash';
   static const String markSoldConfirm =
       "E'lon qidiruvdan olib tashlanadi. Buni orqaga qaytarib bo'lmaydi.";
@@ -204,6 +210,13 @@ abstract final class AppStrings {
   static String resultCount(int count) => "$count ta e'lon";
 
   static String photosRemaining(int slots) => "Yana $slots ta rasm qo'shsa bo'ladi";
+
+  /// Says what is already on the listing, because the strip cannot show it.
+  /// An empty-looking picker on a listing with three photos reads as "the
+  /// photos are gone".
+  static String photosEditHint(int existing) => existing == 0
+      ? "Yangi rasm qo'shishingiz mumkin"
+      : "$existing ta rasm allaqachon bor — pastda yangilarini qo'shasiz";
 
   static String photoOf(int index, int total) => '$index / $total';
 

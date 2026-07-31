@@ -262,6 +262,27 @@ class ApiListingRepository implements ListingRepository {
   }
 
   @override
+  Future<Listing> update(String id, ListingDraft draft) async {
+    try {
+      final listing = await _client.patch(
+        '/listings/$id',
+        body: bodyFor(draft),
+        decode: ListingMapper.listing,
+      );
+      if (listing == null) {
+        throw ListingNotFoundException(id);
+      }
+      await cache?.remove(_detailKey(id));
+      return listing;
+    } on ApiException catch (error) {
+      if (error.fieldErrors.isNotEmpty) {
+        throw ListingValidationException(error.fieldErrors);
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<Listing> markSold(String id) async {
     final listing = await _client.post(
       '/listings/$id/sold',

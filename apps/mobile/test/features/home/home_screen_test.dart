@@ -108,6 +108,10 @@ class _FailingListingRepository implements ListingRepository {
       Future.error(const _Offline());
 
   @override
+  Future<Listing> update(String id, ListingDraft draft) =>
+      Future.error(const _Offline());
+
+  @override
   Future<Listing> markSold(String id) => Future.error(const _Offline());
 
   @override

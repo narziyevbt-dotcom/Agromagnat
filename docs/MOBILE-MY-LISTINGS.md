@@ -51,6 +51,40 @@ on the market.
 The "Sotildi deb belgilash" button only exists on an active row. On a sold or
 expired one it could only ever return an error.
 
+## Editing
+
+"Tahrirlash" reopens the **posting form** on the listing — the same
+spec-driven form, seeded from the listing rather than empty. There is no
+second edit screen: a category's questions are decided by its spec, and a
+separate editor would be a second place for that to be got wrong.
+
+Three things it does that are easy to get wrong:
+
+- **The category comes from the catalogue, not from the listing.** The
+  category nested in a listing carries no form spec — only `GET /categories`
+  expands it. The list row resolves it before pushing, so the form never opens
+  with nothing below the category row. If the category has since been retired,
+  the seller is told, rather than handed a form they cannot submit.
+- **Answers to questions the spec no longer asks are dropped.** Sending one
+  back would have the server reject an edit the seller can see nothing wrong
+  with.
+- **An edit is never queued offline.** The outbox replays *creates*; a queued
+  edit would sit behind them with no ordering, and "saqlandi" would be a lie
+  until it went out. It fails in front of the seller instead.
+
+The whole draft is sent, not a diff — `PATCH` takes a partial, but the server
+re-validates the merged row anyway, and a client-side diff is one more place
+for the two to disagree about what changed.
+
+Photos already on the listing are not re-uploaded and cannot yet be removed;
+new ones are appended, and the picker counts the existing ones against the
+API's five. The label says how many are already there, because an
+empty-looking strip on a listing with three reads as "the photos are gone".
+
+Saving pops back to the list with a snackbar. No modal with a "view it"
+button: the seller came from a list they are returning to, and a celebration
+over a corrected price is noise.
+
 ## Not cached, and disposed on close
 
 Unlike the feed, this screen never reads from disk, and its provider is
@@ -62,24 +96,29 @@ not save" — and the next thing that gets tapped is the same button again.
 
 ## Tests
 
-15 tests in `test/features/my_listings/my_listings_test.dart` — the notifier
-over the mock repository, and the screen over the real widget tree.
+26 tests — `my_listings_test.dart` for the list and its two edits,
+`edit_listing_test.dart` for the form reopened on a listing.
 
 The ones worth having: a sold listing leaves the feed but stays in this list,
 a failed mark-sold reverts the row, a failed delete restores it in position,
 cancelling a dialog changes nothing, and the sold row stops offering the sold
 button.
 
-Writing them turned up one real defect: the new profile row was a `ListTile`
-inside a coloured `Container`, which silently swallows the ink splash. Flutter
-asserts on it, and the sign-in and screenshot tests caught it — it is now a
-`Material`.
+On the edit side: the form opens valid on the first frame, a sold listing
+stays sold after a correction, an answer to a retired question is dropped, and
+a dead network does not queue the edit.
+
+Writing them turned up two real defects. The new profile row was a `ListTile`
+inside a coloured `Container`, which silently swallows the ink splash — Flutter
+asserts on it, and the sign-in and screenshot tests caught it. And seeding the
+form from `initState` is exactly what Riverpod forbids; the listing now arrives
+through a `ProviderScope` override, which also removes the frame of empty form
+that a post-frame callback would have left.
 
 ## Not done yet
 
-- **Editing.** `PATCH /listings/:id` exists and nothing calls it. The posting
-  form would need to open populated from an existing listing.
+- **Removing a photo.** `DELETE /listings/:id/photos/:photoId` exists and
+  nothing calls it, so a bad photo can only be added around, not taken off.
 - **Reposting an expired listing.** The copy tells the seller to post it again;
   it should be one button.
-- **Photo management.** Photos can be added at posting time and never touched
-  since, though `DELETE /listings/:id/photos/:photoId` is there.
+- **Editing offline.** Deliberate for now — see above.

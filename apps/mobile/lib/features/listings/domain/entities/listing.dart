@@ -55,6 +55,8 @@ class Listing {
     this.isFavorite = false,
     this.expiresAt,
     this.photos = const [],
+    this.wholesalePrice,
+    this.attributes = const {},
   });
 
   final String id;
@@ -72,6 +74,17 @@ class Listing {
 
   /// Smallest lot the seller will break. Null means they will sell any amount.
   final num? minOrder;
+
+  /// Price at or above [minOrder], when the seller offers a wholesale rate.
+  final num? wholesalePrice;
+
+  /// Answers to the category's own questions, keyed by its spec.
+  ///
+  /// Carried on the entity so the edit form can open populated. Without it a
+  /// seller correcting a price would be made to re-answer "holati" from
+  /// scratch, and the value they picked in a hurry the second time would
+  /// silently replace the one they meant.
+  final Map<String, Object> attributes;
 
   final ListingCategory category;
   final Region region;
@@ -144,6 +157,8 @@ class Listing {
       createdAt: createdAt,
       expiresAt: expiresAt,
       photos: photos ?? this.photos,
+      wholesalePrice: wholesalePrice,
+      attributes: attributes,
     );
   }
 

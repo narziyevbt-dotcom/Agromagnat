@@ -198,6 +198,15 @@ abstract interface class ListingRepository {
   /// everywhere else, and a seller who cannot see it concludes the app lost it.
   Future<Paginated<Listing>> mine({String? cursor, int limit});
 
+  /// Saves changes to a listing the caller owns.
+  ///
+  /// Sends the whole draft rather than a diff. `PATCH` accepts a partial, but
+  /// the server re-validates the *merged* row anyway — and a diff computed on
+  /// the client is one more place for the two to disagree about what changed.
+  ///
+  /// Throws [ListingValidationException] the same way [create] does.
+  Future<Listing> update(String id, ListingDraft draft);
+
   /// Marks a listing sold. Returns it in its new state.
   Future<Listing> markSold(String id);
 
