@@ -107,7 +107,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 308 tests
+flutter test          # 316 tests
 flutter analyze       # clean
 ```
 
@@ -141,7 +141,7 @@ Five real defects came out of writing these:
 
 | | Status |
 |---|---|
-| Android | `flutter build apk --debug` verified in CI-like container |
+| Android | `flutter build apk --release --split-per-abi` verified; permissions checked with `aapt2 dump permissions` |
 | iOS | Project configured; **cannot be built on Linux** — needs macOS + Xcode |
 
 Bundle id `uz.agromagnat.agromagnat` on both. iOS deployment target 13.0.
@@ -167,6 +167,24 @@ deployment-target problem the first time they are compiled.
 — camera, photo library, microphone, speech recognition — in Uzbek. Missing
 one does not fail the build; it crashes the app at the moment that permission
 is first asked for, which is the hardest kind of iOS problem to find late.
+
+### The permission that was missing
+
+A release APK shipped that could not make a single request. `INTERNET` was
+declared only in Flutter's **debug and profile** manifests — the tool adds it
+there for its own use — and not in `main`, so every debug build reached the
+API and the release build was cut off entirely. On the phone it read as
+"Internet yo'q", which is the one message guaranteed to send somebody looking
+at their signal bars instead of at the build.
+
+`test/platform_manifest_test.dart` now reads both native manifests and fails
+if `INTERNET`, the microphone, the recogniser query or any of the four iOS
+usage descriptions goes missing. A release build should also be checked
+directly, which is cheap:
+
+```bash
+aapt2 dump permissions build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+```
 
 ## Next
 

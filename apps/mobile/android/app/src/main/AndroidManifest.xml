@@ -1,4 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Every request the app makes. Flutter declares this in the debug and
+         profile manifests for its own tooling, which is why a debug build
+         reaches the network and a release build without this line cannot make
+         a single request — the app looks offline on a phone with full signal.
+         There is a test over this file so it cannot go missing again. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <!-- Dictation on the posting form. The recogniser runs on the device;
          no audio is uploaded. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
