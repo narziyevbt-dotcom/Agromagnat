@@ -106,6 +106,22 @@ abstract final class AppStrings {
   static const String signInRequiredMessages =
       'Xabarlashish uchun kiring';
 
+  // Voice / AI composer
+  static const String composerTitle = 'Gapirib aytish';
+  static const String composerHint =
+      "Bir gapda ayting — qolganini o'zi to'ldiradi";
+  static const String composerPlaceholder =
+      "12 tonna pomidor, kilosi 14 ming so'm";
+  static const String startDictation = 'Gapirish';
+  static const String stopDictation = "To'xtatish";
+  static const String listening = 'Tinglanmoqda…';
+  static const String fillForm = "Formani to'ldirish";
+  static const String drafting = "To'ldirilmoqda…";
+  static const String draftApplied = "Forma to'ldirildi — tekshirib chiqing";
+  static const String stillNeeded = "Qolgan maydonlar";
+  static const String aiNeverPublishes =
+      "Yordamchi faqat to'ldiradi — joylashni o'zingiz tasdiqlaysiz";
+
   // Photos
   static const String photos = 'Rasmlar';
   static const String photosHint =

@@ -42,6 +42,14 @@
 	<string>Mahsulotingiz rasmini olish uchun kamera kerak</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>E'longa rasm qo'shish uchun galereyaga ruxsat kerak</string>
+	<!-- Dictation on the posting form. Declared even though Apple's Speech
+	     framework does not list Uzbek — the mic hides itself when the locale
+	     is unavailable, and a missing string is a crash rather than a
+	     graceful absence if that ever changes. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>E'lonni gapirib aytish uchun mikrofon kerak</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Aytganingizni matnga aylantirish uchun kerak</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

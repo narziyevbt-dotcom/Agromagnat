@@ -1,4 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Dictation on the posting form. The recogniser runs on the device;
+         no audio is uploaded. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+    <!-- Android 11+ package visibility: without this the speech recogniser
+         and the gallery picker are invisible to the app and silently do
+         nothing. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+    </queries>
     <application
         android:label="agromagnat"
         android:name="${applicationName}"

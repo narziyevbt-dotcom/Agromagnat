@@ -15,6 +15,7 @@ import 'providers/draft_controller.dart';
 import 'widgets/attribute_fields.dart';
 import 'widgets/measure_field.dart';
 import 'widgets/photo_picker_field.dart';
+import 'widgets/voice_composer.dart';
 
 /// Posting a listing.
 ///
@@ -61,6 +62,11 @@ class _Form extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
+              // Above everything, because one sentence can fill most of what
+              // follows — including the category. Entirely skippable.
+              const VoiceComposer(),
+              const SizedBox(height: AppSpacing.xl),
+
               const FieldLabel(label: AppStrings.chooseCategory, required: true),
               const SizedBox(height: AppSpacing.sm),
               categories.when(

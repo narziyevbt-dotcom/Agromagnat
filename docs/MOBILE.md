@@ -14,6 +14,7 @@ one codebase. Uzbek UI throughout.
 | Profile — account, sign out | built |
 | Add listing — category-aware form | built · [MOBILE-POSTING.md](MOBILE-POSTING.md) |
 | Photos — camera, gallery, gallery view | built · [MOBILE-PHOTOS.md](MOBILE-PHOTOS.md) |
+| Voice-first posting — say it, form fills | built · [MOBILE-VOICE.md](MOBILE-VOICE.md) |
 | Messages | gated placeholder |
 
 Everything runs on mock repositories. No backend is needed to open the app.
@@ -29,6 +30,7 @@ lib/
   features/
     listings/      domain → data → presentation      ← owns the listing model
     auth/          domain → data → presentation      ← owns the session
+    ai/            domain → data → presentation      ← drafts and dictation
     add_listing/   presentation                      ← renders the API's form spec
     home/          presentation
     search/        presentation
@@ -95,7 +97,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 147 tests
+flutter test          # 187 tests
 flutter analyze       # clean
 ```
 
@@ -150,7 +152,7 @@ time it is compiled.
 
 ## Next
 
-1. Voice-first posting — the mic on Add Listing, `POST /ai/draft`
-2. Real API behind the existing repository interfaces, including token refresh
-3. My listings — edit, mark sold, retry a failed photo upload
-4. Messages
+1. Real API behind the existing repository interfaces — every one of them is
+   already a provider override away
+2. My listings — edit, mark sold, retry a failed photo upload
+3. Messages

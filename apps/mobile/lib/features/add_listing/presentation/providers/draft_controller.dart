@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../ai/domain/entities/ai_draft.dart';
+import '../../../listings/data/fixtures/catalog_fixtures.dart';
 import '../../../listings/data/photo_picker.dart';
 import '../../../listings/domain/entities/category.dart';
 import '../../../listings/domain/entities/draft_photo.dart';
@@ -138,6 +140,82 @@ class DraftController extends StateNotifier<DraftState> {
       next[key] = value;
     }
     _edit(state.draft.copyWith(attributes: next));
+  }
+
+  // --- AI draft -------------------------------------------------------
+
+  /// Fills the form from an AI draft, leaving everything editable.
+  ///
+  /// Applied field by field rather than by replacing the draft wholesale: the
+  /// seller may have already typed something, and having the assistant wipe it
+  /// is worse than having it fill nothing. Anything the draft left null is
+  /// left as it was.
+  ///
+  /// Units are taken from the category's spec, not from the draft. The model
+  /// picks the category; the spec decides what units that category allows —
+  /// otherwise a suggestion of "kg" for machinery lands an illegal value in a
+  /// select that cannot show it. Same guard the backend applies.
+  void applyAiDraft(AiDraft draft) {
+    final slug = draft.categorySlug;
+    if (slug != null) {
+      final category = CatalogFixtures.categories
+          .where((candidate) => candidate.slug == slug)
+          .firstOrNull;
+      if (category != null) {
+        setCategory(category);
+      }
+    }
+
+    if (draft.title.trim().isNotEmpty && state.draft.title.trim().isEmpty) {
+      setTitle(draft.title.trim());
+    }
+    if (draft.description.trim().isNotEmpty &&
+        state.draft.description.trim().isEmpty) {
+      setDescription(draft.description.trim());
+    }
+
+    final spec = state.draft.spec;
+
+    if (draft.quantity != null) {
+      setQuantity(draft.quantity);
+    }
+    final quantityUnit = _legalUnit(draft.quantityUnit, spec?.quantity.units);
+    if (quantityUnit != null) {
+      setQuantityUnit(quantityUnit);
+    }
+
+    if (draft.price != null) {
+      setPrice(draft.price);
+    }
+    final priceUnit = _legalUnit(draft.priceUnit, spec?.price.units);
+    if (priceUnit != null) {
+      setPriceUnit(priceUnit);
+    }
+
+    if (draft.harvestDate != null && spec?.optional.harvestDate == true) {
+      setHarvestDate(draft.harvestDate);
+    }
+
+    for (final entry in draft.attributes.entries) {
+      // A key the model invented is dropped here rather than rejected at
+      // publish time — the same thing validateAttributes does server-side.
+      final declared =
+          spec?.attributes.any((attribute) => attribute.key == entry.key) ?? false;
+      if (declared) {
+        setAttribute(entry.key, entry.value);
+      }
+    }
+  }
+
+  QuantityUnit? _legalUnit(String? wire, List<QuantityUnit>? allowed) {
+    if (wire == null || allowed == null) {
+      return null;
+    }
+    final unit = QuantityUnit.values.where((candidate) => candidate.wire == wire);
+    if (unit.isEmpty || !allowed.contains(unit.first)) {
+      return null;
+    }
+    return unit.first;
   }
 
   // --- photos ---------------------------------------------------------

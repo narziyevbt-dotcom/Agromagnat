@@ -83,13 +83,13 @@ because it is below the fold. These tests turn entirely on telling those apart.
 Writing them surfaced the unit/number rule above: the screen kept a typed `12`
 across a switch into machinery, and the test that objected was right.
 
+## See also
+
+Photos on the form: [MOBILE-PHOTOS.md](MOBILE-PHOTOS.md).
+Filling it by voice: [MOBILE-VOICE.md](MOBILE-VOICE.md).
+
 ## Not done yet
 
-- **Voice-first posting.** The product rule is a mic on this screen that
-  transcribes and fills the whole form (`POST /ai/draft` returns values plus
-  `missingUz`; AI drafts, it never publishes). That needs audio recording — a
-  native plugin and a permissions story — plus the AI endpoint, so it is its
-  own slice on top of this one.
 - **Draft persistence.** `shared_preferences` is already a dependency for
   exactly this: a half-filled form should survive the app being killed on a
   weak connection. Nothing writes to it yet.

@@ -4,11 +4,13 @@ import 'package:agromagnat/features/add_listing/presentation/providers/draft_con
 import 'package:agromagnat/features/add_listing/presentation/widgets/attribute_fields.dart';
 import 'package:agromagnat/features/add_listing/presentation/widgets/photo_picker_field.dart';
 import 'package:agromagnat/features/auth/data/mock_auth_repository.dart';
+import 'package:agromagnat/features/ai/presentation/providers/composer_controller.dart';
 import 'package:agromagnat/features/auth/data/token_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/test_harness.dart';
+import '../ai/composer_test.dart' show FakeDictation;
 import 'photos_test.dart' show FakePhotoPicker, photo;
 
 /// The screen's job is to render whatever the category's spec says and collect
@@ -40,8 +42,14 @@ void main() {
   /// absent because the spec omitted it or because it is simply below the
   /// fold, and these tests turn on telling those apart.
   late FakePhotoPicker picker;
+  late FakeDictation dictation;
 
-  setUp(() => picker = FakePhotoPicker());
+  setUp(() {
+    picker = FakePhotoPicker();
+    // Off by default: most tests are about the form, and a mic that is not
+    // there keeps their finders unambiguous.
+    dictation = FakeDictation(available: false);
+  });
 
   Future<void> pumpForm(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1000, 4000);
@@ -57,7 +65,10 @@ void main() {
       const AddListingScreen(),
       auth: repository,
       tokenStore: store,
-      overrides: [photoPickerProvider.overrideWithValue(picker)],
+      overrides: [
+        photoPickerProvider.overrideWithValue(picker),
+        dictationProvider.overrideWithValue(dictation),
+      ],
     );
   }
 
@@ -233,6 +244,82 @@ void main() {
       await completeForm(tester);
 
       expect(find.text(AppStrings.published), findsOneWidget);
+    });
+  });
+
+  group('the voice composer', () {
+    testWidgets('is offered before a category is chosen', (tester) async {
+      await pumpForm(tester);
+
+      // It is what picks the category, so it cannot wait for one.
+      expect(find.text(AppStrings.composerTitle), findsOneWidget);
+      expect(find.text(AppStrings.aiNeverPublishes), findsOneWidget);
+    });
+
+    testWidgets('hides the mic where the device cannot dictate Uzbek',
+        (tester) async {
+      await pumpForm(tester);
+
+      // Apple's recogniser does not list Uzbek. A button that explains why it
+      // will not work is worse than no button.
+      expect(find.byIcon(Icons.mic_rounded), findsNothing);
+      expect(find.text(AppStrings.fillForm), findsOneWidget);
+    });
+
+    testWidgets('shows the mic where it can', (tester) async {
+      dictation.available = true;
+      await pumpForm(tester);
+
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+    });
+
+    testWidgets('one sentence fills the form', (tester) async {
+      await pumpForm(tester);
+
+      await tester.enterText(
+        find.byType(TextField).first,
+        "12 tonna pomidor, kilosi 14 ming so'm",
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(AppStrings.fillForm));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.draftApplied), findsOneWidget);
+      // The category it picked, and the produce form that came with it.
+      expect(find.text('Hajm'), findsOneWidget);
+      expect(find.text(AppStrings.harvestDate), findsOneWidget);
+    });
+
+    testWidgets('lists what the seller still has to supply', (tester) async {
+      await pumpForm(tester);
+
+      await tester.enterText(find.byType(TextField).first, '12 tonna pomidor');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.fillForm));
+      await tester.pumpAndSettle();
+
+      // missingUz is where "I don't know" goes, so the assistant never has to
+      // invent a price — but only if the seller is told what is empty.
+      expect(find.text(AppStrings.stillNeeded), findsOneWidget);
+      expect(find.text('• Narxni kiriting'), findsOneWidget);
+    });
+
+    testWidgets('filling the form does not publish it', (tester) async {
+      await pumpForm(tester);
+
+      await tester.enterText(
+        find.byType(TextField).first,
+        "12 tonna pomidor, kilosi 14 ming so'm",
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.fillForm));
+      await tester.pumpAndSettle();
+
+      // A model that can post unattended is a model that can misprice
+      // somebody's harvest in public.
+      expect(find.text(AppStrings.published), findsNothing);
+      expect(find.text(AppStrings.publish), findsOneWidget);
     });
   });
 
