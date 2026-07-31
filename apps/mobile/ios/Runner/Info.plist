@@ -14,6 +14,15 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<!-- Without this iOS advertises the app as English-only: the App Store
+	     listing shows no Uzbek, and system UI the app hands off to (share
+	     sheets, permission prompts) comes back in English on an Uzbek phone.
+	     Must stay in step with supportedLocales in main.dart. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>uz</string>
+		<string>ru</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>agromagnat</string>
 	<key>CFBundlePackageType</key>
@@ -26,6 +35,21 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- iOS terminates the app on the spot if it asks for the camera or the
+	     photo library without a reason string. Uzbek, because it is shown in
+	     the system prompt the seller reads. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Mahsulotingiz rasmini olish uchun kamera kerak</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>E'longa rasm qo'shish uchun galereyaga ruxsat kerak</string>
+	<!-- Dictation on the posting form. Declared even though Apple's Speech
+	     framework does not list Uzbek — the mic hides itself when the locale
+	     is unavailable, and a missing string is a crash rather than a
+	     graceful absence if that ever changes. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>E'lonni gapirib aytish uchun mikrofon kerak</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Aytganingizni matnga aylantirish uchun kerak</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

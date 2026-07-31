@@ -18,17 +18,25 @@ dependencies:
   # Navigation
   go_router: ^14.8.1
 
-  # Design system: the three font roles come from google_fonts.
-  google_fonts: ^6.2.1
-
   # Networking — wired to the real API in Prompt 11.
   dio: ^5.7.0
 
   # Local storage: a draft listing must survive an app restart on weak internet.
   shared_preferences: ^2.3.5
 
+  # Refresh tokens live for 30 days. SharedPreferences is a plain XML file on
+  # Android and a plist on iOS — readable over adb backup or on a rooted
+  # handset — so the session goes to the Keystore/Keychain instead.
+  flutter_secure_storage: ^10.3.1
+
+  # Camera and gallery. Its maxWidth/imageQuality do the downscaling in
+  # native code before the file ever reaches Dart — see PhotoPicker for why
+  # that matters more here than the size limit on the server.
+  image_picker: ^1.2.3
+
   intl: ^0.20.2
   cupertino_icons: ^1.0.8
+  speech_to_text: ^7.4.0
 
 dev_dependencies:
   flutter_test:
@@ -37,3 +45,15 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Plus Jakarta Sans ships with the APK rather than being fetched at runtime.
+  #
+  # google_fonts downloads a face on first use and falls back to Roboto until
+  # it lands. For a farmer opening the app on 2 bars of EDGE that means the
+  # first session is rendered in the wrong typeface — and if the request never
+  # completes, every session is. One 176 KB variable file removes the network
+  # from the critical path entirely.
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans.ttf

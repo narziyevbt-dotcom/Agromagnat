@@ -223,6 +223,40 @@ export class ListingsService {
     return this.findOne(id);
   }
 
+  /**
+   * Puts an expired listing back on the market for another {@link
+   * LISTING_TTL_DAYS} days.
+   *
+   * The same row rather than a copy: the listing keeps its id, so the links
+   * already shared in Telegram still resolve, and it keeps its view count,
+   * its favourites and the conversations hanging off it. Reposting by
+   * creating a duplicate would strand all four.
+   *
+   * Only an expired listing can be renewed. An active one is already on the
+   * market and renewing it would be a way to buy a fresh 14 days without
+   * anybody noticing; a sold one is finished.
+   */
+  async renew(id: string, userId: string): Promise<Listing> {
+    const listing = await this.assertOwned(id, userId);
+
+    if (listing.status !== ListingStatus.EXPIRED) {
+      throw new BadRequestException(
+        "Faqat muddati tugagan e'lonni qayta joylash mumkin",
+      );
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + LISTING_TTL_DAYS);
+
+    await this.listings.update(id, {
+      status: ListingStatus.ACTIVE,
+      expiresAt,
+    });
+
+    await this.invalidateFeedCache();
+    return this.findOne(id);
+  }
+
   async remove(id: string, userId: string): Promise<void> {
     const listing = await this.assertOwned(id, userId);
     // Soft delete — chats, reviews and the price index all reference this row.

@@ -11,6 +11,7 @@
 | PATCH | `/api/listings/:id` | bearer | Edit own |
 | DELETE | `/api/listings/:id` | bearer | Soft-delete own |
 | POST | `/api/listings/:id/sold` | bearer | Mark sold, increments seller `sales_count` |
+| POST | `/api/listings/:id/renew` | bearer | Put an **expired** listing back for 14 more days |
 | POST | `/api/listings/:id/call` | public | Record a call tap |
 | POST | `/api/listings/:id/photos` | bearer | Upload up to 5 photos |
 | DELETE | `/api/listings/:id/photos/:photoId` | bearer | Delete one photo |
@@ -88,6 +89,17 @@ image. EXIF orientation is honoured, otherwise phone photos arrive sideways.
 Listings expire 14 days after publication. An hourly cron sweeps them to `expired` —
 hourly rather than daily so nothing lingers a full day past its fourteenth, since
 feed freshness is what a buyer trusts.
+
+`POST /listings/:id/renew` puts an expired listing back on the market for another
+14 days. It updates **the same row** rather than copying it: the listing keeps its
+id, so links already shared in Telegram still resolve, and it keeps its view count,
+its favourites and the conversations hanging off it. A repost that created a
+duplicate would strand all four.
+
+Only an `expired` listing can be renewed. Renewing an active one would be a way to
+buy a fresh fourteen days at the top of the feed whenever you liked, without anybody
+noticing; a sold one is finished. Both are a 400, and somebody else's listing is a
+403.
 
 Deletes are soft: chats, reviews and the price index all reference the row.
 

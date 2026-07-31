@@ -5,21 +5,25 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 
-/// The five-item bottom bar: Bosh · Qidiruv · big saffron "+" · Xabarlar · Profil.
+/// The five-item bottom bar: Bosh · Qidiruv · big lime "+" · Xabarlar · Profil.
 ///
 /// The middle item is deliberately not a normal tab — posting a listing is the
-/// single action the whole product exists for, so it is a raised saffron button
+/// single action the whole product exists for, so it is a raised lime button
 /// that outweighs everything beside it.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     required this.currentIndex,
     required this.onTap,
+    this.unread = 0,
     super.key,
   });
 
   /// Index into the five bar slots; slot 2 is the "+" button.
   final int currentIndex;
   final ValueChanged<int> onTap;
+
+  /// Unread messages across every conversation.
+  final int unread;
 
   static const int addSlot = 2;
 
@@ -58,6 +62,7 @@ class AppBottomNav extends StatelessWidget {
                 activeIcon: Icons.chat_bubble_rounded,
                 label: AppStrings.navMessages,
                 selected: currentIndex == 3,
+                badge: unread,
                 onTap: () => onTap(3),
               ),
               _NavItem(
@@ -82,6 +87,7 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.badge = 0,
   });
 
   final IconData icon;
@@ -90,9 +96,12 @@ class _NavItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  /// Zero draws nothing.
+  final int badge;
+
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.cobalt : AppColors.textTertiary;
+    final color = selected ? AppColors.forest : AppColors.inkFaint;
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -103,7 +112,40 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(selected ? activeIcon : icon, color: color, size: 26),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(selected ? activeIcon : icon, color: color, size: 26),
+                  if (badge > 0)
+                    Positioned(
+                      top: -4,
+                      right: -8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 17),
+                        decoration: BoxDecoration(
+                          color: AppColors.danger,
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusPill),
+                        ),
+                        child: Text(
+                          // Capped: the count stops meaning anything past a
+                          // point, and a four-digit badge breaks the row.
+                          badge > 99 ? '99+' : '$badge',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.number(
+                            size: 10,
+                            weight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 label,
@@ -134,7 +176,7 @@ class _AddButton extends StatelessWidget {
           button: true,
           label: AppStrings.navAdd,
           child: Material(
-            color: AppColors.saffron,
+            color: AppColors.lime,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
             ),
@@ -144,7 +186,7 @@ class _AddButton extends StatelessWidget {
               child: const SizedBox(
                 width: 52,
                 height: AppSpacing.minTapTarget,
-                child: Icon(Icons.add_rounded, color: Colors.white, size: 30),
+                child: Icon(Icons.add_rounded, color: AppColors.onLime, size: 30),
               ),
             ),
           ),

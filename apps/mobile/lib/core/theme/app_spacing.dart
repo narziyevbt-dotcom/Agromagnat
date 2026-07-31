@@ -13,6 +13,11 @@ abstract final class AppSpacing {
   static const double radiusSm = 8;
   static const double radiusMd = 12;
   static const double radiusLg = 16;
+
+  /// Cards, panels and sheets — the web's `rounded-3xl`.
+  static const double radiusCard = 24;
+
+  /// Buttons and chips are fully rounded, per the design system.
   static const double radiusPill = 999;
 
   /// Minimum tap target in logical pixels — a hard rule, never shrink it.

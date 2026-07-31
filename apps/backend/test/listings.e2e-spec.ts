@@ -479,5 +479,51 @@ describe('Listings (e2e)', () => {
         .expect(200);
       expect(feed.body.items.map((i: { id: string }) => i.id)).not.toContain(id);
     });
+
+    it('renews an expired listing under the same id', async () => {
+      const listing = await post(validListing());
+      const id = listing.body.id;
+
+      await listings.update(id, {
+        status: ListingStatus.EXPIRED,
+        expiresAt: new Date(Date.now() - 1000),
+      });
+
+      const renewed = await request(app.getHttpServer())
+        .post(`/api/listings/${id}/renew`)
+        .set('Authorization', `Bearer ${sellerToken}`)
+        .expect(201);
+
+      expect(renewed.body.id).toBe(id);
+      expect(renewed.body.status).toBe(ListingStatus.ACTIVE);
+      expect(new Date(renewed.body.expiresAt).getTime()).toBeGreaterThan(Date.now());
+
+      const feed = await request(app.getHttpServer())
+        .get('/api/listings')
+        .query({ limit: 50, regionId })
+        .expect(200);
+      expect(feed.body.items.map((i: { id: string }) => i.id)).toContain(id);
+    });
+
+    it('refuses to renew a listing that has not expired', async () => {
+      const listing = await post(validListing());
+
+      // Otherwise renewing is a way to buy a fresh 14 days at the top of the
+      // feed whenever you like.
+      await request(app.getHttpServer())
+        .post(`/api/listings/${listing.body.id}/renew`)
+        .set('Authorization', `Bearer ${sellerToken}`)
+        .expect(400);
+    });
+
+    it('refuses to renew somebody else\'s listing', async () => {
+      const listing = await post(validListing());
+      await listings.update(listing.body.id, { status: ListingStatus.EXPIRED });
+
+      await request(app.getHttpServer())
+        .post(`/api/listings/${listing.body.id}/renew`)
+        .set('Authorization', `Bearer ${buyerToken}`)
+        .expect(403);
+    });
   });
 });

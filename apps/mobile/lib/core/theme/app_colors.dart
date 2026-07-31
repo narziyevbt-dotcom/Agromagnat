@@ -1,46 +1,70 @@
 import 'package:flutter/material.dart';
 
-/// The Rishtan-ceramic palette from the brand book.
+/// The palette, mirroring `apps/web/app/globals.css` value for value.
 ///
-/// The screen is full of fruit and vegetable photography — already green, red
-/// and yellow. A green interface would swallow the product; cobalt and
-/// turquoise make the photos stand out instead.
+/// A buyer who found a listing through Google and then installs the app has to
+/// recognise it as the same product, so both platforms resolve to one set of
+/// hexes. When a colour changes it changes in both files or in neither.
+///
+/// Green dominates and the accents stay scarce on purpose: lime is the only
+/// thing that reads as "press me", and harvest green is only ever money.
 abstract final class AppColors {
-  /// Primary. Headers, bottom nav, the market-price card.
-  static const Color cobalt = Color(0xFF0A3A55);
+  // --- Surfaces -----------------------------------------------------------
 
-  /// Secondary. Verified badge, secondary accents.
-  static const Color turquoise = Color(0xFF1D7F8C);
+  /// App background. Warm grey rather than white — photographed produce looks
+  /// washed out against a pure white feed.
+  static const Color canvas = Color(0xFFECEEEA);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceSoft = Color(0xFFF6F8F5);
 
-  /// CTA ONLY — action buttons and the TOP badge. Used anywhere else it stops
-  /// meaning "press me".
-  static const Color saffron = Color(0xFFE0932A);
+  // --- Brand greens -------------------------------------------------------
+
+  /// Primary. Header, bottom bar, dark panels.
+  static const Color forest = Color(0xFF0B1D14);
+  static const Color forestSoft = Color(0xFF16321F);
+  static const Color forestDeep = Color(0xFF061109);
+
+  // --- Money --------------------------------------------------------------
 
   /// Prices and volumes ONLY, so the user learns "green number = money".
   static const Color harvest = Color(0xFF1F7A4D);
+  static const Color harvestBright = Color(0xFF2FA36A);
 
-  /// Errors and falling prices ONLY.
-  static const Color error = Color(0xFFC4452F);
+  /// The fill behind a volume chip.
+  static const Color mint = Color(0xFFE7F4EC);
 
-  /// App background.
-  static const Color background = Color(0xFFEEF1F2);
+  // --- Call to action -----------------------------------------------------
 
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color onCobalt = Color(0xFFFFFFFF);
+  /// CTA ONLY. Used anywhere else it stops meaning "press me".
+  static const Color lime = Color(0xFFD4E96A);
+  static const Color limeDark = Color(0xFFC2DA51);
 
-  // Text ramp, all derived from cobalt so the greys never look muddy next to it.
-  static const Color textPrimary = Color(0xFF0A3A55);
-  static const Color textSecondary = Color(0xFF5B6B75);
-  static const Color textTertiary = Color(0xFF8A97A0);
+  /// Sits on lime. Lime is far too light to carry white text — this pairing is
+  /// the one that clears WCAG AA, so never substitute white here.
+  static const Color onLime = forest;
 
-  static const Color divider = Color(0xFFDCE2E5);
+  // --- Accents ------------------------------------------------------------
+
+  static const Color turquoise = Color(0xFF1D7F8C);
+
+  /// The TOP badge, and nothing else.
+  static const Color saffron = Color(0xFFE0932A);
+  static const Color saffronDark = Color(0xFFC67D1C);
 
   /// 12% saffron — the fill behind a TOP badge.
   static const Color saffronSubtle = Color(0x1FE0932A);
 
-  /// 12% harvest green — the fill behind a volume chip.
-  static const Color harvestSubtle = Color(0x1F1F7A4D);
+  /// Errors and falling prices ONLY.
+  static const Color danger = Color(0xFFC4452F);
 
-  /// 10% cobalt — neutral chip fill.
-  static const Color cobaltSubtle = Color(0x1A0A3A55);
+  // --- Text ---------------------------------------------------------------
+
+  static const Color ink = Color(0xFF0B1D14);
+  static const Color inkMuted = Color(0xFF5C6B62);
+  static const Color inkFaint = Color(0xFF8B978F);
+  static const Color onForest = Color(0xFFFFFFFF);
+
+  // --- Lines --------------------------------------------------------------
+
+  static const Color hairline = Color(0xFFE4E9E4);
 }
