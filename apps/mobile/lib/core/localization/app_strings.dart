@@ -105,6 +105,10 @@ abstract final class AppStrings {
   static const String signInRequiredMessages =
       'Xabarlashish uchun kiring';
 
+  // Offline
+  static const String offlineTitle = 'Internet yo‘q';
+  static const String offlineRetry = 'Yangilash';
+
   // Voice / AI composer
   static const String composerTitle = 'Gapirib aytish';
   static const String composerHint =
@@ -166,4 +170,9 @@ abstract final class AppStrings {
   static String photosRemaining(int slots) => "Yana $slots ta rasm qo'shsa bo'ladi";
 
   static String photoOf(int index, int total) => '$index / $total';
+
+  /// Says how old what is on screen is. Deliberately specific — "offline"
+  /// alone leaves a farmer to guess whether these prices are an hour or a week
+  /// out of date, and they will guess generously.
+  static String offlineSince(String ago) => 'Oxirgi ma\'lumot: $ago';
 }

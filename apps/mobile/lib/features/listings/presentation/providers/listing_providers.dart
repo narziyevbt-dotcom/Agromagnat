@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/pagination/paginated.dart';
+import '../../../../core/cache/cache_providers.dart';
 import '../../../../core/network/api_config.dart';
 import '../../../../core/network/api_providers.dart';
 import '../../data/repositories/api_catalog_repository.dart';
@@ -22,14 +23,20 @@ final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
   if (!ApiConfig.isConfigured) {
     return MockCatalogRepository();
   }
-  return ApiCatalogRepository(ref.watch(apiClientProvider));
+  return ApiCatalogRepository(
+    ref.watch(apiClientProvider),
+    cache: ref.watch(jsonCacheProvider),
+  );
 });
 
 final listingRepositoryProvider = Provider<ListingRepository>((ref) {
   if (!ApiConfig.isConfigured) {
     return MockListingRepository();
   }
-  return ApiListingRepository(ref.watch(apiClientProvider));
+  return ApiListingRepository(
+    ref.watch(apiClientProvider),
+    cache: ref.watch(jsonCacheProvider),
+  );
 });
 
 // --- Reference data ---------------------------------------------------------
@@ -59,10 +66,49 @@ final searchQueryProvider = StateProvider<ListingQuery>((ref) {
   return const ListingQuery();
 });
 
-/// A page of listings for an arbitrary query, used by home's feed.
-final listingFeedProvider =
-    FutureProvider.family<Paginated<Listing>, ListingQuery>((ref, query) {
-  return ref.watch(listingRepositoryProvider).search(query);
+/// The home feed, painted from disk first and refreshed behind it.
+///
+/// A plain FutureProvider spends the whole connect timeout showing a spinner
+/// before it can show anything at all — fifteen seconds of nothing for a
+/// farmer with no signal, ending in an empty screen. This paints whatever was
+/// stored on the first frame and replaces it when the network answers, so the
+/// worst case is old prices rather than none.
+class HomeFeedNotifier extends StateNotifier<AsyncValue<Paginated<Listing>>> {
+  HomeFeedNotifier(this._repository, this._query)
+      : super(const AsyncValue.loading()) {
+    final cached = _cachedPage();
+    if (cached != null) {
+      state = AsyncValue.data(cached);
+    }
+    refresh();
+  }
+
+  final ListingRepository _repository;
+  final ListingQuery _query;
+
+  Paginated<Listing>? _cachedPage() {
+    final repository = _repository;
+    return repository is ApiListingRepository
+        ? repository.cachedFeed(_query)
+        : null;
+  }
+
+  Future<void> refresh() async {
+    try {
+      state = AsyncValue.data(await _repository.search(_query));
+    } on Object catch (error, stack) {
+      // Something is already on screen — keep it. Replacing a cached feed
+      // with an error page throws away the only useful thing the app has.
+      if (state.valueOrNull == null) {
+        state = AsyncValue.error(error, stack);
+      }
+    }
+  }
+}
+
+final homeFeedProvider = StateNotifierProvider.family<HomeFeedNotifier,
+    AsyncValue<Paginated<Listing>>, ListingQuery>((ref, query) {
+  return HomeFeedNotifier(ref.watch(listingRepositoryProvider), query);
 });
 
 final listingDetailProvider =

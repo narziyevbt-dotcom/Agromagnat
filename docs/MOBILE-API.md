@@ -96,6 +96,6 @@ SMS or leaves rows behind is one people turn off.
 - **The AI draft endpoint** is wired with the on-device lexicon underneath as a
   fallback, which is the same shape the backend uses. Unverified against the
   live route for the same reason: it is authenticated and rate-limited per user.
-- **Offline caching.** Nothing is persisted between launches, so a feed opened
-  with no signal is empty rather than stale. For this audience that is the
-  next thing worth doing.
+
+See also: [MOBILE-OFFLINE.md](MOBILE-OFFLINE.md), which is what the repositories
+here fall back to when the network is dead.

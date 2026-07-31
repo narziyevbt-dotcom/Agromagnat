@@ -523,7 +523,7 @@ class _SubmitBar extends ConsumerWidget {
 
     final result = ref.read(draftControllerProvider);
     // The feed is stale the moment a listing joins it.
-    ref.invalidate(listingFeedProvider);
+    ref.invalidate(homeFeedProvider);
 
     await _showPublished(context, result.published!.id, result.photoFailure);
   }

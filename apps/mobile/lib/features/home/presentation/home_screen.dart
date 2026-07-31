@@ -5,6 +5,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../shared/widgets/offline_banner.dart';
 import '../../../shared/widgets/state_views.dart';
 import '../../listings/domain/entities/category.dart';
 import '../../listings/domain/repositories/listing_repository.dart';
@@ -27,19 +28,27 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final feed = ref.watch(listingFeedProvider(_feedQuery));
+    final feed = ref.watch(homeFeedProvider(_feedQuery));
     final categories = ref.watch(categoriesProvider);
 
     return Scaffold(
       body: RefreshIndicator(
         color: AppColors.harvest,
-        onRefresh: () async {
-          ref.invalidate(listingFeedProvider(_feedQuery));
-          await ref.read(listingFeedProvider(_feedQuery).future);
-        },
+        onRefresh: () =>
+            ref.read(homeFeedProvider(_feedQuery).notifier).refresh(),
         child: CustomScrollView(
           slivers: [
             const _HomeHeader(),
+            // Above the categories, not buried under the feed: it changes how
+            // every price below it should be read.
+            if (feed.valueOrNull?.cachedAt case final cachedAt?)
+              SliverToBoxAdapter(
+                child: OfflineBanner(
+                  cachedAt: cachedAt,
+                  onRetry: () =>
+                      ref.read(homeFeedProvider(_feedQuery).notifier).refresh(),
+                ),
+              ),
             SliverToBoxAdapter(child: _Categories(categories: categories)),
             const SliverToBoxAdapter(
               child: Padding(
@@ -64,7 +73,8 @@ class HomeScreen extends ConsumerWidget {
               error: (_, __) => SliverFillRemaining(
                 hasScrollBody: false,
                 child: ErrorView(
-                  onRetry: () => ref.invalidate(listingFeedProvider(_feedQuery)),
+                  onRetry: () =>
+                      ref.read(homeFeedProvider(_feedQuery).notifier).refresh(),
                 ),
               ),
               data: (page) {

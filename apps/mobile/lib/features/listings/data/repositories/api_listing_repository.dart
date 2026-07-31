@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/cache/json_cache.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/pagination/paginated.dart';
 import '../../domain/entities/draft_photo.dart';
@@ -9,14 +10,79 @@ import '../../domain/repositories/listing_repository.dart';
 import '../api/listing_mapper.dart';
 
 /// The real feed, search and posting.
+///
+/// Caching lives here rather than in a decorator because this is the only
+/// layer that sees the wire format. A decorator would have to serialise
+/// entities back to JSON, which means a second mapper written in reverse —
+/// and the day the two disagree, a listing reads back wrong from disk with
+/// nothing to catch it. Storing the raw response keeps one mapper, one
+/// direction.
 class ApiListingRepository implements ListingRepository {
-  ApiListingRepository(this._client);
+  ApiListingRepository(this._client, {this.cache});
 
   final ApiClient _client;
 
+  /// Not private: a named parameter cannot carry an underscore, and an
+  /// initializer written only to add one is noise.
+  final JsonCache? cache;
+
+  /// The unfiltered first page — the screen a farmer opens the app to.
+  ///
+  /// Filtered searches are not cached: the key space is unbounded, and a
+  /// buyer who filtered to "Samarqand, pomidor, under 10 000" expects an
+  /// answer to that question, not a remembered one.
+  static const String feedKey = 'feed';
+
+  static String _detailKey(String id) => 'listing_$id';
+
+  static bool _isCacheable(ListingQuery query) =>
+      query.isUnfiltered &&
+      query.cursor == null &&
+      query.sort == ListingSort.newest;
+
   @override
   Future<Paginated<Listing>> search(ListingQuery query) async {
-    return _client.get(
+    try {
+      return await _fetchPage(query);
+    } on ApiException catch (error) {
+      // Only a dead network falls back. A 500 or a 400 means the server
+      // answered, and showing yesterday's feed as though nothing happened
+      // would hide a real fault.
+      final cached = error.status == 0 ? cachedFeed(query) : null;
+      if (cached != null) {
+        return cached;
+      }
+      rethrow;
+    }
+  }
+
+  /// The last stored feed, if this query is the one that gets cached.
+  ///
+  /// Public so the home screen can paint it before the request has even been
+  /// sent — waiting fifteen seconds for a connect timeout to expire, then
+  /// showing what was on disk all along, is the worst of both.
+  Paginated<Listing>? cachedFeed(ListingQuery query) {
+    if (!_isCacheable(query) || cache == null) {
+      return null;
+    }
+    final entry = cache!.read<List<Listing>>(
+      feedKey,
+      (json) => [
+        for (final row in (json as List)) ?ListingMapper.listing(row),
+      ],
+    );
+    if (entry == null || entry.value.isEmpty) {
+      return null;
+    }
+    // No cursor: paging on from a cached page would ask the server for the
+    // continuation of something it never sent.
+    return Paginated<Listing>(items: entry.value, cachedAt: entry.cachedAt);
+  }
+
+  Future<Paginated<Listing>> _fetchPage(ListingQuery query) async {
+    dynamic raw;
+
+    final page = await _client.get(
       '/listings',
       query: {
         'q': query.text,
@@ -31,34 +97,63 @@ class ApiListingRepository implements ListingRepository {
         'limit': query.limit,
       },
       decode: (body) {
+        raw = body;
         final map = body is Map ? body : const {};
         return Paginated<Listing>(
           items: [
+            // A row the mapper cannot make sense of is dropped rather than
+            // failing the page it arrived in.
             for (final entry in (map['items'] as List? ?? const []))
-              // A row the mapper cannot make sense of is dropped rather than
-              // failing the page it arrived in.
               ?ListingMapper.listing(entry),
           ],
           nextCursor: ListingMapper.text(map['nextCursor']),
         );
       },
     );
+
+    // Awaited rather than fired off. A SharedPreferences write is a few
+    // milliseconds against a request that just took hundreds, and leaving it
+    // in flight means the page is only sometimes there on the next launch —
+    // a cache that works most of the time is the hardest kind to trust.
+    if (_isCacheable(query) && raw is Map) {
+      await cache?.write(feedKey, (raw as Map)['items'] ?? const []);
+    }
+
+    return page;
   }
 
   @override
   Future<Listing> byId(String id) async {
     try {
+      dynamic raw;
       final listing = await _client.get(
         '/listings/$id',
-        decode: ListingMapper.listing,
+        decode: (body) {
+          raw = body;
+          return ListingMapper.listing(body);
+        },
       );
       if (listing == null) {
         throw ListingNotFoundException(id);
       }
+      await cache?.write(_detailKey(id), raw);
       return listing;
     } on ApiException catch (error) {
       if (error.isNotFound) {
+        // Gone for good — drop it rather than keep serving a deleted listing.
+        await cache?.remove(_detailKey(id));
         throw ListingNotFoundException(id);
+      }
+
+      // A listing the buyer opened once should still open in a dead spot.
+      // That is where they are standing when they decide to call.
+      if (error.status == 0) {
+        final cached = cache
+            ?.read<Listing?>(_detailKey(id), ListingMapper.listing)
+            ?.value;
+        if (cached != null) {
+          return cached;
+        }
       }
       rethrow;
     }

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/cache/cache_providers.dart';
+import '../../../../core/cache/json_cache.dart';
 import '../../../../core/network/api_config.dart';
 import '../../../../core/network/api_providers.dart';
 import '../../data/api_auth_repository.dart';
@@ -48,12 +50,16 @@ class AuthSignedIn extends AuthState {
 }
 
 class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._repository, this._store) : super(const AuthRestoring()) {
+  AuthController(this._repository, this._store, {this.cache})
+      : super(const AuthRestoring()) {
     _ready = _restore();
   }
 
   final AuthRepository _repository;
   final TokenStore _store;
+
+  /// Not private: a named parameter cannot carry an underscore.
+  final JsonCache? cache;
 
   late final Future<void> _ready;
 
@@ -120,6 +126,10 @@ class AuthController extends StateNotifier<AuthState> {
       }
     }
     await _store.clear();
+    // A cached listing carries isFavorite, which belongs to whoever was
+    // signed in. Leaving it would show the next user somebody else's saved
+    // hearts on a shared handset — and shared handsets are common here.
+    await cache?.clear();
     state = const AuthSignedOut();
   }
 
@@ -148,6 +158,7 @@ final authControllerProvider =
   return AuthController(
     ref.watch(authRepositoryProvider),
     ref.watch(tokenStoreProvider),
+    cache: ref.watch(jsonCacheProvider),
   );
 });
 

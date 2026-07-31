@@ -16,6 +16,7 @@ one codebase. Uzbek UI throughout.
 | Photos — camera, gallery, gallery view | built · [MOBILE-PHOTOS.md](MOBILE-PHOTOS.md) |
 | Voice-first posting — say it, form fills | built · [MOBILE-VOICE.md](MOBILE-VOICE.md) |
 | Real API — feed, auth, posting, AI | built · [MOBILE-API.md](MOBILE-API.md) |
+| Offline — cached feed, catalogue, details | built · [MOBILE-OFFLINE.md](MOBILE-OFFLINE.md) |
 | Messages | gated placeholder |
 
 Runs against the real API when one is configured, and on mock repositories
@@ -28,7 +29,7 @@ account. See [MOBILE-AUTH.md](MOBILE-AUTH.md).
 
 ```
 lib/
-  core/            theme · localization · format · pagination · network
+  core/            theme · localization · format · pagination · network · cache
   features/
     listings/      domain → data → presentation      ← owns the listing model
     auth/          domain → data → presentation      ← owns the session
@@ -102,7 +103,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 211 tests
+flutter test          # 227 tests
 flutter analyze       # clean
 ```
 
@@ -157,7 +158,7 @@ time it is compiled.
 
 ## Next
 
-1. Offline caching — a feed opened with no signal is empty rather than stale,
-   which for this audience is the next thing worth doing
+1. Queued posting — a listing written with no signal is lost on submit, and
+   that is the remaining place the app fails the field it was built for
 2. My listings — edit, mark sold, retry a failed photo upload
 3. Messages
