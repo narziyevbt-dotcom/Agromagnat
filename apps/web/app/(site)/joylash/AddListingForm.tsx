@@ -130,7 +130,7 @@ export function AddListingForm({
           name="photos"
           multiple
           accept="image/jpeg,image/png,image/webp"
-          className="tap-target w-full rounded-lg bg-canvas p-2 text-sm ring-1 ring-hairline file:mr-3 file:rounded-md file:border-0 file:bg-cobalt file:px-3 file:py-2 file:text-sm file:text-white"
+          className="tap-target w-full rounded-lg bg-canvas p-2 text-sm ring-1 ring-hairline file:mr-3 file:rounded-md file:border-0 file:bg-forest file:px-3 file:py-2 file:text-sm file:text-white"
         />
       </Section>
 
@@ -340,7 +340,7 @@ function PublishButton() {
     <button
       type="submit"
       disabled={pending}
-      className="tap-target w-full rounded-lg bg-lime px-4 py-3 text-base font-semibold text-cobalt transition-colors hover:bg-lime-dark disabled:opacity-60"
+      className="tap-target w-full rounded-lg bg-lime px-4 py-3 text-base font-semibold text-forest transition-colors hover:bg-lime-dark disabled:opacity-60"
     >
       {pending ? t.common.loading : t.addListing.publish}
     </button>

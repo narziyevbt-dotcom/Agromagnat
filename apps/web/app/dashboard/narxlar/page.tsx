@@ -54,7 +54,7 @@ export default async function MarketPricesPage({ searchParams }: { searchParams:
           </select>
           <button
             type="submit"
-            className="tap-target ml-2 rounded-xl bg-cobalt px-4 text-sm font-semibold text-white"
+            className="tap-target ml-2 rounded-xl bg-forest px-4 text-sm font-semibold text-white"
           >
             Ko&apos;rish
           </button>

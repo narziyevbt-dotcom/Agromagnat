@@ -276,7 +276,7 @@ function Bubble({
       <div
         className={`max-w-[80%] rounded-2xl px-3 py-2 text-[15px] leading-snug ${
           mine
-            ? 'rounded-br-md bg-cobalt text-white'
+            ? 'rounded-br-md bg-forest text-white'
             : 'rounded-bl-md bg-surface text-ink ring-1 ring-hairline'
         } ${message.pending ? 'opacity-70' : ''}`}
       >

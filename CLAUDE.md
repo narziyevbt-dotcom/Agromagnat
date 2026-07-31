@@ -21,12 +21,22 @@ in Uzbek.
 - Monorepo: apps/web, apps/mobile, apps/backend, docker-compose (Postgres + Redis + MinIO)
 
 ## Design system (follow exactly)
-- Colors: cobalt #0A3A55 primary, turquoise #1D7F8C, saffron #E0932A CTA only, green #1F7A4D prices
-  only, bg #EEF1F2, error #C4452F
-- Fonts: Bricolage Grotesque headings, IBM Plex Sans body, IBM Plex Mono for ALL numbers
+Green-dominant. Tokens live in apps/web/app/globals.css - take colours and type from
+there, never inline a hex.
+- Colors: forest #0B1D14 all dark chrome (sidebar, site header, dark cards), lime #D4E96A
+  CTAs and ONE filled card per screen, harvest #1F7A4D money/volume/positive deltas,
+  turquoise #1D7F8C trust marks (verified, ratings), error #C4452F, page canvas #ECEEEA,
+  cards #FFFFFF on hairline #E4E9E4
+- Font: Plus Jakarta Sans for everything - headings, body and numbers alike. There is no
+  monospace. Numbers use the `.numeric` utility (tabular figures + tight tracking) so
+  price columns still align; oversized dashboard figures use `.figure-xl`
+- Shape: rounded-3xl cards, rounded-full buttons and pills, generous padding (p-5/p-6),
+  shadow-sm with ring-1 ring-hairline rather than borders
+- The dashboard sits in a floating window (`.app-window`) inset from the page canvas
+- Primary CTA is a lime pill with the arrow in its own forest circle
 - Every listing card shows volume ("12 t") as a green chip - as prominent as price
 - Location format "Region - District", tap targets >=44px
-- Bottom nav: Home, Search, big saffron "+", Messages, Profile. TOP badge in saffron
+- Bottom nav: Home, Search, big lime "+", Messages, Profile. TOP badge in saffron
 
 ## Product rules
 - Listing required: category, volume+unit, price+unit, region, district. Optional: min_order,

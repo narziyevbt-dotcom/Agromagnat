@@ -48,7 +48,7 @@ export default async function SellerPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-5 sm:py-8">
       <section className="mb-6 flex items-center gap-4 rounded-[var(--radius-card)] bg-surface p-4 ring-1 ring-hairline">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-cobalt text-lg font-bold text-white">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-forest text-lg font-bold text-white">
           {initials(seller?.name ?? null)}
         </span>
         <div className="min-w-0">

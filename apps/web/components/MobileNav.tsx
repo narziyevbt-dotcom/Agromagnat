@@ -44,7 +44,7 @@ export function MobileNav() {
                 <Link
                   href={tab.href}
                   aria-label={tab.label}
-                  className="tap-target flex w-[52px] items-center justify-center rounded-xl bg-lime text-cobalt"
+                  className="tap-target flex w-[52px] items-center justify-center rounded-xl bg-lime text-forest"
                 >
                   <Icon name="add" className="h-7 w-7" />
                 </Link>
@@ -60,7 +60,7 @@ export function MobileNav() {
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={`tap-target flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] ${
-                  active ? 'font-semibold text-cobalt' : 'text-ink-faint'
+                  active ? 'font-semibold text-forest' : 'text-ink-faint'
                 }`}
               >
                 <span className="relative">

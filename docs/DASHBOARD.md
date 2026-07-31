@@ -3,8 +3,8 @@
 ## Route groups
 
 ```
-app/(site)/     public marketplace — cobalt header, footer, mobile tab bar
-app/dashboard/  seller dashboard — cobalt sidebar, top bar
+app/(site)/     public marketplace — forest header, footer, mobile tab bar
+app/dashboard/  seller dashboard — forest sidebar in a floating window
 ```
 
 The root layout carries only the document, fonts and metadata. Chrome belongs to the
@@ -56,7 +56,8 @@ before an agreement exists would be a claim the product cannot back.
 - **Chart** — six-month median per category, bar or line (Recharts)
 - **Table** — photo, title, category, green volume badge, price, location, status
 
-Numbers use `.numeric` (IBM Plex Mono, tabular figures) throughout.
+Numbers use `.numeric` (tabular figures, tight tracking) throughout; the four header
+figures use `.figure-xl`.
 
 ### What the numbers actually are
 

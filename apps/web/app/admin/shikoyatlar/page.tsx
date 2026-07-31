@@ -29,7 +29,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
           href="/admin/shikoyatlar"
           className={`rounded-full px-3 py-1.5 text-xs font-medium ${
             !params.status
-              ? 'bg-cobalt text-white'
+              ? 'bg-forest text-white'
               : 'bg-white text-ink-muted ring-1 ring-slate-line'
           }`}
         >
@@ -39,7 +39,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
           href="/admin/shikoyatlar?status=all"
           className={`rounded-full px-3 py-1.5 text-xs font-medium ${
             params.status === 'all'
-              ? 'bg-cobalt text-white'
+              ? 'bg-forest text-white'
               : 'bg-white text-ink-muted ring-1 ring-slate-line'
           }`}
         >

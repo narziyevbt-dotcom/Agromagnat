@@ -69,12 +69,12 @@ query is meaningless against the new one.
 Tokens are defined once in `app/globals.css` under Tailwind's `@theme`, never inlined
 in a component. That is what keeps the two rules that matter enforceable:
 
-- **saffron** is CTAs and the TOP badge, nothing else
+- **lime** is CTAs and one filled card per screen, nothing else
 - **harvest green** is prices and volumes, nothing else
 
 Used anywhere else, both stop meaning anything.
 
-The `.numeric` utility carries IBM Plex Mono plus `tabular-nums` and is applied to
+The `.numeric` utility carries `tabular-nums` plus tight tracking and is applied to
 every price, volume, tonnage and percentage. This is not decoration: a farmer scans a
 column of prices top to bottom, and tabular digits share one width so the numbers line
 up. `.tap-target` enforces the 44px floor — the audience skews older and often taps

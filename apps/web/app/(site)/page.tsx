@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { BentoFeatures } from '@/components/landing/BentoFeatures';
 import { Hero } from '@/components/landing/Hero';
 import { PartnerBar } from '@/components/landing/PartnerBar';
@@ -40,7 +40,7 @@ export default async function HomePage() {
       {feed.items.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-16">
           <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-2xl sm:text-3xl">{t.home.latest}</h2>
+            <h2 className="text-2xl sm:text-[2rem]">{t.home.latest}</h2>
             <Link
               href="/qidiruv"
               className="inline-flex items-center gap-1 text-sm font-medium text-turquoise hover:underline"
@@ -67,8 +67,8 @@ export default async function HomePage() {
 
 function CtaBand() {
   return (
-    <section className="bg-cobalt">
-      <div className="mx-auto flex max-w-7xl flex-col items-start gap-6 px-4 py-14 sm:flex-row sm:items-center sm:justify-between">
+    <section className="px-4 pb-10">
+      <div className="mx-auto flex max-w-7xl flex-col items-start gap-6 rounded-[var(--radius-window)] bg-forest px-6 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-14">
         <div>
           <h2 className="text-2xl text-white sm:text-3xl">
             Hosilingiz dalada qolib ketmasin
@@ -80,10 +80,12 @@ function CtaBand() {
 
         <Link
           href="/joylash"
-          className="tap-target inline-flex shrink-0 items-center gap-2 rounded-xl bg-lime px-6 py-3.5 text-base font-semibold text-cobalt transition-colors hover:bg-lime-dark"
+          className="tap-target group inline-flex shrink-0 items-center gap-3 rounded-full bg-lime py-1.5 pr-1.5 pl-6 text-base font-bold text-forest transition-colors hover:bg-lime-dark"
         >
           {t.nav.add}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-forest text-lime transition-transform group-hover:rotate-45">
+            <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
+          </span>
         </Link>
       </div>
     </section>

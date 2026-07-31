@@ -23,7 +23,7 @@ import type { PriceTrend } from '@/lib/types';
  * assigned by index so a category always keeps the same colour across the
  * legend, the bars and the tooltip.
  */
-const SERIES_COLORS = ['#1F7A4D', '#1D7F8C', '#E0932A', '#0A3A55', '#C4452F'];
+const SERIES_COLORS = ['#1F7A4D', '#2FA36A', '#1D7F8C', '#C2DA51', '#C4452F'];
 
 const MONTHS_SHORT = [
   'Yan',
@@ -56,9 +56,9 @@ export function PriceTrendChart({ trend }: { trend: PriceTrend | null }) {
 
   if (!trend?.categories.length || !trend.points.length) {
     return (
-      <section className="rounded-2xl border border-slate-line bg-white p-6 shadow-sm">
+      <section className="rounded-3xl bg-surface p-6 shadow-sm ring-1 ring-hairline">
         <h2 className="text-lg">Bozor narxlari</h2>
-        <p className="mt-6 rounded-xl bg-slate-canvas p-8 text-center text-sm text-ink-faint">
+        <p className="mt-6 rounded-2xl bg-surface-soft p-8 text-center text-sm text-ink-faint">
           Narx ma&apos;lumotlari hozircha yetarli emas.
         </p>
       </section>
@@ -73,7 +73,7 @@ export function PriceTrendChart({ trend }: { trend: PriceTrend | null }) {
   const Chart = mode === 'bar' ? BarChart : LineChart;
 
   return (
-    <section className="rounded-2xl border border-slate-line bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-hairline sm:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg">Bozor narxlari o&apos;zgarishi</h2>
@@ -82,8 +82,10 @@ export function PriceTrendChart({ trend }: { trend: PriceTrend | null }) {
           </p>
         </div>
 
+        {/* Pill segmented control, the shape every reference dashboard uses
+            for "this switches the view" as opposed to "this submits". */}
         <div
-          className="flex overflow-hidden rounded-xl border border-slate-line"
+          className="flex items-center rounded-full bg-surface-soft p-1 ring-1 ring-hairline"
           role="group"
           aria-label="Grafik turi"
         >
@@ -93,10 +95,10 @@ export function PriceTrendChart({ trend }: { trend: PriceTrend | null }) {
               type="button"
               onClick={() => setMode(option)}
               aria-pressed={mode === option}
-              className={`px-3 py-2 text-xs font-semibold transition-colors ${
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
                 mode === option
-                  ? 'bg-cobalt text-white'
-                  : 'bg-white text-ink-muted hover:bg-slate-canvas'
+                  ? 'bg-forest text-white shadow-sm'
+                  : 'text-ink-faint hover:text-ink'
               }`}
             >
               {option === 'bar' ? 'Ustun' : 'Chiziq'}
@@ -108,29 +110,54 @@ export function PriceTrendChart({ trend }: { trend: PriceTrend | null }) {
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <Chart data={data} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+            {/* One gradient per series: solid at the cap, fading toward the
+                baseline, so a column reads as growing out of the axis rather
+                than as a block sitting on it. */}
+            <defs>
+              {SERIES_COLORS.map((color, index) => (
+                <linearGradient
+                  key={index}
+                  id={`bar-${index}`}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stopColor={color} stopOpacity={0.95} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0.28} />
+                </linearGradient>
+              ))}
+            </defs>
+
+            <CartesianGrid strokeDasharray="4 6" stroke="#E4E9E4" vertical={false} />
             <XAxis
               dataKey="month"
-              tick={{ fill: '#5B6B75', fontSize: 12, fontFamily: 'var(--font-mono)' }}
-              axisLine={{ stroke: '#E2E8F0' }}
+              tick={{ fill: '#8B978F', fontSize: 12, fontWeight: 600 }}
+              axisLine={false}
               tickLine={false}
+              dy={6}
             />
             <YAxis
-              tick={{ fill: '#5B6B75', fontSize: 12, fontFamily: 'var(--font-mono)' }}
+              tick={{ fill: '#8B978F', fontSize: 12, fontWeight: 600 }}
               axisLine={false}
               tickLine={false}
               width={64}
               tickFormatter={(value: number) => formatMoney(value)}
             />
             <Tooltip
-              cursor={{ fill: 'rgba(10,58,85,0.04)' }}
+              cursor={{ fill: 'rgba(11,29,20,0.04)' }}
+              /* Dark floating card, the treatment every reference uses — it
+                 lifts off a white chart in a way a white tooltip cannot. */
               contentStyle={{
-                borderRadius: 12,
-                border: '1px solid #E2E8F0',
-                boxShadow: '0 4px 16px rgba(10,58,85,0.08)',
-                fontFamily: 'var(--font-mono)',
+                borderRadius: 14,
+                border: 'none',
+                background: '#0B1D14',
+                boxShadow: '0 12px 28px -8px rgba(11,29,20,0.45)',
                 fontSize: 12,
+                padding: '10px 12px',
               }}
+              labelStyle={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginBottom: 4 }}
+              itemStyle={{ color: '#FFFFFF', fontWeight: 600 }}
               formatter={(value, name) =>
                 [`${formatMoney(Number(value))} so'm/kg`, String(name)] as [string, string]
               }
@@ -138,7 +165,7 @@ export function PriceTrendChart({ trend }: { trend: PriceTrend | null }) {
             <Legend
               iconType="circle"
               iconSize={8}
-              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+              wrapperStyle={{ fontSize: 12, fontWeight: 600, paddingTop: 12 }}
             />
 
             {trend.categories.map((category, index) =>
@@ -147,9 +174,9 @@ export function PriceTrendChart({ trend }: { trend: PriceTrend | null }) {
                   key={category.slug}
                   dataKey={category.slug}
                   name={category.nameUz}
-                  fill={SERIES_COLORS[index % SERIES_COLORS.length]}
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={28}
+                  fill={`url(#bar-${index % SERIES_COLORS.length})`}
+                  radius={[10, 10, 10, 10]}
+                  maxBarSize={26}
                 />
               ) : (
                 <Line

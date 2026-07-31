@@ -1,8 +1,12 @@
-import { TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, MoreHorizontal } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 /**
  * One figure from the dashboard header row.
+ *
+ * The figure is the card. Everything else — the icon chip, the label, the
+ * delta — is sized to stay out of its way, which is why the number runs at
+ * 2.5rem in extra-bold while the label sits at 12px in a muted grey.
  *
  * `trendPct` is nullable and renders as nothing when absent. A dashboard that
  * invents a comparison it cannot compute teaches the farmer to distrust every
@@ -15,7 +19,8 @@ export function MetricCard({
   icon: Icon,
   trendPct = null,
   trendLabel,
-  accent = 'cobalt',
+  accent = 'forest',
+  featured = false,
 }: {
   label: string;
   value: string;
@@ -23,47 +28,89 @@ export function MetricCard({
   icon: LucideIcon;
   trendPct?: number | null;
   trendLabel?: string;
-  accent?: 'cobalt' | 'turquoise' | 'harvest' | 'saffron';
+  accent?: 'forest' | 'turquoise' | 'harvest' | 'saffron';
+  /** Fills the card lime — at most one per row, the way the references do it. */
+  featured?: boolean;
 }) {
-  const accents = {
-    cobalt: 'bg-cobalt/8 text-cobalt',
+  const chips = {
+    forest: 'bg-forest/8 text-forest',
     turquoise: 'bg-turquoise/10 text-turquoise',
-    harvest: 'bg-harvest/10 text-harvest',
+    harvest: 'bg-mint text-harvest',
     saffron: 'bg-saffron/12 text-saffron-dark',
   } as const;
 
   const up = (trendPct ?? 0) >= 0;
-  const TrendIcon = up ? TrendingUp : TrendingDown;
+  const TrendIcon = up ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <article className="rounded-2xl border border-slate-line bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <span
-          className={`flex h-10 w-10 items-center justify-center rounded-xl ${accents[accent]}`}
-        >
-          <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
-        </span>
-
-        {trendPct !== null && (
+    <article
+      className={`rounded-3xl p-5 transition-shadow ${
+        featured
+          ? 'bg-lime text-forest'
+          : 'bg-surface shadow-sm ring-1 ring-hairline hover:shadow-md'
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
           <span
-            className={`numeric inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
-              up ? 'bg-harvest/10 text-harvest' : 'bg-danger/10 text-danger'
+            className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+              featured ? 'bg-forest/12 text-forest' : chips[accent]
             }`}
           >
-            <TrendIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            <Icon className="h-[17px] w-[17px]" aria-hidden="true" />
+          </span>
+          <p
+            className={`text-[13px] font-semibold ${
+              featured ? 'text-forest/75' : 'text-ink-muted'
+            }`}
+          >
+            {label}
+          </p>
+        </div>
+
+        <MoreHorizontal
+          className={`h-4 w-4 ${featured ? 'text-forest/40' : 'text-ink-faint'}`}
+          aria-hidden="true"
+        />
+      </div>
+
+      <p
+        className={`figure-xl mt-4 text-[2.1rem] ${
+          featured ? 'text-forest' : 'text-ink'
+        }`}
+      >
+        {value}
+        {suffix && (
+          <span
+            className={`ml-1.5 text-base font-semibold tracking-normal ${
+              featured ? 'text-forest/60' : 'text-ink-faint'
+            }`}
+          >
+            {suffix}
+          </span>
+        )}
+      </p>
+
+      {trendPct !== null && (
+        <p className="mt-3 flex items-center gap-2">
+          <span
+            className={`numeric inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[11px] font-bold ${
+              up ? 'bg-mint text-harvest' : 'bg-danger/10 text-danger'
+            }`}
+          >
+            <TrendIcon className="h-3 w-3" aria-hidden="true" />
             {up ? '+' : ''}
             {trendPct.toFixed(1)}%
           </span>
-        )}
-      </div>
-
-      <p className="mt-4 text-xs font-medium text-ink-muted">{label}</p>
-      <p className="numeric mt-1 text-2xl leading-tight font-bold text-ink">
-        {value}
-        {suffix && <span className="ml-1 text-base font-semibold text-ink-muted">{suffix}</span>}
-      </p>
-
-      {trendLabel && <p className="mt-1 text-[11px] text-ink-faint">{trendLabel}</p>}
+          {trendLabel && (
+            <span
+              className={`text-[11px] ${featured ? 'text-forest/55' : 'text-ink-faint'}`}
+            >
+              {trendLabel}
+            </span>
+          )}
+        </p>
+      )}
     </article>
   );
 }

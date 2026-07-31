@@ -48,7 +48,7 @@ export function AdminReviewRow({ review }: { review: Review }) {
             {review.author?.name ?? 'Xaridor'} →{' '}
             <Link
               href={`/sotuvchi/${review.sellerId}`}
-              className="underline underline-offset-2 hover:text-cobalt"
+              className="underline underline-offset-2 hover:text-forest"
             >
               sotuvchi
             </Link>
@@ -79,7 +79,7 @@ export function AdminReviewRow({ review }: { review: Review }) {
       {review.listing && (
         <Link
           href={`/e/${review.listingId}`}
-          className="mt-1.5 block truncate text-[11px] text-ink-faint underline-offset-2 hover:text-cobalt hover:underline"
+          className="mt-1.5 block truncate text-[11px] text-ink-faint underline-offset-2 hover:text-forest hover:underline"
         >
           {review.listing.title}
         </Link>

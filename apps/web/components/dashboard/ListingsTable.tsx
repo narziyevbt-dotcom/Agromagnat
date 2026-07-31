@@ -4,23 +4,36 @@ import { ImageOff } from 'lucide-react';
 import { formatLocation, formatPrice, formatQuantity, formatTimeAgo } from '@/lib/format';
 import type { Listing, ListingStatus } from '@/lib/types';
 
-const STATUS: Record<ListingStatus, { label: string; className: string }> = {
-  active: { label: 'Faol', className: 'bg-harvest/10 text-harvest' },
-  sold: { label: 'Sotildi', className: 'bg-cobalt/8 text-cobalt' },
-  pending: { label: 'Kutilmoqda', className: 'bg-saffron/15 text-saffron-dark' },
-  draft: { label: 'Qoralama', className: 'bg-slate-100 text-ink-muted' },
-  expired: { label: 'Muddati tugagan', className: 'bg-slate-100 text-ink-muted' },
-  blocked: { label: 'Bloklangan', className: 'bg-danger/10 text-danger' },
+/**
+ * Status as a pill with a filled dot, the pattern the reference dashboards use
+ * for transaction state. The dot carries the colour, so the pill itself stays
+ * quiet enough to sit in a table without competing with the price beside it.
+ */
+const STATUS: Record<ListingStatus, { label: string; pill: string; dot: string }> = {
+  active: { label: 'Faol', pill: 'bg-mint text-harvest', dot: 'bg-harvest' },
+  sold: { label: 'Sotildi', pill: 'bg-forest/8 text-forest', dot: 'bg-forest' },
+  pending: {
+    label: 'Kutilmoqda',
+    pill: 'bg-saffron/12 text-saffron-dark',
+    dot: 'bg-saffron',
+  },
+  draft: { label: 'Qoralama', pill: 'bg-canvas text-ink-muted', dot: 'bg-ink-faint' },
+  expired: {
+    label: 'Muddati tugagan',
+    pill: 'bg-canvas text-ink-muted',
+    dot: 'bg-ink-faint',
+  },
+  blocked: { label: 'Bloklangan', pill: 'bg-danger/10 text-danger', dot: 'bg-danger' },
 };
 
 export function ListingsTable({ listings }: { listings: Listing[] }) {
   return (
-    <section className="rounded-2xl border border-slate-line bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-line px-5 py-4 sm:px-6">
+    <section className="rounded-3xl bg-surface shadow-sm ring-1 ring-hairline">
+      <div className="flex items-center justify-between border-b border-hairline px-5 py-4 sm:px-6">
         <h2 className="text-lg">So&apos;nggi e&apos;lonlar</h2>
         <Link
           href="/dashboard/elonlar"
-          className="text-sm font-medium text-turquoise hover:underline"
+          className="rounded-full bg-surface-soft px-3.5 py-1.5 text-xs font-bold text-ink-muted ring-1 ring-hairline transition-colors hover:text-ink"
         >
           Barchasi
         </Link>
@@ -34,7 +47,7 @@ export function ListingsTable({ listings }: { listings: Listing[] }) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left">
             <thead>
-              <tr className="border-b border-slate-line text-xs text-ink-faint">
+              <tr className="border-b border-hairline text-[11px] font-semibold tracking-wide text-ink-faint uppercase">
                 <th scope="col" className="px-5 py-3 font-medium sm:px-6">
                   Mahsulot
                 </th>
@@ -56,16 +69,16 @@ export function ListingsTable({ listings }: { listings: Listing[] }) {
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-line">
+            <tbody className="divide-y divide-hairline">
               {listings.map((listing) => {
                 const cover = listing.photos?.[0];
                 const status = STATUS[listing.status];
 
                 return (
-                  <tr key={listing.id} className="transition-colors hover:bg-slate-canvas">
+                  <tr key={listing.id} className="transition-colors hover:bg-surface-soft">
                     <td className="px-5 py-3 sm:px-6">
                       <Link href={`/e/${listing.id}`} className="flex items-center gap-3">
-                        <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-canvas">
+                        <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-surface-soft">
                           {cover ? (
                             <Image
                               src={cover.thumbUrl ?? cover.url}
@@ -97,7 +110,7 @@ export function ListingsTable({ listings }: { listings: Listing[] }) {
                     </td>
 
                     <td className="px-3 py-3">
-                      <span className="numeric inline-block rounded-full bg-harvest/12 px-2.5 py-1 text-xs font-semibold text-harvest">
+                      <span className="numeric inline-block rounded-full bg-mint px-2.5 py-1 text-xs font-bold text-harvest">
                         {formatQuantity(listing.quantity, listing.quantityUnit)}
                       </span>
                     </td>
@@ -112,8 +125,12 @@ export function ListingsTable({ listings }: { listings: Listing[] }) {
 
                     <td className="px-5 py-3 sm:px-6">
                       <span
-                        className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${status.pill}`}
                       >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${status.dot}`}
+                          aria-hidden="true"
+                        />
                         {status.label}
                       </span>
                     </td>

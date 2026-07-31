@@ -71,7 +71,7 @@ export function ReviewList({ reviews }: { reviews: SellerReviews }) {
                 className="rounded-[var(--radius-card)] bg-surface p-4 ring-1 ring-hairline"
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cobalt text-xs font-semibold text-white">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-forest text-xs font-semibold text-white">
                     {initials(review.author?.name ?? null)}
                   </span>
                   <div className="min-w-0 flex-1">

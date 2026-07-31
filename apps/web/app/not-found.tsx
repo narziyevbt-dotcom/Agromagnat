@@ -10,13 +10,13 @@ export default function NotFound() {
       <div className="mt-6 flex gap-2">
         <Link
           href="/"
-          className="tap-target inline-flex items-center rounded-lg bg-cobalt px-5 text-sm font-semibold text-white"
+          className="tap-target inline-flex items-center rounded-lg bg-forest px-5 text-sm font-semibold text-white"
         >
           {t.nav.home}
         </Link>
         <Link
           href="/qidiruv"
-          className="tap-target inline-flex items-center rounded-lg px-5 text-sm font-medium text-cobalt ring-1 ring-hairline"
+          className="tap-target inline-flex items-center rounded-lg px-5 text-sm font-medium text-forest ring-1 ring-hairline"
         >
           {t.search.title}
         </Link>

@@ -40,7 +40,7 @@ export default async function AdminOverviewPage() {
           label="Jami foydalanuvchilar"
           value={formatMoney(stats?.totalUsers ?? 0)}
           icon={Users}
-          accent="cobalt"
+          accent="forest"
         />
         <MetricCard
           label="Yangi (7 kun)"

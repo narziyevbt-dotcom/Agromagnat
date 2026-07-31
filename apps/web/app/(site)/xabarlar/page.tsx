@@ -71,7 +71,7 @@ function ChatRow({ chat }: { chat: ChatSummary }) {
           />
         </span>
       ) : (
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cobalt text-sm font-semibold text-white">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-forest text-sm font-semibold text-white">
           {initials(chat.counterpart.name)}
         </span>
       )}

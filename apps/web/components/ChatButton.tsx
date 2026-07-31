@@ -33,7 +33,7 @@ export function ChatButton({ listingId }: { listingId: string }) {
         type="button"
         onClick={open}
         disabled={pending}
-        className="tap-target flex w-full items-center justify-center gap-2 rounded-xl bg-turquoise px-4 font-semibold text-white transition-colors hover:bg-cobalt disabled:opacity-60"
+        className="tap-target flex w-full items-center justify-center gap-2 rounded-xl bg-turquoise px-4 font-semibold text-white transition-colors hover:bg-forest disabled:opacity-60"
       >
         <MessageSquare className="h-5 w-5" aria-hidden="true" />
         {t.chat.write}

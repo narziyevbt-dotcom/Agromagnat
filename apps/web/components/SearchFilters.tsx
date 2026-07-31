@@ -183,7 +183,7 @@ export function SearchFilters({
             <button
               type="button"
               onClick={() => router.push('/qidiruv')}
-              className="tap-target w-full rounded-lg px-3 text-sm font-medium text-ink-muted ring-1 ring-hairline hover:text-cobalt"
+              className="tap-target w-full rounded-lg px-3 text-sm font-medium text-ink-muted ring-1 ring-hairline hover:text-forest"
             >
               {t.search.reset}
             </button>
@@ -210,7 +210,7 @@ function Chip({
       aria-pressed={active}
       className={`tap-target rounded-full px-3.5 text-sm font-medium transition-colors ${
         active
-          ? 'bg-cobalt text-white'
+          ? 'bg-forest text-white'
           : 'bg-surface text-ink ring-1 ring-hairline hover:ring-turquoise'
       }`}
     >

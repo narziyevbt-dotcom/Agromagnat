@@ -135,7 +135,7 @@ async function Results({
         <div className="mt-6 flex justify-center">
           <Link
             href={`/qidiruv?${nextParams.toString()}`}
-            className="tap-target inline-flex items-center rounded-lg bg-surface px-6 text-sm font-semibold text-cobalt ring-1 ring-hairline hover:ring-turquoise"
+            className="tap-target inline-flex items-center rounded-lg bg-surface px-6 text-sm font-semibold text-forest ring-1 ring-hairline hover:ring-turquoise"
           >
             {t.search.loadMore}
           </Link>

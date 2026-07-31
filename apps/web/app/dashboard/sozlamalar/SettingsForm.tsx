@@ -124,7 +124,7 @@ function SaveButton() {
     <button
       type="submit"
       disabled={pending}
-      className="tap-target rounded-xl bg-lime px-6 text-sm font-semibold text-cobalt hover:bg-lime-dark disabled:opacity-60"
+      className="tap-target rounded-xl bg-lime px-6 text-sm font-semibold text-forest hover:bg-lime-dark disabled:opacity-60"
     >
       {pending ? 'Saqlanmoqda...' : 'Saqlash'}
     </button>

@@ -1,55 +1,67 @@
 @import "tailwindcss";
 
 /*
- * The Rishtan-ceramic palette from the brand book.
+ * Green-dominant palette.
  *
- * The screen is full of fruit and vegetable photography — already green, red
- * and yellow. A green interface would swallow the product; cobalt and turquoise
- * make the photos stand out instead.
+ * The earlier system led with cobalt on the argument that produce photography
+ * is already green and a green interface would swallow it. That argument still
+ * holds on a listing card, and nothing here overrides it: cards keep white
+ * surfaces and the photo stays the loudest thing in the frame. What changed is
+ * everything around them — the dark chrome is now deep forest rather than
+ * cobalt, which reads as agriculture on sight instead of as a fintech app that
+ * happens to sell vegetables.
  *
- * Two rules matter more than the hex values:
- *   saffron is CTAs and the TOP badge, nothing else
- *   harvest green is prices and volumes, nothing else
- * Used anywhere else, both stop meaning anything.
+ * Two rules survive intact, because they are what stop a palette becoming
+ * decoration:
+ *   lime is CTAs and one highlighted card per screen, nothing else
+ *   harvest green is money, volume and positive movement, nothing else
  */
 @theme {
-  --color-cobalt: #0a3a55;
-  --color-cobalt-light: #14536f;
-  --color-cobalt-deep: #072c42;
-  --color-turquoise: #1d7f8c;
-  --color-saffron: #e0932a;
-  --color-saffron-dark: #c67d1c;
-  --color-harvest: #1f7a4d;
-  --color-danger: #c4452f;
+  /* --- Surfaces ------------------------------------------------------- */
+  /* The neutral the app window floats on. Warm-neutral, not blue-grey. */
+  --color-canvas: #eceeea;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f6f8f5;
 
-  /*
-   * Lime is the CTA colour on the landing page and dashboard, per the brief.
-   * It is dark-on-light rather than light-on-dark, which is what lets it hold
-   * its own against a cobalt hero the way saffron cannot.
-   *
-   * Note this is a second accent alongside saffron, which the marketplace pages
-   * still use — see docs/WEB.md.
-   */
+  /* Forest — every dark surface: sidebar, site header, dark feature cards. */
+  --color-forest: #0b1d14;
+  --color-forest-soft: #16321f;
+  --color-forest-deep: #061109;
+
+  /* Harvest — money, volume, positive deltas. */
+  --color-harvest: #1f7a4d;
+  --color-harvest-bright: #2fa36a;
+  --color-mint: #e7f4ec;
+
+  /* Lime — the call to action, and the one filled card per screen. */
   --color-lime: #d4e96a;
   --color-lime-dark: #c2da51;
 
-  --color-canvas: #eef1f2;
-  --color-surface: #ffffff;
-  /* Slate-50, the lighter background the dashboard and landing page sit on. */
-  --color-slate-canvas: #f8fafc;
-  --color-slate-line: #e2e8f0;
+  /* Secondary accents. Turquoise carries trust marks (verified, ratings). */
+  --color-turquoise: #1d7f8c;
+  --color-saffron: #e0932a;
+  --color-saffron-dark: #c67d1c;
+  --color-danger: #c4452f;
 
-  --color-ink: #0a3a55;
-  --color-ink-muted: #5b6b75;
-  --color-ink-faint: #8a97a0;
-  --color-hairline: #dce2e5;
+  /* --- Ink and lines --------------------------------------------------- */
+  --color-ink: #0b1d14;
+  --color-ink-muted: #5c6b62;
+  --color-ink-faint: #8b978f;
+  --color-hairline: #e4e9e4;
+  --color-slate-canvas: #f6f8f5;
+  --color-slate-line: #e6ebe6;
 
-  /* Three font roles. Numbers are ALWAYS mono — see the .numeric utility. */
-  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  /*
+   * One family for headings, body and figures. The display and sans roles keep
+   * separate names so a display face can be swapped in later without touching
+   * component code.
+   */
+  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 16px;
+  --radius-card: 20px;
+  /* The floating app window and full-bleed hero panels. */
+  --radius-window: 28px;
 }
 
 /*
@@ -64,14 +76,38 @@
 /*
  * Every price, volume, tonnage and percentage in the product.
  *
- * Monospace is not decoration. A farmer scans a column of prices top to bottom;
- * tabular digits share one width so the numbers line up and can be compared at
- * a glance. Prose never uses this, numbers never use anything else.
+ * No longer a font switch — the family is the same everywhere. What this buys
+ * is tabular figures, so digits share one advance width and a column of prices
+ * still lines up when a farmer scans it top to bottom. The negative tracking is
+ * what lets a large figure read as a headline number rather than as running
+ * text that happens to be numeric.
  */
 @utility numeric {
-  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.02em;
+}
+
+/* Oversized dashboard figures — the headline-number treatment. */
+@utility figure-xl {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.035em;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/*
+ * The floating application window: the whole app inset from a neutral page,
+ * with a large radius and a shadow soft enough to read as depth rather than as
+ * a drop shadow.
+ */
+@utility app-window {
+  border-radius: var(--radius-window);
+  background-color: var(--color-surface-soft);
+  box-shadow:
+    0 1px 2px rgb(11 29 20 / 0.04),
+    0 12px 32px -8px rgb(11 29 20 / 0.1);
 }
 
 @layer base {
@@ -91,12 +127,14 @@
   h4 {
     font-family: var(--font-display);
     font-weight: 700;
-    letter-spacing: -0.015em;
+    /* Tighter than the old display face wanted — Jakarta sets loose by default
+       and every reference design runs its headlines close. */
+    letter-spacing: -0.03em;
   }
 
   /* Keyboard users get a visible ring; pointer users do not. */
   :focus-visible {
-    outline: 2px solid var(--color-turquoise);
+    outline: 2px solid var(--color-harvest);
     outline-offset: 2px;
   }
 }

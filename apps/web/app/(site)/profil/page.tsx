@@ -39,7 +39,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-5 sm:py-8">
-      <section className="rounded-[var(--radius-card)] bg-cobalt p-5 text-white sm:p-6">
+      <section className="rounded-[var(--radius-card)] bg-forest p-5 text-white sm:p-6">
         <div className="flex items-center gap-4">
           <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/15 text-lg font-bold">
             {initials(user.name)}
@@ -71,7 +71,7 @@ export default async function ProfilePage() {
         </Link>
         <Link
           href="/joylash"
-          className="tap-target inline-flex items-center rounded-lg bg-lime px-4 text-sm font-semibold text-cobalt hover:bg-lime-dark"
+          className="tap-target inline-flex items-center rounded-lg bg-lime px-4 text-sm font-semibold text-forest hover:bg-lime-dark"
         >
           + {t.nav.add}
         </Link>

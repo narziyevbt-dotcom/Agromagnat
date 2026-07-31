@@ -37,7 +37,7 @@ export default async function AnalyticsPage() {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-slate-line bg-cobalt p-5 text-white shadow-sm">
+      <div className="rounded-2xl border border-slate-line bg-forest p-5 text-white shadow-sm">
         <p className="flex items-center gap-2 text-sm text-white/75">
           <PhoneCall className="h-4 w-4" aria-hidden="true" />
           Bosh ko&apos;rsatkich: faol e&apos;lon boshiga qo&apos;ng&apos;iroq

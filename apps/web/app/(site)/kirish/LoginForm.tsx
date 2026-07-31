@@ -167,7 +167,7 @@ function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="tap-target w-full rounded-lg bg-lime px-4 py-3 text-base font-semibold text-cobalt transition-colors hover:bg-lime-dark disabled:opacity-60"
+      className="tap-target w-full rounded-lg bg-lime px-4 py-3 text-base font-semibold text-forest transition-colors hover:bg-lime-dark disabled:opacity-60"
     >
       {pending ? t.common.loading : label}
     </button>

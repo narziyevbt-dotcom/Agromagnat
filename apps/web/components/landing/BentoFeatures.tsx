@@ -14,7 +14,7 @@ export function BentoFeatures({ trend }: { trend: PriceTrend | null }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="text-3xl sm:text-4xl">Nima uchun Agromagnat</h2>
+        <h2 className="text-3xl sm:text-[2.75rem] sm:leading-[1.08]">Nima uchun Agromagnat</h2>
         <p className="mt-3 text-base text-ink-muted">
           Oddiy e&apos;lonlar taxtasi emas — hajm, mavsum va narx bo&apos;yicha
           ishlaydigan agro bozor.
@@ -35,7 +35,7 @@ function PriceIndexCard({ trend }: { trend: PriceTrend | null }) {
   const rows = buildRows(trend);
 
   return (
-    <article className="rounded-3xl border border-slate-line bg-white p-6 shadow-sm lg:col-span-2">
+    <article className="rounded-3xl bg-surface p-6 shadow-sm ring-1 ring-hairline lg:col-span-2">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-xl">Bozor narxlari indeksi</h3>
@@ -43,13 +43,13 @@ function PriceIndexCard({ trend }: { trend: PriceTrend | null }) {
             Har kuni yangilanadigan real narxlar — bozorga bormasdan bilib turasiz.
           </p>
         </div>
-        <span className="hidden shrink-0 rounded-full bg-harvest/10 px-2.5 py-1 text-[11px] font-semibold text-harvest sm:block">
+        <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-mint px-2.5 py-1 text-[11px] font-bold text-harvest sm:flex">
           Jonli
         </span>
       </div>
 
       {rows.length === 0 ? (
-        <p className="mt-6 rounded-2xl bg-slate-canvas p-6 text-center text-sm text-ink-faint">
+        <p className="mt-6 rounded-2xl bg-surface-soft p-6 text-center text-sm text-ink-faint">
           Narx indeksi hozircha yig&apos;ilmoqda.
         </p>
       ) : (
@@ -57,7 +57,7 @@ function PriceIndexCard({ trend }: { trend: PriceTrend | null }) {
           {rows.map((row) => (
             <li
               key={row.slug}
-              className="flex items-center justify-between rounded-2xl bg-slate-canvas px-4 py-3"
+              className="flex items-center justify-between rounded-2xl bg-surface-soft px-4 py-3"
             >
               <span className="text-sm font-medium text-ink">{row.nameUz}</span>
               <span className="flex items-center gap-3">
@@ -100,8 +100,8 @@ function TrendChip({ value }: { value: number | null }) {
 /** Card B — voice-to-listing. */
 function VoiceCard() {
   return (
-    <article className="flex flex-col rounded-3xl bg-cobalt p-6 text-white shadow-sm">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-lime text-cobalt">
+    <article className="flex flex-col rounded-3xl bg-forest p-6 text-white shadow-sm">
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-lime text-forest">
         <Mic className="h-5 w-5" aria-hidden="true" />
       </span>
 
@@ -130,23 +130,23 @@ function VoiceCard() {
 /** Card C — direct contact. */
 function DirectContactCard() {
   return (
-    <article className="rounded-3xl border border-slate-line bg-white p-6 shadow-sm lg:col-span-3">
+    <article className="relative rounded-3xl bg-lime p-6 lg:col-span-3">
       <div className="grid items-center gap-6 sm:grid-cols-[auto_1fr_auto]">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-harvest/10 text-harvest">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-forest/12 text-forest">
           <PhoneCall className="h-5 w-5" aria-hidden="true" />
         </span>
 
         <div>
-          <h3 className="text-xl">To&apos;g&apos;ridan-to&apos;g&apos;ri aloqa</h3>
-          <p className="mt-1.5 max-w-xl text-sm text-ink-muted">
+          <h3 className="text-xl text-forest">To&apos;g&apos;ridan-to&apos;g&apos;ri aloqa</h3>
+          <p className="mt-1.5 max-w-xl text-sm text-forest/70">
             Xaridor bir bosishda fermerga qo&apos;ng&apos;iroq qiladi. Oradagi hech kim
             narxni tushirmaydi, komissiya olmaydi.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-2xl bg-harvest px-5 py-3 text-white">
+        <div className="flex items-center gap-2 rounded-full bg-forest px-5 py-3 text-white">
           <PhoneCall className="h-4 w-4" aria-hidden="true" />
-          <span className="numeric text-sm font-semibold">+998 90 123-45-67</span>
+          <span className="numeric text-sm font-bold">+998 90 123-45-67</span>
         </div>
       </div>
     </article>

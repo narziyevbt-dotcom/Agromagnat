@@ -41,7 +41,7 @@ export function SearchBar() {
         <button
           type="submit"
           aria-label={t.search.title}
-          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-ink-muted hover:text-cobalt"
+          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-ink-muted hover:text-forest"
         >
           <svg
             viewBox="0 0 24 24"

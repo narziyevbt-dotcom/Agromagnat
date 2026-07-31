@@ -22,7 +22,7 @@ const STATUS_STYLE: Record<ListingStatus, string> = {
   draft: 'bg-ink-faint/15 text-ink-muted',
   pending: 'bg-saffron/15 text-saffron-dark',
   active: 'bg-harvest/12 text-harvest',
-  sold: 'bg-cobalt/10 text-cobalt',
+  sold: 'bg-forest/10 text-forest',
   expired: 'bg-ink-faint/15 text-ink-muted',
   blocked: 'bg-danger/10 text-danger',
 };

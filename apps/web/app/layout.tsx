@@ -1,28 +1,24 @@
 import type { Metadata, Viewport } from 'next';
-import { Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import { t } from '@/lib/strings';
 import './globals.css';
 
-// The three font roles from the brand book. latin-ext covers the Uzbek Latin
-// alphabet — without it, oʻ and gʻ fall back to a different face mid-word.
-const bricolage = Bricolage_Grotesque({
-  variable: '--font-bricolage',
+/**
+ * One family, the whole product — headings, body and figures alike.
+ *
+ * Three faces used to do this job, with a monospace reserved for every number.
+ * The monospace is gone: at the sizes the dashboard shows a figure, mono reads
+ * as a code listing rather than a headline number. Alignment still matters in
+ * price columns, so it is bought with tabular figures instead of a second
+ * family — same column-wise alignment, none of the typewriter texture.
+ *
+ * latin-ext covers the Uzbek Latin alphabet; without it oʻ and gʻ fall back to
+ * a different face mid-word.
+ */
+const jakarta = Plus_Jakarta_Sans({
+  variable: '--font-jakarta',
   subsets: ['latin', 'latin-ext'],
-  weight: ['600', '700', '800'],
-  display: 'swap',
-});
-
-const plexSans = IBM_Plex_Sans({
-  variable: '--font-plex-sans',
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600'],
-  display: 'swap',
-});
-
-const plexMono = IBM_Plex_Mono({
-  variable: '--font-plex-mono',
-  subsets: ['latin', 'latin-ext'],
-  weight: ['500', '600', '700'],
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
 });
 
@@ -43,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0A3A55',
+  themeColor: '#0B1D14',
   width: 'device-width',
   initialScale: 1,
 };
@@ -58,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="uz"
-      className={`${bricolage.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${jakarta.variable} h-full antialiased`}
     >
       <body className="min-h-full">{children}</body>
     </html>

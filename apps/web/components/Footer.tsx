@@ -10,7 +10,7 @@ export function Footer() {
           <div className="max-w-sm">
             <div className="flex items-center gap-2">
               <Logo className="h-7 w-7" />
-              <span className="font-[family-name:var(--font-display)] text-base font-bold text-cobalt">
+              <span className="font-[family-name:var(--font-display)] text-base font-bold text-forest">
                 {t.brand}
               </span>
             </div>
@@ -18,13 +18,13 @@ export function Footer() {
           </div>
 
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-muted">
-            <Link href="/haqida" className="hover:text-cobalt">
+            <Link href="/haqida" className="hover:text-forest">
               {t.footer.about}
             </Link>
-            <Link href="/shartlar" className="hover:text-cobalt">
+            <Link href="/shartlar" className="hover:text-forest">
               {t.footer.terms}
             </Link>
-            <Link href="/maxfiylik" className="hover:text-cobalt">
+            <Link href="/maxfiylik" className="hover:text-forest">
               {t.footer.privacy}
             </Link>
           </nav>

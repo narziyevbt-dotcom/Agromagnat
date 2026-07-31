@@ -55,7 +55,7 @@ export default async function AdminListingsPage({ searchParams }: { searchParams
         {params.status && <input type="hidden" name="status" value={params.status} />}
         <button
           type="submit"
-          className="tap-target rounded-xl bg-cobalt px-4 text-sm font-semibold text-white"
+          className="tap-target rounded-xl bg-forest px-4 text-sm font-semibold text-white"
         >
           Qidirish
         </button>
@@ -68,7 +68,7 @@ export default async function AdminListingsPage({ searchParams }: { searchParams
             href={query({ status: status.value || undefined })}
             className={`rounded-full px-3 py-1.5 text-xs font-medium ${
               (params.status ?? '') === status.value
-                ? 'bg-cobalt text-white'
+                ? 'bg-forest text-white'
                 : 'bg-white text-ink-muted ring-1 ring-slate-line hover:text-ink'
             }`}
           >

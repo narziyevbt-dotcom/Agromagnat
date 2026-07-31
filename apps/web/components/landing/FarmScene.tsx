@@ -8,10 +8,21 @@
  * commissioned photograph of a real Uzbek farm when one exists; that will carry
  * far more trust than any illustration.
  */
-export function FarmScene({ className = '' }: { className?: string }) {
+export function FarmScene({
+  className = '',
+  fill = false,
+}: {
+  className?: string;
+  /** Fills its parent with no frame of its own — used as a hero backdrop. */
+  fill?: boolean;
+}) {
   return (
     <div
-      className={`relative aspect-4/3 w-full overflow-hidden rounded-3xl ring-1 ring-white/15 ${className}`}
+      className={
+        fill
+          ? `relative h-full w-full overflow-hidden ${className}`
+          : `relative aspect-4/3 w-full overflow-hidden rounded-3xl ring-1 ring-white/15 ${className}`
+      }
     >
       <svg
         viewBox="0 0 800 600"
@@ -22,9 +33,9 @@ export function FarmScene({ className = '' }: { className?: string }) {
       >
         <defs>
           <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0A3A55" />
-            <stop offset="55%" stopColor="#1D7F8C" />
-            <stop offset="100%" stopColor="#2E9A8E" />
+            <stop offset="0%" stopColor="#0B1D14" />
+            <stop offset="45%" stopColor="#2C5B3A" />
+            <stop offset="100%" stopColor="#C98A3C" />
           </linearGradient>
           <linearGradient id="far-field" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#2C7F5E" />
@@ -53,8 +64,8 @@ export function FarmScene({ className = '' }: { className?: string }) {
         {/* Distant ridge */}
         <path
           d="M0 250 L120 214 L240 244 L360 200 L480 236 L620 196 L760 232 L800 220 L800 300 L0 300 Z"
-          fill="#0A3A55"
-          opacity="0.45"
+          fill="#0B1D14"
+          opacity="0.5"
         />
 
         {/* Field bands, receding to near */}

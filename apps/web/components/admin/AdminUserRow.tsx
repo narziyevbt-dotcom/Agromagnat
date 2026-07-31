@@ -38,7 +38,7 @@ export function AdminUserRow({ user }: { user: AdminUser }) {
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-line bg-white p-3 shadow-sm sm:flex-nowrap">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cobalt text-xs font-semibold text-white">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest text-xs font-semibold text-white">
         {initials(user.name)}
       </span>
 

@@ -5,7 +5,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { isSignedIn } from '@/lib/session';
 
 /**
- * Public site chrome: cobalt header, footer, and the mobile tab bar.
+ * Public site chrome: forest header, footer, and the mobile tab bar.
  *
  * The dashboard sits outside this group because it has its own shell — a
  * sidebar plus top bar — and stacking both would give it two navigations.
@@ -20,7 +20,7 @@ export default async function SiteLayout({
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header reads search params, so it needs a Suspense boundary. */}
-      <Suspense fallback={<div className="h-[68px] bg-cobalt" />}>
+      <Suspense fallback={<div className="h-[68px] bg-forest" />}>
         <Header signedIn={signedIn} />
       </Suspense>
       <main className="flex-1">{children}</main>

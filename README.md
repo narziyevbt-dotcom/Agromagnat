@@ -86,27 +86,35 @@ so bring the stack up first.
 
 ## Design system
 
-Cobalt and turquoise, not green. The screen is already full of green, red and yellow
-produce photography; a green interface swallows the product, while cobalt makes the
-photos stand out and separates Agromagnat from every other agro app on the market.
+Green-dominant, forest for chrome. The cards stay white and the produce photo is still
+the loudest thing on a listing — what changed is everything around it: the sidebar,
+header and dark panels are deep forest rather than cobalt, which reads as agriculture
+on sight instead of as a fintech app that happens to sell vegetables.
 
 | Token | Hex | Used for |
 |---|---|---|
-| Cobalt | `#0A3A55` | Primary — headers, nav, price card |
-| Turquoise | `#1D7F8C` | Secondary, verified badge |
-| Saffron | `#E0932A` | **CTA and TOP badge only** |
-| Harvest green | `#1F7A4D` | **Prices and volumes only** |
+| Forest | `#0B1D14` | All dark chrome — sidebar, site header, dark cards |
+| Lime | `#D4E96A` | **CTAs and one filled card per screen, nothing else** |
+| Harvest green | `#1F7A4D` | **Money, volume and positive deltas, nothing else** |
+| Turquoise | `#1D7F8C` | Trust marks — verified badge, ratings |
 | Error | `#C4452F` | Errors, falling prices |
-| Background | `#EEF1F2` | App background |
+| Canvas | `#ECEEEA` | The page the app window floats on |
+| Surface | `#FFFFFF` | Cards, on `#E4E9E4` hairlines |
 
-Three font roles: Bricolage Grotesque for headings, IBM Plex Sans for body,
-**IBM Plex Mono for every number without exception** — monospace digits align
-column-wise, so a farmer can compare a list of prices at a glance.
+One font: **Plus Jakarta Sans**, headings and body and numbers alike. There is no
+monospace. Alignment in a price column is bought with tabular figures instead — the
+`.numeric` utility — so a farmer can still compare a list at a glance without every
+figure reading as a code listing. Oversized dashboard numbers use `.figure-xl`.
+
+Cards are `rounded-3xl` with `shadow-sm ring-1 ring-hairline`; buttons and pills are
+fully round. The dashboard sits in a floating window (`.app-window`) inset from the
+canvas. The primary CTA is a lime pill with its arrow in a forest circle.
 
 Tap targets are never below 44px, and location always reads `Viloyat · Tuman`.
 
-Tokens live in `apps/mobile/lib/core/theme/`. Take colours and type from there rather
-than writing them inline — that is what keeps saffron confined to CTAs.
+Web tokens live in `apps/web/app/globals.css`, mobile tokens in
+`apps/mobile/lib/core/theme/`. Take colours and type from there rather than writing
+them inline — that is what keeps lime confined to CTAs.
 
 ## Build progress
 

@@ -26,7 +26,7 @@ export function AdminSidebar({ name }: { name: string | null }) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col bg-cobalt lg:flex">
+    <aside className="hidden w-60 shrink-0 flex-col bg-forest lg:flex">
       <Link href="/" className="flex items-center gap-2.5 px-5 py-5">
         <Logo className="h-8 w-8" />
         <span className="font-[family-name:var(--font-display)] text-base font-bold text-white">

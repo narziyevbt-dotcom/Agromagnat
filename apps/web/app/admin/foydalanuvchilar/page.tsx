@@ -32,7 +32,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
         />
         <button
           type="submit"
-          className="tap-target rounded-xl bg-cobalt px-4 text-sm font-semibold text-white"
+          className="tap-target rounded-xl bg-forest px-4 text-sm font-semibold text-white"
         >
           Qidirish
         </button>

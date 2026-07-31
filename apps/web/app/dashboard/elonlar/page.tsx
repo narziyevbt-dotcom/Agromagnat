@@ -54,7 +54,7 @@ export default async function MyListingsPage({ searchParams }: { searchParams: S
             }
             className={`rounded-full px-3 py-1.5 text-xs font-medium ${
               (status ?? '') === filter.value
-                ? 'bg-cobalt text-white'
+                ? 'bg-forest text-white'
                 : 'bg-white text-ink-muted ring-1 ring-slate-line hover:text-ink'
             }`}
           >
@@ -70,7 +70,7 @@ export default async function MyListingsPage({ searchParams }: { searchParams: S
           </p>
           <Link
             href="/joylash"
-            className="tap-target mt-4 inline-flex items-center rounded-xl bg-lime px-5 text-sm font-semibold text-cobalt hover:bg-lime-dark"
+            className="tap-target mt-4 inline-flex items-center rounded-xl bg-lime px-5 text-sm font-semibold text-forest hover:bg-lime-dark"
           >
             + Yangi e&apos;lon
           </Link>

@@ -54,12 +54,12 @@ export default async function ChatPage({ params }: Props) {
           <Link
             href="/xabarlar"
             aria-label={t.chat.backToInbox}
-            className="tap-target -ml-1 flex items-center justify-center rounded-xl text-ink-muted hover:text-cobalt"
+            className="tap-target -ml-1 flex items-center justify-center rounded-xl text-ink-muted hover:text-forest"
           >
             <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </Link>
 
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cobalt text-sm font-semibold text-white">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest text-sm font-semibold text-white">
             {initials(chat.counterpart.name)}
           </span>
 

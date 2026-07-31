@@ -157,7 +157,7 @@ export default async function ListingPage({ params }: Props) {
               href={`/sotuvchi/${listing.seller.id}`}
               className="flex items-center gap-3 rounded-[var(--radius-card)] bg-surface p-3 ring-1 ring-hairline transition-colors hover:ring-turquoise"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cobalt text-sm font-semibold text-white">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest text-sm font-semibold text-white">
                 {initials(listing.seller.name)}
               </span>
               <span className="min-w-0 flex-1">
