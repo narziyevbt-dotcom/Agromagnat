@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { RedisService } from '../../redis/redis.service';
 import { District } from '../geo/entities/district.entity';
 import { Region } from '../geo/entities/region.entity';
+import { CategoryKind } from './category-forms';
 import { CatalogService } from './catalog.service';
 import { Category, QuantityUnit } from './entities/category.entity';
 
@@ -43,22 +44,65 @@ describe('CatalogService', () => {
 
   describe('findCategories', () => {
     it('reads through to Postgres on a cache miss and populates the cache', async () => {
-      const rows = [{ slug: 'mevalar', unitDefault: QuantityUnit.KG }] as Category[];
+      const rows = [
+        { slug: 'mevalar', unitDefault: QuantityUnit.KG, kind: CategoryKind.PRODUCE },
+      ] as Category[];
       redis.get.mockResolvedValue(null);
       categories.find!.mockResolvedValue(rows);
 
-      await expect(service.findCategories()).resolves.toBe(rows);
+      await expect(service.findCategories()).resolves.toEqual([
+        { ...rows[0], form: expect.objectContaining({ kind: CategoryKind.PRODUCE }) },
+      ]);
       expect(categories.find).toHaveBeenCalledTimes(1);
+      // The raw rows are cached; the derived form spec is not.
       expect(redis.set).toHaveBeenCalledWith('catalog:categories', rows, 3600);
     });
 
     it('serves a cache hit without touching Postgres', async () => {
-      const cached = [{ slug: 'poliz' }] as Category[];
+      const cached = [{ slug: 'texnika', kind: CategoryKind.MACHINERY }] as Category[];
       redis.get.mockResolvedValue(cached);
 
-      await expect(service.findCategories()).resolves.toBe(cached);
+      const result = await service.findCategories();
+      expect(result[0].slug).toBe('texnika');
       expect(categories.find).not.toHaveBeenCalled();
       expect(redis.set).not.toHaveBeenCalled();
+    });
+
+    it('expands the form spec even on a cache hit, so a stale year bound cannot be served', async () => {
+      redis.get.mockResolvedValue([{ slug: 'texnika', kind: CategoryKind.MACHINERY }]);
+
+      const [category] = await service.findCategories();
+      const year = category.form!.attributes.find((a) => a.key === 'year');
+      expect(year!.max).toBe(new Date().getFullYear() + 1);
+    });
+  });
+
+  describe('findCategoryForm', () => {
+    it('asks a machinery category for a count, never for kilos', async () => {
+      redis.get.mockResolvedValue([
+        { id: 'c1', slug: 'texnika', kind: CategoryKind.MACHINERY },
+      ]);
+
+      const spec = await service.findCategoryForm('texnika');
+      expect(spec.kind).toBe(CategoryKind.MACHINERY);
+      expect(spec.quantity.units).toEqual(['dona']);
+      expect(spec.quantity.labelUz).toBe('Nechta');
+      expect(spec.optional.harvestDate).toBe(false);
+      expect(spec.attributes.map((a) => a.key)).toContain('condition');
+    });
+
+    it('resolves by id as well as by slug', async () => {
+      redis.get.mockResolvedValue([{ id: 'c1', slug: 'yer', kind: CategoryKind.LAND }]);
+
+      await expect(service.findCategoryForm('c1')).resolves.toMatchObject({
+        kind: CategoryKind.LAND,
+      });
+    });
+
+    it('rejects an unknown category with an Uzbek message', async () => {
+      redis.get.mockResolvedValue([]);
+
+      await expect(service.findCategoryForm('nope')).rejects.toThrow('Kategoriya topilmadi');
     });
   });
 

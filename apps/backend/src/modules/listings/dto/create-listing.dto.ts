@@ -7,6 +7,7 @@ import {
   IsEnum,
   IsInt,
   IsNumber,
+  IsObject,
   IsOptional,
   IsPositive,
   IsString,
@@ -107,6 +108,20 @@ export class CreateListingDto {
   @Max(12, { each: true })
   @Type(() => Number)
   seasonMonths?: number[];
+
+  /**
+   * Category-specific answers. The shape is not fixed here because it depends
+   * on the category — `ListingsService` checks it against that category's field
+   * spec, which is also what the client rendered the inputs from.
+   */
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true,
+    example: { condition: 'used', year: 2018 },
+  })
+  @IsOptional()
+  @IsObject({ message: "Qo'shimcha maydonlar noto'g'ri" })
+  attributes?: Record<string, unknown>;
 }
 
 export class UpdateListingDto extends PartialType(CreateListingDto) {}

@@ -1,15 +1,19 @@
 import type {
   AdminOverview,
+  AssistAnswer,
   AdminPage,
   AdminReport,
   AdminUser,
   AuthTokens,
   Category,
+  CategoryFormSpec,
+  CategorySuggestion,
   ChatMessage,
   ChatSummary,
   CurrentUser,
   District,
   Listing,
+  ListingDraft,
   ListingFilters,
   MessagePage,
   Paginated,
@@ -122,6 +126,44 @@ export const getRegions = () => apiFetch<Region[]>('/regions', { revalidate: 360
 
 export const getDistricts = (regionId: string) =>
   apiFetch<District[]>(`/regions/${regionId}/districts`, { revalidate: 3600 });
+
+/**
+ * The posting form for one category. `getCategories` already carries this on
+ * every row, so this is for the narrower case of loading a spec on its own —
+ * an edit screen that knows the category and nothing else.
+ */
+export const getCategoryForm = (idOrSlug: string) =>
+  apiFetch<CategoryFormSpec>(`/categories/${idOrSlug}/form`, { revalidate: 3600 });
+
+/* ---------------------------------------------------------------------- ai */
+
+export const aiSuggestCategory = (text: string, token: string) =>
+  apiFetch<CategorySuggestion>('/ai/category', {
+    method: 'POST',
+    body: { text },
+    token,
+    revalidate: 0,
+  });
+
+export const aiDraftListing = (text: string, token: string) =>
+  apiFetch<ListingDraft>('/ai/draft', {
+    method: 'POST',
+    body: { text },
+    token,
+    revalidate: 0,
+  });
+
+export const aiAssist = (
+  question: string,
+  history: Array<{ role: 'user' | 'assistant'; content: string }>,
+  token: string,
+) =>
+  apiFetch<AssistAnswer>('/ai/assist', {
+    method: 'POST',
+    body: { question, history },
+    token,
+    revalidate: 0,
+  });
 
 /* ----------------------------------------------------------------- listings */
 

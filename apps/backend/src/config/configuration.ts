@@ -59,6 +59,19 @@ export interface PushConfig {
 }
 
 export interface AiConfig {
+  /**
+   * `local` needs no credentials and no network — it is the default, and it is
+   * what `anthropic` degrades to when the key is missing or the API is down.
+   */
+  provider: 'local' | 'anthropic';
+
+  /** Drafting a whole listing: the harder task, worth the better model. */
+  anthropicModel: string;
+  /** Category classification and Q&A: short, frequent, cost-sensitive. */
+  anthropicFastModel: string;
+  anthropicApiKey: string;
+
+  /** OpenAI-compatible endpoint, still used for voice transcription. */
   baseUrl: string;
   apiKey: string;
   model: string;
@@ -125,6 +138,10 @@ export default () => ({
     privateKey: process.env.FCM_PRIVATE_KEY ?? '',
   } satisfies PushConfig,
   ai: {
+    provider: (process.env.AI_PROVIDER ?? 'local') as 'local' | 'anthropic',
+    anthropicModel: process.env.ANTHROPIC_MODEL ?? 'claude-opus-5',
+    anthropicFastModel: process.env.ANTHROPIC_FAST_MODEL ?? 'claude-haiku-4-5',
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
     baseUrl: process.env.AI_BASE_URL ?? 'https://api.openai.com/v1',
     apiKey: process.env.AI_API_KEY ?? '',
     model: process.env.AI_MODEL ?? 'gpt-4o-mini',

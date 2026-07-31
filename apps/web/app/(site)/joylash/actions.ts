@@ -22,6 +22,22 @@ const stringOrUndefined = (value: FormDataEntryValue | null): string | undefined
   return text.length ? text : undefined;
 };
 
+/**
+ * Category-specific answers arrive as `attr.<key>` so they ride in the same
+ * FormData as everything else. Reassembled here rather than in the client so
+ * the prefix stays an implementation detail of this one round trip; the API
+ * checks every key against the category's spec regardless.
+ */
+const collectAttributes = (formData: FormData): Record<string, string> => {
+  const attributes: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith('attr.') || typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (trimmed) attributes[key.slice(5)] = trimmed;
+  }
+  return attributes;
+};
+
 export async function publishListing(
   _prev: PublishState,
   formData: FormData,
@@ -45,6 +61,7 @@ export async function publishListing(
     districtId: String(formData.get('districtId') ?? ''),
     harvestDate: stringOrUndefined(formData.get('harvestDate')),
     delivery: stringOrUndefined(formData.get('delivery')) ?? 'none',
+    attributes: collectAttributes(formData),
   };
 
   // Check client-side-visible requirements before the round trip, so a farmer

@@ -59,7 +59,14 @@ export const envValidationSchema = Joi.object({
   FCM_CLIENT_EMAIL: Joi.string().allow('').default(''),
   FCM_PRIVATE_KEY: Joi.string().allow('').default(''),
 
-  // AI (OpenAI-compatible)
+  // AI. `local` is keyword-only: no key, no network, no cost — and it is what
+  // `anthropic` falls back to when the API cannot be reached.
+  AI_PROVIDER: Joi.string().valid('local', 'anthropic').default('local'),
+  ANTHROPIC_API_KEY: Joi.string().allow('').default(''),
+  ANTHROPIC_MODEL: Joi.string().default('claude-opus-5'),
+  ANTHROPIC_FAST_MODEL: Joi.string().default('claude-haiku-4-5'),
+
+  // Voice transcription (OpenAI-compatible)
   AI_BASE_URL: Joi.string().default('https://api.openai.com/v1'),
   AI_API_KEY: Joi.string().allow('').default(''),
   AI_MODEL: Joi.string().default('gpt-4o-mini'),

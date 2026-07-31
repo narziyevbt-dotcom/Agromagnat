@@ -1,20 +1,22 @@
 import Link from 'next/link';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
+import { SignedInHome } from '@/components/home/SignedInHome';
 import { BentoFeatures } from '@/components/landing/BentoFeatures';
 import { Hero } from '@/components/landing/Hero';
 import { PartnerBar } from '@/components/landing/PartnerBar';
 import { ListingCard } from '@/components/ListingCard';
-import { getListings, getPriceTrend } from '@/lib/api';
+import { getCategories, getListings, getMe, getPriceTrend } from '@/lib/api';
 import { getAccessToken, isSignedIn } from '@/lib/session';
 import { t } from '@/lib/strings';
 
 /**
- * Landing page.
+ * Home, which is two different pages behind one URL.
  *
- * It still renders a strip of real listings below the marketing sections. The
- * home page is the strongest URL on the domain, and handing a crawler nothing
- * but marketing copy would waste it — the listing feed is what earns the
- * search traffic this business runs on.
+ * A signed-out visitor gets the marketing landing: it has to argue for the
+ * site, and it is the strongest URL on the domain for search, so it also
+ * carries a strip of real listings rather than marketing copy alone. A
+ * signed-in farmer gets the app — search, categories, feed — because they have
+ * already been convinced and re-reading the pitch every session is friction.
  */
 export const revalidate = 60;
 
@@ -22,9 +24,29 @@ export default async function HomePage() {
   const signedIn = await isSignedIn();
   const token = signedIn ? await getAccessToken() : undefined;
 
+  if (signedIn && token) {
+    const [categories, feed, me] = await Promise.all([
+      getCategories().catch(() => []),
+      getListings({ limit: 12 }, token).catch(() => ({
+        items: [],
+        hasMore: false,
+        nextCursor: null,
+      })),
+      getMe(token).catch(() => null),
+    ]);
+
+    return (
+      <SignedInHome
+        name={me?.name ?? null}
+        categories={categories}
+        listings={feed.items}
+      />
+    );
+  }
+
   const [trend, feed] = await Promise.all([
     getPriceTrend().catch(() => null),
-    getListings({ limit: 8 }, token).catch(() => ({
+    getListings({ limit: 8 }).catch(() => ({
       items: [],
       hasMore: false,
       nextCursor: null,

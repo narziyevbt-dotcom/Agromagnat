@@ -28,6 +28,41 @@ export interface District {
   regionId: string;
 }
 
+/** Which questions a category's posting form asks. */
+export type CategoryKind = 'produce' | 'supply' | 'machinery' | 'service' | 'land';
+
+export interface AttributeDef {
+  key: string;
+  labelUz: string;
+  type: 'select' | 'number' | 'text';
+  required: boolean;
+  options?: Array<{ value: string; labelUz: string }>;
+  min?: number;
+  max?: number;
+  maxLength?: number;
+  suffixUz?: string;
+  placeholderUz?: string;
+}
+
+/**
+ * The posting form, described by the API rather than hardcoded in the client.
+ * A machinery listing is asked for a count and a year; a produce listing for a
+ * volume, a picking date and a season. Adding a field is a backend change.
+ */
+export interface CategoryFormSpec {
+  kind: CategoryKind;
+  quantity: { labelUz: string; hintUz: string; units: QuantityUnit[]; placeholder: string };
+  price: { labelUz: string; hintUz: string; units: PriceUnit[]; placeholder: string };
+  optional: {
+    minOrder: boolean;
+    wholesalePrice: boolean;
+    harvestDate: boolean;
+    seasonMonths: boolean;
+    delivery: boolean;
+  };
+  attributes: AttributeDef[];
+}
+
 export interface Category {
   id: string;
   nameUz: string;
@@ -37,6 +72,9 @@ export interface Category {
   unitDefault: QuantityUnit;
   isFeatured: boolean;
   sortOrder: number;
+  kind: CategoryKind;
+  /** Expanded from `kind` by the API on every read. */
+  form: CategoryFormSpec;
 }
 
 export interface ListingPhoto {
@@ -90,6 +128,9 @@ export interface Listing {
 
   createdAt: string;
   expiresAt: string | null;
+
+  /** Category-specific answers, keyed by the spec's attribute keys. */
+  attributes: Record<string, string | number>;
 
   photos?: ListingPhoto[];
   seller?: Seller;
@@ -278,4 +319,44 @@ export interface AdminReport {
   createdAt: string;
   listing?: Listing;
   reporter?: AdminUser;
+}
+
+/* -------------------------------------------------------------------- ai */
+
+export interface CategoryCandidate {
+  categoryId: string;
+  slug: string;
+  nameUz: string;
+  /** 0-1. At or above 0.75 the form selects it outright rather than offering it. */
+  confidence: number;
+  reasonUz?: string;
+}
+
+export interface CategorySuggestion {
+  candidates: CategoryCandidate[];
+  source: 'keyword' | 'model';
+}
+
+export interface ListingDraft {
+  title: string;
+  description: string;
+  categoryId: string | null;
+  categorySlug: string | null;
+  quantity: number | null;
+  quantityUnit: string | null;
+  price: number | null;
+  priceUnit: string | null;
+  regionId: string | null;
+  districtId: string | null;
+  harvestDate: string | null;
+  seasonMonths: number[];
+  attributes: Record<string, string | number>;
+  /** What the seller still has to fill in by hand, in Uzbek. */
+  missingUz: string[];
+  source: 'keyword' | 'model';
+}
+
+export interface AssistAnswer {
+  answerUz: string;
+  source: 'canned' | 'model';
 }

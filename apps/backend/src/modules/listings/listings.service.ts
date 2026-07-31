@@ -8,6 +8,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { RedisService } from '../../redis/redis.service';
+import { formSpecFor, validateAttributes } from '../catalog/category-forms';
+import { Category } from '../catalog/entities/category.entity';
 import { StorageService } from '../storage/storage.service';
 import { User } from '../users/entities/user.entity';
 import { CreateListingDto, UpdateListingDto } from './dto/create-listing.dto';
@@ -54,6 +56,7 @@ export class ListingsService {
     @InjectRepository(Listing) private readonly listings: Repository<Listing>,
     @InjectRepository(ListingPhoto) private readonly photos: Repository<ListingPhoto>,
     @InjectRepository(Favorite) private readonly favorites: Repository<Favorite>,
+    @InjectRepository(Category) private readonly categories: Repository<Category>,
     private readonly redis: RedisService,
     private readonly storage: StorageService,
     private readonly dataSource: DataSource,
@@ -63,12 +66,14 @@ export class ListingsService {
 
   async create(sellerId: string, dto: CreateListingDto): Promise<Listing> {
     this.assertWholesaleCoherent(dto);
+    const attributes = await this.resolveAttributes(dto.categoryId, dto);
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + LISTING_TTL_DAYS);
 
     const listing = this.listings.create({
       ...dto,
+      attributes,
       // numeric columns round-trip as strings so no value passes through a float.
       quantity: String(dto.quantity),
       price: String(dto.price),
@@ -170,10 +175,20 @@ export class ListingsService {
 
   async update(id: string, userId: string, dto: UpdateListingDto): Promise<Listing> {
     const listing = await this.assertOwned(id, userId);
-    this.assertWholesaleCoherent({ ...listing, ...dto } as CreateListingDto);
+    const merged = { ...listing, ...dto } as CreateListingDto;
+    this.assertWholesaleCoherent(merged);
+
+    // Re-run the spec over the merged row, not the patch: moving a listing into
+    // another category has to re-check the unit and the attributes it arrived
+    // with, which a patch-only check would wave through.
+    const attributes = await this.resolveAttributes(merged.categoryId, {
+      ...merged,
+      attributes: dto.attributes ?? listing.attributes,
+    });
 
     Object.assign(listing, {
       ...dto,
+      attributes,
       quantity: dto.quantity === undefined ? listing.quantity : String(dto.quantity),
       price: dto.price === undefined ? listing.price : String(dto.price),
       minOrder:
@@ -654,5 +669,47 @@ export class ListingsService {
     ) {
       throw new BadRequestException("Ulgurji narx oddiy narxdan past bo'lishi kerak");
     }
+  }
+
+  /**
+   * Checks the parts of a listing that only make sense relative to its category
+   * — the units and the attribute bag — and returns the normalised bag.
+   *
+   * The client renders its inputs from the same spec, so anything rejected here
+   * is a stale build or a hand-crafted request rather than a farmer typing. The
+   * messages are still in Uzbek: a seller on an old app version is the likeliest
+   * person to see one.
+   */
+  private async resolveAttributes(
+    categoryId: string,
+    dto: Partial<CreateListingDto>,
+  ): Promise<Record<string, string | number>> {
+    const category = await this.categories.findOne({ where: { id: categoryId } });
+    if (!category) {
+      throw new BadRequestException('Kategoriya topilmadi');
+    }
+
+    const spec = formSpecFor(category.kind);
+
+    if (dto.quantityUnit && !spec.quantity.units.includes(dto.quantityUnit)) {
+      throw new BadRequestException(
+        `«${category.nameUz}» uchun bu o'lchov birligi mos emas`,
+      );
+    }
+    if (dto.priceUnit && !spec.price.units.includes(dto.priceUnit)) {
+      throw new BadRequestException(`«${category.nameUz}» uchun bu narx birligi mos emas`);
+    }
+    if (!spec.optional.harvestDate && dto.harvestDate) {
+      throw new BadRequestException(
+        `«${category.nameUz}» uchun hosil sanasi ko'rsatilmaydi`,
+      );
+    }
+
+    const { value, errors } = validateAttributes(spec, dto.attributes ?? {});
+    const firstError = Object.values(errors)[0];
+    if (firstError) {
+      throw new BadRequestException(firstError);
+    }
+    return value;
   }
 }

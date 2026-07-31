@@ -3,6 +3,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/decorators/public.decorator';
 import { District } from '../geo/entities/district.entity';
 import { Region } from '../geo/entities/region.entity';
+import { CategoryFormSpec } from './category-forms';
 import { CatalogService } from './catalog.service';
 import { Category } from './entities/category.entity';
 
@@ -19,6 +20,15 @@ export class CatalogController {
   @ApiOkResponse({ type: [Category] })
   findCategories(): Promise<Category[]> {
     return this.catalog.findCategories();
+  }
+
+  @Get('categories/:idOrSlug/form')
+  @ApiOperation({
+    summary: 'Posting-form spec for one category — which fields to ask for',
+  })
+  @ApiOkResponse({ type: CategoryFormSpec })
+  findCategoryForm(@Param('idOrSlug') idOrSlug: string): Promise<CategoryFormSpec> {
+    return this.catalog.findCategoryForm(idOrSlug);
   }
 
   @Get('regions')

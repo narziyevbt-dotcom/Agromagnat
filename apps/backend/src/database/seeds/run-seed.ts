@@ -1,5 +1,9 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
+import {
+  CategoryKind,
+  KIND_BY_SLUG,
+} from '../../modules/catalog/category-forms';
 import { Category } from '../../modules/catalog/entities/category.entity';
 import { District } from '../../modules/geo/entities/district.entity';
 import { Region } from '../../modules/geo/entities/region.entity';
@@ -71,6 +75,7 @@ async function seedCategories(ds: DataSource): Promise<void> {
         icon: seed.icon,
         unitDefault: seed.unitDefault,
         isFeatured: seed.isFeatured,
+        kind: KIND_BY_SLUG[seed.slug] ?? CategoryKind.PRODUCE,
         sortOrder: index,
       });
       await repo.save(existing);
@@ -83,6 +88,7 @@ async function seedCategories(ds: DataSource): Promise<void> {
           icon: seed.icon,
           unitDefault: seed.unitDefault,
           isFeatured: seed.isFeatured,
+          kind: KIND_BY_SLUG[seed.slug] ?? CategoryKind.PRODUCE,
           sortOrder: index,
         }),
       );

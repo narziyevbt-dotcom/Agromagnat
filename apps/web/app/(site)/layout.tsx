@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { AiHelp } from '@/components/AiHelp';
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 import { MobileNav } from '@/components/MobileNav';
@@ -26,6 +27,9 @@ export default async function SiteLayout({
       <main className="flex-1">{children}</main>
       <Footer />
       <MobileNav />
+      {/* Signed-in only: the endpoint behind it is authenticated and rate-limited
+          per user, and an anonymous visitor is still deciding, not stuck. */}
+      {signedIn && <AiHelp />}
     </div>
   );
 }

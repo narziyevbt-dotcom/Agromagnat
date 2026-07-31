@@ -7,6 +7,7 @@ import { FavoriteButton } from '@/components/FavoriteButton';
 import { PhotoGallery } from '@/components/PhotoGallery';
 import { ReportButton } from '@/components/ReportButton';
 import { ReviewForm } from '@/components/reviews/ReviewForm';
+import { ListingAttributes } from '@/components/ListingAttributes';
 import { SeasonStrip } from '@/components/SeasonStrip';
 import { ApiError, getListing, getMe, getMyReview } from '@/lib/api';
 import {
@@ -145,6 +146,8 @@ export default async function ListingPage({ params }: Props) {
               {formatDelivery(listing.delivery)}
             </Spec>
           </dl>
+
+          <ListingAttributes listing={listing} />
 
           <p className="text-sm text-ink-muted">
             📍 {formatLocation(listing.region, listing.district)}

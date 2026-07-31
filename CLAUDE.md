@@ -13,7 +13,9 @@ in Uzbek.
 - Mobile: Flutter + Riverpod, Clean Architecture, Repository Pattern
 - Backend: NestJS + PostgreSQL + Redis, JWT (phone + SMS OTP via Eskiz.uz, mocked in dev)
 - Files: S3-compatible (MinIO in dev) - Push: Firebase FCM - Maps: Yandex Maps
-- AI: OpenAI-compatible API behind an AiService abstraction
+- AI: an AiService abstraction with two providers — `local` (Uzbek keyword lexicon, no key,
+  no cost, the default) and `anthropic` (Claude, with `local` underneath as the fallback).
+  Voice transcription stays on an OpenAI-compatible endpoint. See docs/AI.md
 - Web: Next.js (App Router, SSR) for the public marketplace - listings must be
   indexable by Google; admin panel lives in the same Next.js app under /admin
   behind a role guard (a separate Vite app would duplicate the API client,
@@ -42,8 +44,16 @@ there, never inline a hex.
 - Listing required: category, volume+unit, price+unit, region, district. Optional: min_order,
   harvest_date, delivery
 - Statuses: draft/active/sold/expired/blocked; auto-expire after 14 days
-- Voice-first posting: mic on Add Listing -> AI transcribes -> fills title/description
+- Voice-first posting: mic on Add Listing -> AI transcribes -> fills the whole form
 - Mock-first: screens ship on mock repositories, real API wired later behind same interfaces
+- The posting form is category-aware. Every category has a `kind` (produce | supply |
+  machinery | service | land) and each kind decides which questions get asked — machinery is
+  counted in `dona` and never asked for kilos or a harvest date. The spec comes from the API,
+  the clients only render it. Never hardcode a per-category form. See docs/CATEGORY-FORMS.md
+- AI drafts, it never publishes. `POST /ai/draft` returns form values plus `missingUz`; the
+  seller reviews and submits through the ordinary listing endpoint with the same validation
+- Home is two pages behind one URL: the marketing landing signed out, the app
+  (search -> categories -> feed) signed in
 
 ## Build order
 Web first, then mobile. Both consume the same backend API, so a feature is built once on the

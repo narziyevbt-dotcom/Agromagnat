@@ -100,6 +100,14 @@ services:
       - key: PUSH_PROVIDER
         value: mock
 
+      # AI. `local` is keyword-only and costs nothing, which is what a review
+      # environment wants. Set AI_PROVIDER=anthropic and paste a key into
+      # ANTHROPIC_API_KEY in the dashboard to exercise the model path.
+      - key: AI_PROVIDER
+        value: local
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
       # Render has no object storage. Photo upload fails until these point at a
       # real S3-compatible bucket (Cloudflare R2 has a free tier); everything
       # else works without them.

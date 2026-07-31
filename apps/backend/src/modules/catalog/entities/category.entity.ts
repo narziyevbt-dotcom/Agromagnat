@@ -1,18 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { CategoryFormSpec, CategoryKind } from '../category-forms';
+import { QuantityUnit } from '../units';
 
-/** Measurement unit a listing's quantity is expressed in. */
-export enum QuantityUnit {
-  KG = 'kg',
-  TON = 't',
-  PIECE = 'dona',
-  BOX = 'quti',
-  BAG = 'qop',
-  LITER = 'l',
-  HECTARE = 'ga',
-  SERVICE = 'xizmat',
-}
+export { QuantityUnit };
 
 /** One of the 12 agro categories; supports one level of nesting via parentId. */
 @Entity('categories')
@@ -64,4 +56,19 @@ export class Category extends BaseEntity {
   @ApiProperty({ description: 'Shown in the 8-icon Home grid' })
   @Column({ name: 'is_featured', type: 'boolean', default: false })
   isFeatured: boolean;
+
+  @ApiProperty({
+    enum: CategoryKind,
+    description: 'Decides which questions the posting form asks',
+  })
+  @Column({ type: 'enum', enum: CategoryKind, default: CategoryKind.PRODUCE })
+  kind: CategoryKind;
+
+  /**
+   * Expanded from `kind` when the catalog is read, not stored. Clients render
+   * the posting form straight from this, so a new field reaches every platform
+   * on the next API deploy rather than on the next app-store review.
+   */
+  @ApiProperty({ type: CategoryFormSpec })
+  form?: CategoryFormSpec;
 }

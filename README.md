@@ -76,7 +76,7 @@ curl http://localhost:3000/api/regions            # 14
 ```
 
 ```bash
-cd apps/backend && npm test && npm run test:e2e   # 61 unit, 92 e2e
+cd apps/backend && npm test && npm run test:e2e   # 98 unit, 117 e2e
 cd apps/web && npx tsc --noEmit && npm run build
 cd apps/mobile && flutter analyze && flutter test
 ```
@@ -130,12 +130,38 @@ them inline — that is what keeps lime confined to CTAs.
 | Production deploy artifacts (Docker, nginx, CI/CD, backups) | ✅ |
 | Admin panel (moderation, users, reports) | ✅ |
 | **Chat, reviews, push** | ✅ |
-| AI: voice listing, pricing, moderation, search | ⬜ |
+| **AI: category suggestion, voice listing, help assistant** | ✅ |
+| AI: pricing, moderation, search | ⬜ |
 | Mobile screens + wiring | ⬜ |
 | Hardening, deploy, release, launch | ⬜ |
 
 Order changed from the playbook: web ships before mobile, so the admin panel and the
 AI features land on top of a working public site rather than waiting on the app.
+
+## AI
+
+Two providers behind one `AiService` interface, chosen at boot from
+`AI_PROVIDER`:
+
+- `local` (the default) is an Uzbek keyword lexicon and a sentence parser. No
+  key, no network, no cost — "12 tonna pomidor, kilosi 14 ming so'm" resolves to
+  a category, a volume and a price without leaving the process.
+- `anthropic` puts Claude on top of it and keeps `local` underneath as the
+  fallback, so an API outage degrades the feature instead of breaking posting.
+
+It powers three things: the category that gets selected as a seller types, the
+"AI writes the listing" panel (with browser dictation, in Uzbek), and the help
+assistant in the corner of every signed-in page. Details, cost and the
+structured-output gotchas are in [docs/AI.md](docs/AI.md).
+
+## Category-aware forms
+
+Every category has a `kind`, and each kind decides which questions the posting
+form asks. Machinery is counted in `dona` and asked for a year and a condition;
+land is measured in hectares and asked about irrigation; only produce gets a
+harvest date. The spec is served by the API and rendered by the clients, so
+adding a field is a backend change — see
+[docs/CATEGORY-FORMS.md](docs/CATEGORY-FORMS.md).
 
 ## Deploying
 

@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { SoftDeletableEntity } from '../../../common/entities/base.entity';
-import { Category, QuantityUnit } from '../../catalog/entities/category.entity';
+import { Category } from '../../catalog/entities/category.entity';
+import { PriceUnit, QuantityUnit } from '../../catalog/units';
 import { District } from '../../geo/entities/district.entity';
 import { Region } from '../../geo/entities/region.entity';
 import { User } from '../../users/entities/user.entity';
@@ -16,17 +17,7 @@ export enum ListingStatus {
   BLOCKED = 'blocked',
 }
 
-/** Unit the price is quoted per — "12 000 so'm/kg". */
-export enum PriceUnit {
-  KG = 'kg',
-  TON = 't',
-  PIECE = 'dona',
-  BOX = 'quti',
-  BAG = 'qop',
-  LITER = 'l',
-  HECTARE = 'ga',
-  SERVICE = 'xizmat',
-}
+export { PriceUnit, QuantityUnit };
 
 export enum DeliveryOption {
   NONE = 'none',
@@ -205,6 +196,20 @@ export class Listing extends SoftDeletableEntity {
   @ApiProperty({ nullable: true, description: 'Uzbek explanation shown to the seller when blocked' })
   @Column({ name: 'moderation_reason', type: 'text', nullable: true })
   moderationReason: string | null;
+
+  /**
+   * Category-specific answers — a tractor's year and condition, a plot's
+   * tenure, a crop's grade. Validated against the category's field spec on
+   * write (see `category-forms.ts`), so the bag only ever holds keys the spec
+   * declares.
+   */
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: true,
+    example: { condition: 'used', year: 2018, brand: 'MTZ-82' },
+  })
+  @Column({ type: 'jsonb', default: () => `'{}'::jsonb` })
+  attributes: Record<string, string | number>;
 
   @OneToMany(() => ListingPhoto, (photo) => photo.listing, { cascade: ['remove'] })
   photos: ListingPhoto[];

@@ -25,17 +25,40 @@ machinery once the catalogue outgrows one file.
 
 | Path | Rendering | Purpose |
 |---|---|---|
-| `/` | SSR, 60s ISR | Hero, category grid, newest listings |
+| `/` | SSR, 60s ISR | Marketing landing signed out; search + categories + feed signed in |
 | `/qidiruv` | SSR | Search with filters, cursor pagination |
 | `/e/[id]` | SSR | Listing detail — the page that has to rank |
 | `/sotuvchi/[id]` | SSR | A seller's listings |
 | `/kirish` | SSR | Phone + OTP login |
-| `/joylash` | SSR, auth | Post a listing |
+| `/joylash` | SSR, auth | Post a listing — AI composer, photo panel, category-aware fields |
 | `/profil` | SSR, auth | Stats, own listings, sold/delete |
 | `/sevimlilar` | SSR, auth | Saved listings |
 
 Uzbek URLs, not English. The audience reads them, and `/e/…` keeps listing links
 short enough to paste into Telegram.
+
+### Two home pages, one URL
+
+A signed-out visitor is still deciding whether to trust the site, so `/` is the
+marketing landing — hero, bento sections, and a strip of real listings, because it
+is the strongest URL on the domain for search and handing a crawler pure marketing
+copy would waste it.
+
+A signed-in farmer has already decided. They get the app instead: a search panel,
+the twelve category tiles, then the feed. Re-reading the pitch every session is a
+scroll before they can do anything. The header goes solid rather than transparent
+in that case — there is no hero underneath it to float on — and drops its own
+search box so there is only one on the page.
+
+### AI route handlers
+
+`/api/ai/category`, `/api/ai/draft` and `/api/ai/assist` proxy the httpOnly token
+to the backend. Route handlers rather than server actions because the category
+caller debounces and cancels: an in-flight action cannot be aborted, so every
+keystroke's work would be paid for after the answer stopped being wanted.
+
+Category suggestion degrades to an empty candidate list on any failure, which the
+form already treats as "no idea" — the manual grid is always on screen.
 
 ## Sessions
 

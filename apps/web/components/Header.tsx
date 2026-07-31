@@ -10,14 +10,19 @@ import { SearchBar } from './SearchBar';
  * Site header. Lime is the only accent, which is what makes it read as the
  * primary action.
  *
- * Over the home page's full-bleed hero it goes transparent and sits on the
- * imagery, the way the reference landing pages do — a solid bar there would cut
- * the photograph off at the top and cost the hero its whole effect. Everywhere
- * else it is an opaque forest bar, because those pages start with content
- * rather than with an image and a floating nav would have nothing to float on.
+ * Over the marketing hero it goes transparent and sits on the imagery, the way
+ * the reference landing pages do — a solid bar there would cut the photograph
+ * off at the top and cost the hero its whole effect. Everywhere else it is an
+ * opaque forest bar, because those pages start with content rather than with an
+ * image and a floating nav would have nothing to float on.
+ *
+ * That includes `/` for a signed-in farmer: they get the app home, which has no
+ * hero, so the transparent variant would leave white text on a white page.
  */
 export function Header({ signedIn }: { signedIn: boolean }) {
-  const overHero = usePathname() === '/';
+  const path = usePathname();
+  const overHero = path === '/' && !signedIn;
+  const atAppHome = path === '/' && signedIn;
 
   return (
     <header
@@ -39,7 +44,13 @@ export function Header({ signedIn }: { signedIn: boolean }) {
           </span>
         </Link>
 
-        <div className={`min-w-0 flex-1 ${overHero ? "hidden sm:block" : ""}`}>
+        {/* The signed-in home leads with its own search panel; a second box in
+            the header would be two search fields stacked on one screen. */}
+        <div
+          className={`min-w-0 flex-1 ${overHero ? 'hidden sm:block' : ''} ${
+            atAppHome ? 'hidden' : ''
+          }`}
+        >
           <SearchBar />
         </div>
 
