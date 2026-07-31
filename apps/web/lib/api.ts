@@ -16,6 +16,7 @@ import type {
   ListingDraft,
   ListingFilters,
   MessagePage,
+  Offer,
   Paginated,
   PriceIndexPoint,
   PriceSuggestion,
@@ -347,6 +348,22 @@ export const sendMessage = (chatId: string, body: string, clientId: string, toke
     body: { body, clientId },
     token,
   });
+
+export const getOffers = (chatId: string, token: string) =>
+  apiFetch<Offer[]>(`/chats/${chatId}/offers`, { token, revalidate: 0 });
+
+export const createOffer = (
+  chatId: string,
+  body: { amount: number; quantity?: number; note?: string },
+  token: string,
+) => apiFetch<Offer>(`/chats/${chatId}/offers`, { method: 'POST', body, token });
+
+/** accept closes the sale; decline and withdraw only change the offer. */
+export const respondToOffer = (
+  offerId: string,
+  action: 'accept' | 'decline' | 'withdraw',
+  token: string,
+) => apiFetch<Offer>(`/offers/${offerId}/${action}`, { method: 'POST', token });
 
 export const markChatRead = (chatId: string, token: string) =>
   apiFetch<{ unread: number }>(`/chats/${chatId}/read`, { method: 'POST', token });

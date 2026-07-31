@@ -39,6 +39,7 @@ describe('Pricing (e2e)', () => {
   let sellerId: string;
   let categoryId: string;
   let otherCategoryId: string;
+  let agreedCategoryId: string;
   let regionId: string;
   let otherRegionId: string;
   let districtId: string;
@@ -53,6 +54,7 @@ describe('Pricing (e2e)', () => {
     soldDaysAgo?: number;
     createdDaysAgo?: number;
     priceUnit?: string;
+    soldPrice?: number;
   }) => {
     const listing = await listings.save(
       listings.create({
@@ -66,6 +68,7 @@ describe('Pricing (e2e)', () => {
         regionId: opts.regionId ?? regionId,
         districtId,
         status: opts.status,
+        soldPrice: opts.soldPrice === undefined ? null : opts.soldPrice.toFixed(2),
         attributes: {},
       }),
     );
@@ -147,6 +150,19 @@ describe('Pricing (e2e)', () => {
       )
     ).id;
 
+    agreedCategoryId = (
+      await categories.save(
+        categories.create({
+          nameUz: `Kelishuv narxi ${stamp}`,
+          nameRu: `Kelishuv narxi ${stamp}`,
+          slug: `kelishuv-narxi-${stamp}`,
+          kind: CategoryKind.PRODUCE,
+          unitDefault: QuantityUnit.KG,
+          sortOrder: 902,
+        }),
+      )
+    ).id;
+
     const region = await regions.save(
       regions.create({
         nameUz: `Narx viloyati ${stamp}`,
@@ -187,12 +203,12 @@ describe('Pricing (e2e)', () => {
 
   afterAll(async () => {
     if (created.length) await listings.delete(created);
-    await index.delete({ categoryId: In([categoryId, otherCategoryId]) });
+    await index.delete({ categoryId: In([categoryId, otherCategoryId, agreedCategoryId]) });
     await users.delete({ phone });
     // Reference rows last — listings hold RESTRICT foreign keys to them.
     await districtRepo.delete(districtId);
     await regionRepo.delete([regionId, otherRegionId]);
-    await categoryRepo.delete([categoryId, otherCategoryId]);
+    await categoryRepo.delete([categoryId, otherCategoryId, agreedCategoryId]);
     await redis.delByPattern('price:suggest:*');
     await app.close();
   });
@@ -336,6 +352,40 @@ describe('Pricing (e2e)', () => {
 
       const after = await suggest({ categoryId, regionId, unit: 'kg' }).expect(201);
       expect(after.body.range.suggested).toBe(fresh.body.range.suggested);
+    });
+
+    it('reads the agreed price on sold rows, not the asking price', async () => {
+      // The whole argument for "based on real sales": a sold listing keeps its
+      // asking price in `price` and what it actually cleared at in
+      // `sold_price`. Agricultural sales close below asking almost every time,
+      // so reading `price` here made the recommendation systematically high.
+      for (const price of [30_000, 31_000, 32_000, 33_000, 34_000, 35_000]) {
+        await seed({
+          price,
+          status: ListingStatus.SOLD,
+          categoryId: agreedCategoryId,
+          soldPrice: price - 20_000,
+        });
+      }
+
+      const { body } = await suggest({
+        categoryId: agreedCategoryId,
+        regionId,
+        unit: 'kg',
+      }).expect(201);
+
+      expect(body.basis).toBe(PriceBasis.SOLD_LOCAL);
+      // Median of the agreed prices (12 500), not of the asking ones (32 500).
+      expect(Number(body.range.suggested)).toBeLessThan(20_000);
+    });
+
+    it('keeps hand-closed sales in the population via COALESCE', async () => {
+      // A seller who pressed "Sotildi" without a deal has no agreed price.
+      // Dropping those rows would shrink the sold population below its floor
+      // for every category that predates offers.
+      const { body } = await suggest({ categoryId, regionId, unit: 'kg' }).expect(201);
+      expect(body.basis).toBe(PriceBasis.SOLD_LOCAL);
+      expect(body.sampleSize).toBeGreaterThanOrEqual(5);
     });
 
     it('prices a wholesale lot below a retail one', async () => {

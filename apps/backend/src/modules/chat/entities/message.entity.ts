@@ -8,6 +8,8 @@ export enum MessageType {
   TEXT = 'text',
   IMAGE = 'image',
   SYSTEM = 'system',
+  /** A price proposal. `body` is "<offerId>|<preview text>". */
+  OFFER = 'offer',
 }
 
 @Entity('messages')

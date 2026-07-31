@@ -78,3 +78,10 @@ phone, and a farmer mid-negotiation will reach for it.
   anything, and neither survives a 3G handover well enough to be trusted.
 - Server-Sent Events as a polling replacement, once the mobile app is the
   primary client and the backend runs behind a proxy configured for streaming.
+
+## Offers
+
+Price negotiation and the sale it closes live in the same module but a separate
+service — `OffersService` changes listings, sales counts and the price index,
+which does not belong in the hot path of sending a message. Offers appear in
+this thread as messages of type `offer`. See [OFFERS.md](OFFERS.md).

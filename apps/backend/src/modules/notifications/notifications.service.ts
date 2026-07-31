@@ -63,6 +63,27 @@ export class NotificationsService {
     });
   }
 
+  /**
+   * A price offer, or the system line that answers one.
+   *
+   * Typed like its neighbours rather than letting callers reach for
+   * `sendToUser` directly, so the wording of every notification the product
+   * sends stays in one file and can be translated in one place.
+   */
+  async notifyOffer(
+    recipientId: string,
+    title: string,
+    body: string,
+    chatId: string,
+    listingId: string,
+  ): Promise<void> {
+    await this.sendToUser(recipientId, {
+      title,
+      body,
+      data: { type: 'offer', chatId, listingId },
+    });
+  }
+
   async notifyNewReview(
     sellerId: string,
     rating: number,

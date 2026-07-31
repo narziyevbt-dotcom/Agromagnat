@@ -44,6 +44,26 @@ If nothing clears the floor, the answer is `range: null` and *"not enough data �
 set the price yourself"*. A fabricated number is worse than no number here,
 because it would be used.
 
+## Asking price vs agreed price
+
+For the two sold populations the price read is `COALESCE(sold_price, price)`,
+not `price`.
+
+A sold listing keeps its asking price in `price`; what it actually cleared at
+lands in `sold_price` when an offer is accepted (see [OFFERS.md](OFFERS.md)).
+Reading `price` — which this did until offers existed — meant a recommendation
+labelled "based on real sales" was really based on what those sellers had
+hoped for, and agricultural sales close below asking almost every time. The
+recommender was therefore systematically high in exactly the case it claimed
+to be most confident about.
+
+`COALESCE` rather than `sold_price` alone keeps listings closed by hand, which
+have no agreed price, inside the population — dropping them would shrink the
+sold sample below its floor for every category that predates offers.
+
+The nightly snapshot uses the same expression. Diverging would make the trend
+line disagree with the number under the price field.
+
 ## Why percentiles, not averages
 
 `PERCENTILE_CONT`, everywhere. A price typed with three extra zeros is routine

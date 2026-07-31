@@ -20,6 +20,7 @@ npm run seed               # reference data, idempotent
 | `listing_photos` | Up to 5 per listing, `sort_order` 0 is the cover |
 | `favorites` | Unique per (user, listing) |
 | `chats` / `messages` | One chat per (listing, buyer); unread counts on the chat |
+| `offers` | Price proposals in a chat; accepting one closes the sale — see docs/OFFERS.md |
 | `reviews` | One per (listing, author), rating 1–5 enforced by a check constraint |
 | `price_index` | Daily median/quartile prices per category+region+unit — see docs/PRICING.md |
 | `reports` | User complaints feeding the admin moderation queue |
@@ -36,6 +37,10 @@ machinery has no harvest date and is counted in `dona`. `attributes` (`jsonb`) h
 category-specific answers on top of that: a tractor's year and condition, a plot's tenure.
 It is validated on write against the same field spec the client rendered the form from, so
 it only ever holds keys that spec declares. See docs/CATEGORY-FORMS.md.
+
+`sold_price` holds the agreed price when a sale closed through an accepted
+offer; `price` always keeps the asking price. The price index reads
+`COALESCE(sold_price, price)` — see docs/PRICING.md.
 
 Statuses are `draft`, `pending`, `active`, `sold`, `expired`, `blocked`. A listing
 auto-expires 14 days after publication via `expires_at`, swept by a cron job. `pending`

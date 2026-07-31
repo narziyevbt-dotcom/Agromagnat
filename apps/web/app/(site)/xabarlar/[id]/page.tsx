@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, Phone } from 'lucide-react';
-import { ApiError, getChat, getMessages, getMe, markChatRead } from '@/lib/api';
+import { OfferPanel } from '@/components/chat/OfferPanel';
+import { ApiError, getChat, getMessages, getMe, getOffers, markChatRead } from '@/lib/api';
 import { formatPhone, formatPrice, initials } from '@/lib/format';
 import { getAccessToken } from '@/lib/session';
 import { t } from '@/lib/strings';
@@ -35,9 +36,12 @@ export default async function ChatPage({ params }: Props) {
     notFound();
   }
 
-  const [page, me] = await Promise.all([
+  const [page, me, offers] = await Promise.all([
     getMessages(id, token, { limit: 30 }),
     getMe(token),
+    // An empty list is a fine answer here — the panel simply offers to start a
+    // negotiation. A failure must not take the whole conversation down.
+    getOffers(id, token).catch(() => []),
   ]);
 
   // Opening the thread is what "read" means. Fired here rather than from the
@@ -102,6 +106,13 @@ export default async function ChatPage({ params }: Props) {
           )}
         </Link>
       </header>
+
+      <OfferPanel
+        chatId={id}
+        askingPrice={chat.listingPrice}
+        priceUnit={chat.listingPriceUnit}
+        initialOffers={offers}
+      />
 
       <ChatThread
         chatId={chat.id}

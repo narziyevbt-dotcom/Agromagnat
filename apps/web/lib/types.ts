@@ -232,7 +232,8 @@ export interface ChatMessage {
   id: string;
   chatId: string;
   senderId: string;
-  type: 'text' | 'image' | 'system';
+  /** `offer` carries "<offerId>|<preview>" in `body`. */
+  type: 'text' | 'image' | 'system' | 'offer';
   body: string;
   clientId: string | null;
   readAt: string | null;
@@ -245,6 +246,26 @@ export interface MessagePage {
   items: ChatMessage[];
   nextCursor: string | null;
   hasMore: boolean;
+}
+
+export type OfferStatus = 'pending' | 'accepted' | 'declined' | 'expired';
+
+export interface Offer {
+  id: string;
+  chatId: string;
+  listingId: string;
+  fromRole: 'buyer' | 'seller';
+  amount: string;
+  priceUnit: PriceUnit;
+  quantity: string | null;
+  quantityUnit: QuantityUnit | null;
+  note: string | null;
+  status: OfferStatus;
+  /** The viewer is the one who has to answer it. */
+  canRespond: boolean;
+  isMine: boolean;
+  createdAt: string;
+  respondedAt: string | null;
 }
 
 /* --------------------------------------------------------------- reviews */

@@ -271,6 +271,23 @@ function Bubble({
     minute: '2-digit',
   });
 
+  // A system line — "savdo yakunlandi", "taklif rad etildi" — belongs to the
+  // conversation rather than to either side of it, so it is centred and
+  // unattributed instead of sitting in somebody's bubble.
+  if (message.type === 'system') {
+    return (
+      <p className="mx-auto max-w-[85%] rounded-full bg-mint px-3 py-1.5 text-center text-xs font-medium text-harvest">
+        {message.body}
+      </p>
+    );
+  }
+
+  // An offer message stores "<offerId>|<preview>" so the panel above can join
+  // the card to its row without a request per message. Only the preview is for
+  // reading; the id would be noise in the thread.
+  const body =
+    message.type === 'offer' ? message.body.slice(message.body.indexOf('|') + 1) : message.body;
+
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -278,9 +295,11 @@ function Bubble({
           mine
             ? 'rounded-br-md bg-forest text-white'
             : 'rounded-bl-md bg-surface text-ink ring-1 ring-hairline'
-        } ${message.pending ? 'opacity-70' : ''}`}
+        } ${message.pending ? 'opacity-70' : ''} ${
+          message.type === 'offer' ? 'ring-2 ring-harvest/40' : ''
+        }`}
       >
-        <p className="whitespace-pre-line break-words">{message.body}</p>
+        <p className="whitespace-pre-line break-words">{body}</p>
 
         <p
           className={`numeric mt-0.5 flex items-center justify-end gap-1 text-[10px] ${

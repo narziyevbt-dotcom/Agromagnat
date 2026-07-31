@@ -78,7 +78,7 @@ curl http://localhost:3000/api/regions            # 14
 ```
 
 ```bash
-cd apps/backend && npm test && npm run test:e2e   # 122 unit, 134 e2e
+cd apps/backend && npm test && npm run test:e2e   # 122 unit, 157 e2e
 cd apps/web && npx tsc --noEmit && npm run build
 cd apps/mobile && flutter analyze && flutter test
 ```
@@ -134,6 +134,7 @@ them inline — that is what keeps lime confined to CTAs.
 | **Chat, reviews, push** | ✅ |
 | **AI: category suggestion, voice listing, help assistant** | ✅ |
 | **Price recommendation + market index** | ✅ |
+| **Offers, negotiation and deal completion** | ✅ |
 | AI: moderation, smart search, image validation | ⬜ |
 | Mobile screens + wiring | ⬜ |
 | Hardening, deploy, release, launch | ⬜ |
@@ -169,6 +170,14 @@ tomatoes should cost returns a confident number with nothing behind it, and a
 farmer would act on it. A nightly job snapshots the index into `price_index` so
 today cannot retroactively change what last month looked like. See
 [docs/PRICING.md](docs/PRICING.md).
+
+## Offers and deals
+
+Buyers and sellers negotiate inside the conversation instead of on the phone.
+Accepting an offer closes the sale at the agreed price in one transaction —
+which is what finally makes reviews reachable without asking a seller to
+delist their own advert, and what gives the price index real clearing prices
+rather than asking prices. See [docs/OFFERS.md](docs/OFFERS.md).
 
 ## Category-aware forms
 

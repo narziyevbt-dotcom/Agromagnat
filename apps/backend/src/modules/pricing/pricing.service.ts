@@ -138,11 +138,24 @@ export class PricingService {
     dto: SuggestPriceDto,
     population: Population,
   ): Promise<PriceSample | null> {
+    // The agreed price when there is one, the asking price otherwise.
+    //
+    // A sold listing keeps its asking price in `price`; what it actually
+    // cleared at lands in `sold_price` when an offer is accepted. Reading
+    // `price` for sold rows — which this did until offers existed — meant the
+    // "based on real sales" recommendation was really based on what those
+    // sellers had hoped for, and agricultural sales close below asking almost
+    // every time. COALESCE keeps listings closed by hand (no deal, so no
+    // agreed price) in the population rather than dropping them.
+    const priceExpr = population.sold
+      ? 'COALESCE(listing.sold_price, listing.price)'
+      : 'listing.price';
+
     const query = this.listings
       .createQueryBuilder('listing')
-      .select('PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY listing.price)', 'p25')
-      .addSelect('PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY listing.price)', 'median')
-      .addSelect('PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY listing.price)', 'p75')
+      .select(`PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY ${priceExpr})`, 'p25')
+      .addSelect(`PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ${priceExpr})`, 'median')
+      .addSelect(`PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY ${priceExpr})`, 'p75')
       .addSelect('COUNT(*)', 'count')
       .where('listing.category_id = :categoryId', { categoryId: dto.categoryId })
       // Prices are only comparable within one unit — a median mixing t and kg
@@ -288,9 +301,12 @@ export class PricingService {
         -- works; without it the whole snapshot fails at runtime while
         -- typechecking cleanly.
         l.price_unit::text::price_index_unit_enum AS unit,
-        ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY l.price)::numeric, 2),
-        ROUND(PERCENTILE_CONT(0.5)  WITHIN GROUP (ORDER BY l.price)::numeric, 2),
-        ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY l.price)::numeric, 2),
+        -- Same rule as the live recommendation: a sold row contributes what it
+        -- agreed at, everything else what it is asking. Diverging here would
+        -- make the trend line disagree with the number under the price field.
+        ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY COALESCE(l.sold_price, l.price))::numeric, 2),
+        ROUND(PERCENTILE_CONT(0.5)  WITHIN GROUP (ORDER BY COALESCE(l.sold_price, l.price))::numeric, 2),
+        ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY COALESCE(l.sold_price, l.price))::numeric, 2),
         COUNT(*),
         0
       FROM listings l

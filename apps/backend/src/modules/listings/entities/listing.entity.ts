@@ -187,6 +187,22 @@ export class Listing extends SoftDeletableEntity {
   @Column({ name: 'sold_at', type: 'timestamptz', nullable: true })
   soldAt: Date | null;
 
+  /**
+   * What the listing actually cleared at, set when an offer is accepted.
+   *
+   * Distinct from `price`, which is the asking price and stays untouched.
+   * Agricultural sales close below asking almost every time, so a price index
+   * built on `price` alone reads systematically high — see docs/PRICING.md.
+   * Null when the seller marked the listing sold by hand without a deal.
+   */
+  @ApiProperty({ nullable: true, description: 'Agreed price, per price_unit' })
+  @Column({ name: 'sold_price', type: 'numeric', precision: 14, scale: 2, nullable: true })
+  soldPrice: string | null;
+
+  @ApiProperty({ nullable: true, description: 'Volume the accepted offer covered' })
+  @Column({ name: 'sold_quantity', type: 'numeric', precision: 14, scale: 3, nullable: true })
+  soldQuantity: string | null;
+
   // ---- Moderation ----
 
   @ApiProperty({ nullable: true, description: 'Latest AI verdict: allow | review | block' })

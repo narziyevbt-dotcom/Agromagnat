@@ -13,13 +13,18 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swa
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ChatService, MessagePage } from './chat.service';
 import { ChatSummaryDto, QueryMessagesDto, SendMessageDto } from './dto/chat.dto';
+import { CreateOfferDto, OfferDto } from './dto/offer.dto';
 import { Message } from './entities/message.entity';
+import { OffersService } from './offers.service';
 
 @ApiTags('chat')
 @ApiBearerAuth()
 @Controller()
 export class ChatController {
-  constructor(private readonly chat: ChatService) {}
+  constructor(
+    private readonly chat: ChatService,
+    private readonly offers: OffersService,
+  ) {}
 
   @Post('listings/:id/chat')
   @HttpCode(HttpStatus.OK)
@@ -78,5 +83,60 @@ export class ChatController {
   @ApiOperation({ summary: 'Mark the other side\'s messages read and clear the badge' })
   read(@Param('id', ParseUUIDPipe) chatId: string, @CurrentUser('sub') userId: string) {
     return this.chat.markRead(chatId, userId);
+  }
+
+  // ------------------------------------------------------------- offers
+
+  @Get('chats/:id/offers')
+  @ApiOperation({ summary: 'Every offer in a conversation, newest first' })
+  @ApiOkResponse({ type: [OfferDto] })
+  listOffers(
+    @Param('id', ParseUUIDPipe) chatId: string,
+    @CurrentUser('sub') userId: string,
+  ): Promise<OfferDto[]> {
+    return this.offers.findForChat(chatId, userId);
+  }
+
+  @Post('chats/:id/offers')
+  @ApiOperation({ summary: 'Propose a price. One live offer per side per chat.' })
+  @ApiOkResponse({ type: OfferDto })
+  createOffer(
+    @Param('id', ParseUUIDPipe) chatId: string,
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateOfferDto,
+  ): Promise<OfferDto> {
+    return this.offers.create(chatId, userId, dto);
+  }
+
+  @Post('offers/:id/accept')
+  @ApiOperation({
+    summary: "Accept — closes the sale at the agreed price and expires rival offers",
+  })
+  @ApiOkResponse({ type: OfferDto })
+  acceptOffer(
+    @Param('id', ParseUUIDPipe) offerId: string,
+    @CurrentUser('sub') userId: string,
+  ): Promise<OfferDto> {
+    return this.offers.accept(offerId, userId);
+  }
+
+  @Post('offers/:id/decline')
+  @ApiOperation({ summary: "Decline the other side's offer" })
+  @ApiOkResponse({ type: OfferDto })
+  declineOffer(
+    @Param('id', ParseUUIDPipe) offerId: string,
+    @CurrentUser('sub') userId: string,
+  ): Promise<OfferDto> {
+    return this.offers.decline(offerId, userId);
+  }
+
+  @Post('offers/:id/withdraw')
+  @ApiOperation({ summary: 'Withdraw your own pending offer' })
+  @ApiOkResponse({ type: OfferDto })
+  withdrawOffer(
+    @Param('id', ParseUUIDPipe) offerId: string,
+    @CurrentUser('sub') userId: string,
+  ): Promise<OfferDto> {
+    return this.offers.withdraw(offerId, userId);
   }
 }
