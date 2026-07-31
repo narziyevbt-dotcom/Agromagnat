@@ -55,7 +55,7 @@ describe('CatalogService', () => {
       ]);
       expect(categories.find).toHaveBeenCalledTimes(1);
       // The raw rows are cached; the derived form spec is not.
-      expect(redis.set).toHaveBeenCalledWith('catalog:categories', rows, 3600);
+      expect(redis.set).toHaveBeenCalledWith('catalog:categories:v2', rows, 3600);
     });
 
     it('serves a cache hit without touching Postgres', async () => {
@@ -66,6 +66,20 @@ describe('CatalogService', () => {
       expect(result[0].slug).toBe('texnika');
       expect(categories.find).not.toHaveBeenCalled();
       expect(redis.set).not.toHaveBeenCalled();
+    });
+
+    it('re-reads Postgres when a cached row predates a field, rather than serving the old shape', async () => {
+      // This is the bug the version key exists for: rows cached before `kind`
+      // was added made every category fall through to the produce spec, and
+      // machinery was asked for kilos on a live site.
+      redis.get.mockResolvedValue([{ slug: 'texnika' }]);
+      categories.find!.mockResolvedValue([
+        { slug: 'texnika', kind: CategoryKind.MACHINERY },
+      ] as Category[]);
+
+      const [category] = await service.findCategories();
+      expect(categories.find).toHaveBeenCalledTimes(1);
+      expect(category.form!.kind).toBe(CategoryKind.MACHINERY);
     });
 
     it('expands the form spec even on a cache hit, so a stale year bound cannot be served', async () => {
@@ -100,7 +114,8 @@ describe('CatalogService', () => {
     });
 
     it('rejects an unknown category with an Uzbek message', async () => {
-      redis.get.mockResolvedValue([]);
+      redis.get.mockResolvedValue(null);
+      categories.find!.mockResolvedValue([]);
 
       await expect(service.findCategoryForm('nope')).rejects.toThrow('Kategoriya topilmadi');
     });
@@ -131,6 +146,6 @@ describe('CatalogService', () => {
 
   it('invalidateCache drops both reference-data keys', async () => {
     await service.invalidateCache();
-    expect(redis.del).toHaveBeenCalledWith('catalog:categories', 'catalog:regions');
+    expect(redis.del).toHaveBeenCalledWith('catalog:categories:v2', 'catalog:regions:v2');
   });
 });

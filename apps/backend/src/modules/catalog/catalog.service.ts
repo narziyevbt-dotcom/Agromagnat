@@ -10,6 +10,23 @@ import { Category } from './entities/category.entity';
 /** Reference data changes rarely — cache it for an hour. */
 const CACHE_TTL_SECONDS = 3600;
 
+/**
+ * Bumped whenever the cached row shape changes.
+ *
+ * Without it, a deploy that adds a column keeps serving the old shape for up to
+ * an hour: `kind` landed with a migration and the cache went on handing back
+ * rows that predated it, so every category fell through to the `produce` field
+ * spec and machinery was asked for kilos on a live site. The feed cache already
+ * carries a version for the same reason (`feed:v1:`); this one did not.
+ *
+ * Adding a field to `Category` without bumping this is a silent, hour-long,
+ * production-only bug.
+ */
+const CACHE_VERSION = 'v2';
+
+const CATEGORIES_KEY = `catalog:categories:${CACHE_VERSION}`;
+const REGIONS_KEY = `catalog:regions:${CACHE_VERSION}`;
+
 @Injectable()
 export class CatalogService {
   constructor(
@@ -20,9 +37,14 @@ export class CatalogService {
   ) {}
 
   async findCategories(): Promise<Category[]> {
-    const cacheKey = 'catalog:categories';
+    const cacheKey = CATEGORIES_KEY;
     const cached = await this.redis.get<Category[]>(cacheKey);
-    if (cached) {
+
+    // Belt to the version key's braces: an entry that predates a field is
+    // treated as a miss rather than served. The version bump is the fix; this
+    // is what makes forgetting one self-heal on the next request instead of
+    // quietly mis-rendering every posting form for an hour.
+    if (cached?.length && cached.every((category) => category.kind)) {
       // The spec is derived, and one of its bounds moves with the calendar, so
       // it is re-expanded on the way out rather than served from the cache.
       return cached.map((category) => this.withForm(category));
@@ -50,7 +72,7 @@ export class CatalogService {
   }
 
   async findRegions(): Promise<Region[]> {
-    const cacheKey = 'catalog:regions';
+    const cacheKey = REGIONS_KEY;
     const cached = await this.redis.get<Region[]>(cacheKey);
     if (cached) {
       return cached;
@@ -75,6 +97,6 @@ export class CatalogService {
 
   /** Called by seeds and admin writes so stale reference data never lingers. */
   async invalidateCache(): Promise<void> {
-    await this.redis.del('catalog:categories', 'catalog:regions');
+    await this.redis.del(CATEGORIES_KEY, REGIONS_KEY);
   }
 }
