@@ -12,7 +12,7 @@ one codebase. Uzbek UI throughout.
 | Listing detail — price, volume, seller, call bar | built |
 | Sign in — phone + SMS OTP | built · [MOBILE-AUTH.md](MOBILE-AUTH.md) |
 | Profile — account, sign out | built |
-| Add listing | gated placeholder |
+| Add listing — category-aware form | built · [MOBILE-POSTING.md](MOBILE-POSTING.md) |
 | Messages | gated placeholder |
 
 Everything runs on mock repositories. No backend is needed to open the app.
@@ -28,6 +28,7 @@ lib/
   features/
     listings/      domain → data → presentation      ← owns the listing model
     auth/          domain → data → presentation      ← owns the session
+    add_listing/   presentation                      ← renders the API's form spec
     home/          presentation
     search/        presentation
     profile/       presentation
@@ -93,7 +94,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 92 tests
+flutter test          # 123 tests
 flutter analyze       # clean
 ```
 
@@ -148,6 +149,7 @@ time it is compiled.
 
 ## Next
 
-1. Add Listing — category-aware form, then voice-first posting
-2. Real API behind the existing repository interfaces, including token refresh
-3. Messages
+1. Photos on a listing — picker plus the S3 presign flow
+2. Voice-first posting — the mic on Add Listing, `POST /ai/draft`
+3. Real API behind the existing repository interfaces, including token refresh
+4. Messages

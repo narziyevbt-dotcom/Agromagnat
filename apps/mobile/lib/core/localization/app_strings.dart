@@ -106,6 +106,30 @@ abstract final class AppStrings {
   static const String signInRequiredMessages =
       'Xabarlashish uchun kiring';
 
+  // Posting a listing
+  static const String chooseCategory = 'Nima sotmoqchisiz?';
+  static const String listingTitle = 'Sarlavha';
+  static const String listingTitleHint = 'Xaridor qidiruvda shuni ko\'radi';
+  static const String listingTitlePlaceholder = 'Urgut pomidori, gruntda';
+  static const String listingDescription = 'Tavsif';
+  static const String listingDescriptionHint = 'Ixtiyoriy — navi, sifati, qadoq haqida';
+  static const String whereFrom = 'Qayerdan';
+  static const String extras = "Qo'shimcha";
+  static const String wholesalePrice = 'Ulgurji narx';
+  static const String notChosen = 'Tanlanmagan';
+  static const String chooseDate = 'Sanani tanlash';
+  static const String clear = 'Olib tashlash';
+  static const String publish = "E'lonni joylash";
+  static const String published = "E'lon joylandi";
+  static const String publishedHint =
+      "E'loningiz 14 kun faol turadi. Xaridorlar to'g'ridan-to'g'ri qo'ng'iroq qiladi.";
+  static const String viewListing = "E'lonni ko'rish";
+  static const String postAnother = 'Yana joylash';
+  static const String fixErrors = "Ba'zi maydonlarni to'ldiring";
+  static const String discardDraft = "E'londan voz kechasizmi?";
+  static const String discard = 'Voz kechish';
+  static const String keepEditing = 'Davom etish';
+
   /// Result counts read naturally in Uzbek without a plural form — the noun
   /// does not inflect after a number.
   static String resultCount(int count) => "$count ta e'lon";

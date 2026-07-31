@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/pagination/paginated.dart';
 import '../entities/listing.dart';
+import '../entities/listing_draft.dart';
 import '../entities/units.dart';
 
 /// How the feed is ordered. The default is newest-first; a wholesale buyer
@@ -132,6 +133,19 @@ class ListingQuery {
       );
 }
 
+/// Field key → Uzbek message, as the API returns on a rejected create.
+///
+/// Keyed rather than a flat list so the form can put each message under the
+/// field it belongs to. A farmer told only "something is wrong" has to hunt.
+class ListingValidationException implements Exception {
+  const ListingValidationException(this.errors);
+
+  final Map<String, String> errors;
+
+  @override
+  String toString() => 'ListingValidationException($errors)';
+}
+
 /// Thrown when a listing id does not resolve — deleted, blocked, or a stale
 /// link pasted from Telegram.
 class ListingNotFoundException implements Exception {
@@ -152,4 +166,11 @@ abstract interface class ListingRepository {
 
   /// Toggles the saved state and returns the listing as it now stands.
   Future<Listing> toggleFavorite(String id);
+
+  /// Publishes a draft and returns the listing it became.
+  ///
+  /// Throws [ListingValidationException] when the server rejects it. The
+  /// client checks the same rules first, but it is the server's answer that
+  /// decides — the spec can move between app releases.
+  Future<Listing> create(ListingDraft draft);
 }

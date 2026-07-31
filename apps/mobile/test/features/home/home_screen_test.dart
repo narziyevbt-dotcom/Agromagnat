@@ -2,6 +2,7 @@ import 'package:agromagnat/core/localization/app_strings.dart';
 import 'package:agromagnat/core/pagination/paginated.dart';
 import 'package:agromagnat/features/home/presentation/home_screen.dart';
 import 'package:agromagnat/features/listings/domain/entities/listing.dart';
+import 'package:agromagnat/features/listings/domain/entities/listing_draft.dart';
 import 'package:agromagnat/features/listings/domain/repositories/listing_repository.dart';
 import 'package:agromagnat/features/listings/presentation/providers/listing_providers.dart';
 import 'package:agromagnat/features/listings/presentation/widgets/listing_card.dart';
@@ -92,6 +93,9 @@ class _FailingListingRepository implements ListingRepository {
 
   @override
   Future<Listing> toggleFavorite(String id) => Future.error(const _Offline());
+
+  @override
+  Future<Listing> create(ListingDraft draft) => Future.error(const _Offline());
 }
 
 class _Offline implements Exception {

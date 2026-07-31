@@ -1,6 +1,7 @@
 import '../../domain/entities/category.dart';
 import '../../domain/entities/location.dart';
 import '../../domain/entities/units.dart';
+import 'form_spec_fixtures.dart';
 
 /// Reference data for the mock repositories.
 ///
@@ -48,8 +49,25 @@ abstract final class CatalogFixtures {
     District(id: 'dis-nukus', regionId: 'reg-qor', nameUz: 'Nukus', slug: 'nukus'),
   ];
 
-  static const List<ListingCategory> categories = [
-    ListingCategory(
+  /// Expanded from `kind` on every read, mirroring the API. Not `const`: the
+  /// machinery spec's year ceiling depends on the calendar.
+  static List<ListingCategory> get categories => [
+        for (final seed in _categorySeeds)
+          ListingCategory(
+            id: seed.id,
+            nameUz: seed.nameUz,
+            slug: seed.slug,
+            kind: seed.kind,
+            unitDefault: seed.unitDefault,
+            emoji: seed.emoji,
+            isFeatured: seed.isFeatured,
+            sortOrder: seed.sortOrder,
+            form: FormSpecFixtures.forKind(seed.kind),
+          ),
+      ];
+
+  static const List<_CategorySeed> _categorySeeds = [
+    _CategorySeed(
       id: 'cat-meva',
       nameUz: 'Mevalar',
       slug: 'mevalar',
@@ -59,7 +77,7 @@ abstract final class CatalogFixtures {
       isFeatured: true,
       sortOrder: 1,
     ),
-    ListingCategory(
+    _CategorySeed(
       id: 'cat-sabzavot',
       nameUz: 'Sabzavotlar',
       slug: 'sabzavotlar',
@@ -69,7 +87,7 @@ abstract final class CatalogFixtures {
       isFeatured: true,
       sortOrder: 2,
     ),
-    ListingCategory(
+    _CategorySeed(
       id: 'cat-poliz',
       nameUz: 'Poliz ekinlari',
       slug: 'poliz',
@@ -79,7 +97,7 @@ abstract final class CatalogFixtures {
       isFeatured: true,
       sortOrder: 3,
     ),
-    ListingCategory(
+    _CategorySeed(
       id: 'cat-don',
       nameUz: 'Don va dukkakli',
       slug: 'don',
@@ -89,7 +107,7 @@ abstract final class CatalogFixtures {
       isFeatured: true,
       sortOrder: 4,
     ),
-    ListingCategory(
+    _CategorySeed(
       id: 'cat-quruq',
       nameUz: 'Quruq mevalar',
       slug: 'quruq-mevalar',
@@ -99,7 +117,7 @@ abstract final class CatalogFixtures {
       isFeatured: true,
       sortOrder: 5,
     ),
-    ListingCategory(
+    _CategorySeed(
       id: 'cat-kokat',
       nameUz: "Ko'katlar",
       slug: 'kokatlar',
@@ -109,7 +127,7 @@ abstract final class CatalogFixtures {
       isFeatured: true,
       sortOrder: 6,
     ),
-    ListingCategory(
+    _CategorySeed(
       id: 'cat-chorva',
       nameUz: 'Chorva mollari',
       slug: 'chorva',
@@ -119,7 +137,7 @@ abstract final class CatalogFixtures {
       isFeatured: true,
       sortOrder: 7,
     ),
-    ListingCategory(
+    _CategorySeed(
       id: 'cat-urug',
       nameUz: "Urug' va ko'chat",
       slug: 'urug-kochat',
@@ -129,7 +147,7 @@ abstract final class CatalogFixtures {
       isFeatured: true,
       sortOrder: 8,
     ),
-    ListingCategory(
+    _CategorySeed(
       id: 'cat-texnika',
       nameUz: 'Qishloq texnikasi',
       slug: 'texnika',
@@ -138,7 +156,7 @@ abstract final class CatalogFixtures {
       emoji: '🚜',
       sortOrder: 9,
     ),
-    ListingCategory(
+    _CategorySeed(
       id: 'cat-xizmat',
       nameUz: 'Xizmatlar',
       slug: 'xizmatlar',
@@ -146,6 +164,15 @@ abstract final class CatalogFixtures {
       unitDefault: QuantityUnit.xizmat,
       emoji: '🛠',
       sortOrder: 10,
+    ),
+    _CategorySeed(
+      id: 'cat-yer',
+      nameUz: 'Yer',
+      slug: 'yer',
+      kind: CategoryKind.land,
+      unitDefault: QuantityUnit.ga,
+      emoji: '🏞',
+      sortOrder: 11,
     ),
   ];
 
@@ -157,4 +184,27 @@ abstract final class CatalogFixtures {
 
   static ListingCategory categoryById(String id) =>
       categories.firstWhere((category) => category.id == id);
+}
+
+/// A category before its form spec is expanded from its kind.
+class _CategorySeed {
+  const _CategorySeed({
+    required this.id,
+    required this.nameUz,
+    required this.slug,
+    required this.kind,
+    required this.unitDefault,
+    this.emoji,
+    this.isFeatured = false,
+    this.sortOrder = 0,
+  });
+
+  final String id;
+  final String nameUz;
+  final String slug;
+  final CategoryKind kind;
+  final QuantityUnit unitDefault;
+  final String? emoji;
+  final bool isFeatured;
+  final int sortOrder;
 }

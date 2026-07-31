@@ -22,6 +22,11 @@ Future<void> toggleFavoriteOrSignIn(
   await ref.read(authControllerProvider.notifier).ready;
 
   if (!ref.read(isSignedInProvider)) {
+    // The restore is awaited above, so the screen may have gone in the
+    // meantime — a back-press while a slow keystore read was in flight.
+    if (!context.mounted) {
+      return;
+    }
     final signedIn = await promptSignIn(context);
     if (!signedIn) {
       return;

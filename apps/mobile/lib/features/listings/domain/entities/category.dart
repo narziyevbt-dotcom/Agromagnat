@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart';
 
+import 'category_form.dart';
 import 'units.dart';
 
 /// A top-level catalogue entry: Mevalar, Sabzavotlar, Poliz, Don…
 ///
-/// [kind] drives the posting form. The full form spec the web app receives is
-/// not modelled yet — the posting flow lands in a later slice, and carrying a
-/// structure nothing reads would be dead weight.
+/// [form] is expanded from [kind] by the API on every read, and is what the
+/// posting screen renders. The client never decides which questions a category
+/// asks — do that and the backend ends up validating one shape while the app
+/// collects another.
 @immutable
 class ListingCategory {
   const ListingCategory({
@@ -15,6 +17,7 @@ class ListingCategory {
     required this.slug,
     required this.kind,
     required this.unitDefault,
+    required this.form,
     this.emoji,
     this.isFeatured = false,
     this.sortOrder = 0,
@@ -27,6 +30,9 @@ class ListingCategory {
 
   /// Pre-selected in the volume field when posting into this category.
   final QuantityUnit unitDefault;
+
+  /// Which questions this category's posting form asks.
+  final CategoryFormSpec form;
 
   /// Stands in for the icon until the real icon set is drawn. The API sends an
   /// `icon` name; mapping it to an asset is a job for the design pass.

@@ -1,5 +1,7 @@
 import '../../../../core/pagination/paginated.dart';
 import '../../domain/entities/listing.dart';
+import '../../domain/entities/listing_draft.dart';
+import '../../domain/entities/units.dart';
 import '../../domain/repositories/listing_repository.dart';
 import '../fixtures/listing_fixtures.dart';
 
@@ -13,9 +15,11 @@ class MockListingRepository implements ListingRepository {
   MockListingRepository({
     DateTime? now,
     this.latency = const Duration(milliseconds: 350),
-  }) : _listings = ListingFixtures.build(now ?? DateTime.now());
+  })  : _now = now ?? DateTime.now(),
+        _listings = ListingFixtures.build(now ?? DateTime.now());
 
   final Duration latency;
+  final DateTime _now;
   final List<Listing> _listings;
 
   /// Saved state lives here rather than on the entity so a toggle survives a
@@ -66,6 +70,43 @@ class MockListingRepository implements ListingRepository {
       _favorites.add(id);
     }
     return _withFavorite(listing);
+  }
+
+  @override
+  Future<Listing> create(ListingDraft draft) async {
+    await Future<void>.delayed(latency);
+
+    // The server validates too, and its answer is the one that counts — but it
+    // returns the same shape, so the form has one error path rather than two.
+    final errors = draft.validate();
+    if (errors.isNotEmpty) {
+      throw ListingValidationException(errors);
+    }
+
+    final listing = Listing(
+      id: 'lst-${_listings.length + 1}'.padLeft(7, '0'),
+      title: draft.title.trim(),
+      description: draft.description.trim().isEmpty ? null : draft.description.trim(),
+      status: ListingStatus.active,
+      quantity: draft.quantity!,
+      quantityUnit: draft.quantityUnit!,
+      price: draft.price!,
+      priceUnit: draft.priceUnit!,
+      minOrder: draft.minOrder,
+      category: draft.category!,
+      region: draft.region!,
+      district: draft.district!,
+      seller: ListingFixtures.sellers.first,
+      harvestDate: draft.harvestDate,
+      delivery: draft.delivery,
+      createdAt: _now,
+      // Listings auto-expire 14 days after posting.
+      expiresAt: _now.add(const Duration(days: 14)),
+    );
+
+    // Newest first, which is where the feed will look for it.
+    _listings.insert(0, listing);
+    return listing;
   }
 
   Listing _withFavorite(Listing listing) =>
