@@ -20,6 +20,10 @@ export const envValidationSchema = Joi.object({
   DB_SYNCHRONIZE: Joi.boolean().default(false),
   DB_LOGGING: Joi.boolean().default(false),
 
+  // Read by docker-entrypoint.sh, not by the app: seed reference data on boot.
+  // For platforms with no shell access; the standard deploy seeds by hand.
+  SEED_ON_START: Joi.boolean().default(false),
+
   // Redis
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().port().default(6379),
@@ -63,4 +67,8 @@ export const envValidationSchema = Joi.object({
 
   // Swagger
   SWAGGER_ENABLED: Joi.boolean().default(true),
+
+  // Comma-separated browser origins allowed to call the API cross-site.
+  // Empty when nginx serves the web app and the API from one origin.
+  CORS_ORIGINS: Joi.string().allow('').default(''),
 });

@@ -1,0 +1,117 @@
+# Render blueprint — TEST environment only.
+#
+# Production runs on a server inside Uzbekistan (docs/DEPLOY.md); user data is
+# required by law to be hosted there, and Render has no Uzbek region. This
+# exists so the Vercel frontend has a real API to talk to while the product is
+# being reviewed. Treat everything it holds as throwaway.
+#
+# Apply: Render dashboard -> New -> Blueprint -> pick this repo.
+# Full walkthrough: docs/DEPLOY-TEST.md
+
+databases:
+  - name: agromagnat-db
+    databaseName: agromagnat
+    user: agromagnat
+    plan: free
+    region: frankfurt
+
+services:
+  # Redis-compatible cache. Holds OTP codes, rate-limit counters and the feed
+  # cache — all of it reconstructible, so the free plan's eviction is harmless.
+  # On older Render accounts this type is still called `redis`.
+  - type: keyvalue
+    name: agromagnat-redis
+    plan: free
+    region: frankfurt
+    ipAllowList: [] # internal connections only
+
+  - type: web
+    name: agromagnat-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    # Context is apps/backend because the Dockerfile copies package.json from
+    # its own directory rather than from the repo root.
+    dockerfilePath: ./apps/backend/Dockerfile
+    dockerContext: ./apps/backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+
+      # Swagger stays on here and only here: this instance exists to be poked at.
+      - key: SWAGGER_ENABLED
+        value: true
+
+      # The Vercel origin(s), comma-separated. Filled in after the frontend
+      # gets its URL — see docs/DEPLOY-TEST.md, step 4.
+      - key: CORS_ORIGINS
+        sync: false
+
+      - key: DB_HOST
+        fromDatabase: { name: agromagnat-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: agromagnat-db, property: port }
+      - key: DB_USER
+        fromDatabase: { name: agromagnat-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: agromagnat-db, property: password }
+      - key: DB_NAME
+        fromDatabase: { name: agromagnat-db, property: database }
+      - key: DB_SYNCHRONIZE
+        value: false
+      - key: DB_LOGGING
+        value: false
+
+      # Regions, districts and categories are seeded on boot. The free plan has
+      # no shell to run it by hand, and a listing cannot be posted without them.
+      - key: SEED_ON_START
+        value: true
+
+      - key: REDIS_HOST
+        fromService: { type: keyvalue, name: agromagnat-redis, property: host }
+      - key: REDIS_PORT
+        fromService: { type: keyvalue, name: agromagnat-redis, property: port }
+      - key: REDIS_PASSWORD
+        value: ''
+      - key: REDIS_DB
+        value: 0
+
+      # Rotated automatically on every blueprint apply; nobody has to invent them.
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_TTL
+        value: 30d
+
+      # !!! mock means the OTP is ALWAYS 000000 — anyone can sign in as anyone.
+      # That is the point on a test box (no Eskiz credit spent), and it is
+      # exactly why this deployment must never hold real user data.
+      - key: SMS_PROVIDER
+        value: mock
+
+      # Notifications are logged, not delivered. Set PUSH_PROVIDER=fcm plus the
+      # FCM_* values to test real push.
+      - key: PUSH_PROVIDER
+        value: mock
+
+      # Render has no object storage. Photo upload fails until these point at a
+      # real S3-compatible bucket (Cloudflare R2 has a free tier); everything
+      # else works without them.
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: S3_PUBLIC_URL
+        sync: false

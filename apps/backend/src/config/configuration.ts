@@ -2,6 +2,12 @@ export interface AppConfig {
   nodeEnv: string;
   port: number;
   swaggerEnabled: boolean;
+  /**
+   * Browser origins allowed to call the API cross-site. Empty in the standard
+   * deploy, where nginx puts the web app and the API on one origin and CORS
+   * never enters the picture; set when the frontend lives on its own domain.
+   */
+  corsOrigins: string[];
 }
 
 export interface DatabaseConfig {
@@ -62,11 +68,19 @@ export interface AiConfig {
 const toBool = (value?: string, fallback = false): boolean =>
   value === undefined ? fallback : ['true', '1', 'yes'].includes(value.toLowerCase());
 
+/** Comma-separated origins, trailing slashes trimmed — the Origin header has none. */
+const toOrigins = (value?: string): string[] =>
+  (value ?? '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
 export default () => ({
   app: {
     nodeEnv: process.env.NODE_ENV ?? 'development',
     port: parseInt(process.env.PORT ?? '3000', 10),
     swaggerEnabled: toBool(process.env.SWAGGER_ENABLED, true),
+    corsOrigins: toOrigins(process.env.CORS_ORIGINS),
   } satisfies AppConfig,
   database: {
     host: process.env.DB_HOST ?? 'localhost',

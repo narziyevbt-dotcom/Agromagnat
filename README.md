@@ -137,6 +137,10 @@ Ubuntu 24 server is in [docs/DEPLOY.md](docs/DEPLOY.md). User data must be
 hosted inside Uzbekistan, which constrains the choice of provider — see the
 note at the top of that document.
 
+For a throwaway review environment on real URLs — web on Vercel, API on Render —
+see [docs/DEPLOY-TEST.md](docs/DEPLOY-TEST.md). It is not production and cannot
+be: the OTP is mocked there, so anyone can sign in as anyone.
+
 ## Conventions
 
 Each feature ships with a migration, API, DTO validation, tests and a short note in

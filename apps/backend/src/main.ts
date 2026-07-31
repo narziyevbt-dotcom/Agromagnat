@@ -3,6 +3,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import type { AppConfig } from './config/configuration';
 
@@ -10,10 +11,34 @@ async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
-  const { port, swaggerEnabled, nodeEnv } = config.getOrThrow<AppConfig>('app');
+  const { port, swaggerEnabled, nodeEnv, corsOrigins } =
+    config.getOrThrow<AppConfig>('app');
 
   app.setGlobalPrefix('api', { exclude: ['health'] });
   app.enableShutdownHooks();
+
+  // Standard security headers. The CSP is dropped where Swagger runs, because
+  // its UI is inline script and would be blocked by the default policy; in
+  // production Swagger is off and the full policy applies.
+  app.use(helmet({ contentSecurityPolicy: swaggerEnabled ? false : undefined }));
+
+  /*
+   * Cross-origin access is opt-in through CORS_ORIGINS.
+   *
+   * The standard deploy puts nginx in front of both the web app and the API on
+   * one origin, so nothing cross-site happens and no header is needed. A
+   * frontend on its own domain — a Vercel preview, later the mobile web build —
+   * has to be named explicitly. Reflecting whatever Origin arrives would be the
+   * easy version and would hand any site on the internet an authenticated
+   * channel to this API.
+   */
+  if (corsOrigins.length) {
+    app.enableCors({ origin: corsOrigins, credentials: true, maxAge: 86_400 });
+    logger.log(`CORS enabled for: ${corsOrigins.join(', ')}`);
+  } else if (nodeEnv !== 'production') {
+    app.enableCors({ origin: true, credentials: true });
+  }
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
