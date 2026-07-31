@@ -5,8 +5,10 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ListingsModule } from './modules/listings/listings.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { StorageModule } from './modules/storage/storage.module';
 
@@ -22,6 +24,8 @@ import { StorageModule } from './modules/storage/storage.module';
     CatalogModule,
     ListingsModule,
     StatsModule,
+    ReportsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

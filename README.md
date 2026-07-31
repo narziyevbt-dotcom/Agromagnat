@@ -120,7 +120,7 @@ than writing them inline — that is what keeps saffron confined to CTAs.
 | **Public web marketplace** | ✅ |
 | Landing page + seller dashboard | ✅ |
 | Production deploy artifacts (Docker, nginx, CI/CD, backups) | ✅ |
-| Admin panel | ⬜ |
+| Admin panel (moderation, users, reports) | ✅ |
 | Chat, reviews, push | ⬜ |
 | AI: voice listing, pricing, moderation, search | ⬜ |
 | Mobile screens + wiring | ⬜ |

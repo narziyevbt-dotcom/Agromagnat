@@ -15,7 +15,9 @@ in Uzbek.
 - Files: S3-compatible (MinIO in dev) - Push: Firebase FCM - Maps: Yandex Maps
 - AI: OpenAI-compatible API behind an AiService abstraction
 - Web: Next.js (App Router, SSR) for the public marketplace - listings must be
-  indexable by Google; React + Vite for the admin panel
+  indexable by Google; admin panel lives in the same Next.js app under /admin
+  behind a role guard (a separate Vite app would duplicate the API client,
+  session handling and design tokens for no gain)
 - Monorepo: apps/web, apps/mobile, apps/backend, docker-compose (Postgres + Redis + MinIO)
 
 ## Design system (follow exactly)

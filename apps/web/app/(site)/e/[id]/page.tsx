@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { CallButton } from '@/components/CallButton';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { PhotoGallery } from '@/components/PhotoGallery';
+import { ReportButton } from '@/components/ReportButton';
 import { SeasonStrip } from '@/components/SeasonStrip';
 import { ApiError, getListing } from '@/lib/api';
 import {
@@ -193,6 +194,10 @@ export default async function ListingPage({ params }: Props) {
           </p>
         </section>
       )}
+
+      <div className="mt-8">
+        <ReportButton listingId={listing.id} />
+      </div>
 
       <ListingJsonLd listing={listing} />
     </div>

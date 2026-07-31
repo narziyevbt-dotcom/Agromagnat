@@ -1,4 +1,8 @@
 import type {
+  AdminOverview,
+  AdminPage,
+  AdminReport,
+  AdminUser,
   AuthTokens,
   Category,
   CurrentUser,
@@ -8,6 +12,7 @@ import type {
   Paginated,
   PriceTrend,
   Region,
+  ReportReason,
   SellerStats,
 } from './types';
 
@@ -207,3 +212,89 @@ export const logout = (refreshToken: string, token?: string) =>
 
 export const getMe = (token: string) =>
   apiFetch<CurrentUser>('/auth/me', { token, revalidate: 0 });
+
+/* -------------------------------------------------------------- reports */
+
+export const reportListing = (
+  listingId: string,
+  reason: ReportReason,
+  comment: string | undefined,
+  token: string,
+) =>
+  apiFetch<unknown>(`/listings/${listingId}/report`, {
+    method: 'POST',
+    body: { reason, ...(comment ? { comment } : {}) },
+    token,
+  });
+
+/* ---------------------------------------------------------------- admin */
+
+const adminQuery = (params: Record<string, string | number | undefined>) => {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') search.set(key, String(value));
+  }
+  const query = search.toString();
+  return query ? `?${query}` : '';
+};
+
+export const getAdminOverview = (token: string) =>
+  apiFetch<AdminOverview>('/admin/stats', { token, revalidate: 0 });
+
+export const getAdminListings = (
+  token: string,
+  params: { status?: string; q?: string; page?: number } = {},
+) =>
+  apiFetch<AdminPage<Listing>>(`/admin/listings${adminQuery(params)}`, {
+    token,
+    revalidate: 0,
+  });
+
+export const adminApproveListing = (id: string, token: string) =>
+  apiFetch<Listing>(`/admin/listings/${id}/approve`, { method: 'POST', token });
+
+export const adminBlockListing = (id: string, reason: string, token: string) =>
+  apiFetch<Listing>(`/admin/listings/${id}/block`, {
+    method: 'POST',
+    body: { reason },
+    token,
+  });
+
+export const adminPromoteListing = (id: string, days: number, token: string) =>
+  apiFetch<Listing>(`/admin/listings/${id}/promote`, {
+    method: 'POST',
+    body: { days },
+    token,
+  });
+
+export const getAdminUsers = (
+  token: string,
+  params: { q?: string; page?: number } = {},
+) => apiFetch<AdminPage<AdminUser>>(`/admin/users${adminQuery(params)}`, { token, revalidate: 0 });
+
+export const adminSetUserVerified = (id: string, value: boolean, token: string) =>
+  apiFetch<AdminUser>(`/admin/users/${id}/verify`, { method: 'POST', body: { value }, token });
+
+export const adminSetUserBlocked = (id: string, value: boolean, token: string) =>
+  apiFetch<AdminUser>(`/admin/users/${id}/block`, { method: 'POST', body: { value }, token });
+
+export const getAdminReports = (
+  token: string,
+  params: { status?: string; page?: number } = {},
+) =>
+  apiFetch<AdminPage<AdminReport>>(`/admin/reports${adminQuery(params)}`, {
+    token,
+    revalidate: 0,
+  });
+
+export const adminResolveReport = (
+  id: string,
+  outcome: 'resolved' | 'rejected',
+  note: string | undefined,
+  token: string,
+) =>
+  apiFetch<AdminReport>(`/admin/reports/${id}/resolve`, {
+    method: 'POST',
+    body: { outcome, ...(note ? { note } : {}) },
+    token,
+  });

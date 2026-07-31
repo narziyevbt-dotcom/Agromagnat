@@ -83,6 +83,7 @@ export interface Listing {
   seasonMonths: number[];
 
   isPromoted: boolean;
+  promotedUntil: string | null;
   viewCount: number;
   callCount: number;
   favoriteCount: number;
@@ -113,6 +114,8 @@ export interface CurrentUser {
   id: string;
   phone: string;
   name: string | null;
+  role: 'user' | 'moderator' | 'admin';
+  isBlocked: boolean;
   isVerified: boolean;
   ratingAvg: string;
   ratingCount: number;
@@ -158,4 +161,53 @@ export interface ListingFilters {
   sort?: ListingSort;
   cursor?: string;
   limit?: number;
+}
+
+/* ---------------------------------------------------------------- admin */
+
+export interface AdminOverview {
+  totalUsers: number;
+  newUsers7d: number;
+  activeListings: number;
+  pendingListings: number;
+  openReports: number;
+  totalViews: number;
+  totalCalls: number;
+}
+
+export interface AdminPage<T> {
+  items: T[];
+  total: number;
+}
+
+export interface AdminUser {
+  id: string;
+  phone: string;
+  name: string | null;
+  role: 'user' | 'moderator' | 'admin';
+  isVerified: boolean;
+  isBlocked: boolean;
+  ratingAvg: string;
+  salesCount: number;
+  createdAt: string;
+}
+
+export type ReportReason =
+  | 'scam'
+  | 'wrong_category'
+  | 'wrong_price'
+  | 'already_sold'
+  | 'prohibited'
+  | 'spam'
+  | 'other';
+
+export interface AdminReport {
+  id: string;
+  reason: ReportReason;
+  comment: string | null;
+  status: 'open' | 'resolved' | 'rejected';
+  resolutionNote: string | null;
+  createdAt: string;
+  listing?: Listing;
+  reporter?: AdminUser;
 }
