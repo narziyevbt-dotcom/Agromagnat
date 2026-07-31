@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'category.dart';
 import 'category_form.dart';
+import 'draft_photo.dart';
 import 'location.dart';
 import 'units.dart';
 
@@ -28,6 +29,7 @@ class ListingDraft {
     this.harvestDate,
     this.delivery = DeliveryOption.none,
     this.attributes = const {},
+    this.photos = const [],
   });
 
   final ListingCategory? category;
@@ -50,6 +52,10 @@ class ListingDraft {
   /// Answers to the category's own questions, keyed by the spec's keys.
   final Map<String, Object> attributes;
 
+  /// Chosen on the device, uploaded once the listing exists. The first is the
+  /// cover — it is the one the feed shows.
+  final List<DraftPhoto> photos;
+
   CategoryFormSpec? get spec => category?.form;
 
   ListingDraft copyWith({
@@ -67,6 +73,7 @@ class ListingDraft {
     Object? harvestDate = _unset,
     DeliveryOption? delivery,
     Map<String, Object>? attributes,
+    List<DraftPhoto>? photos,
   }) {
     return ListingDraft(
       category: category == _unset ? this.category : category as ListingCategory?,
@@ -87,6 +94,7 @@ class ListingDraft {
           harvestDate == _unset ? this.harvestDate : harvestDate as DateTime?,
       delivery: delivery ?? this.delivery,
       attributes: attributes ?? this.attributes,
+      photos: photos ?? this.photos,
     );
   }
 

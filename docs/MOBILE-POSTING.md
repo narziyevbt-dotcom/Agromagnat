@@ -85,8 +85,6 @@ across a switch into machinery, and the test that objected was right.
 
 ## Not done yet
 
-- **Photos.** The listing model carries them and the card renders them; there
-  is no picker or upload, which needs `image_picker` plus the S3 presign flow.
 - **Voice-first posting.** The product rule is a mic on this screen that
   transcribes and fills the whole form (`POST /ai/draft` returns values plus
   `missingUz`; AI drafts, it never publishes). That needs audio recording — a

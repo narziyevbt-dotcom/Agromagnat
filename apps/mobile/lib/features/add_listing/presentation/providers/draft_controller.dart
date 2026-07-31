@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../listings/data/photo_picker.dart';
 import '../../../listings/domain/entities/category.dart';
+import '../../../listings/domain/entities/draft_photo.dart';
 import '../../../listings/domain/entities/listing.dart';
 import '../../../listings/domain/entities/listing_draft.dart';
 import '../../../listings/domain/entities/location.dart';
@@ -17,6 +19,8 @@ class DraftState {
     this.submitting = false,
     this.published,
     this.failure,
+    this.uploaded = 0,
+    this.photoFailure,
   });
 
   final ListingDraft draft;
@@ -33,12 +37,22 @@ class DraftState {
   /// Something that is not a field problem — no connection, server down.
   final String? failure;
 
+  /// How many photos have made it up, for the progress line during submit.
+  final int uploaded;
+
+  /// Set when the listing published but its photos did not. Deliberately not
+  /// a [failure]: the listing exists and is live, and saying otherwise would
+  /// send the seller to post it a second time.
+  final String? photoFailure;
+
   DraftState copyWith({
     ListingDraft? draft,
     Map<String, String>? errors,
     bool? submitting,
     Object? published = _unset,
     Object? failure = _unset,
+    int? uploaded,
+    Object? photoFailure = _unset,
   }) {
     return DraftState(
       draft: draft ?? this.draft,
@@ -46,6 +60,9 @@ class DraftState {
       submitting: submitting ?? this.submitting,
       published: published == _unset ? this.published : published as Listing?,
       failure: failure == _unset ? this.failure : failure as String?,
+      uploaded: uploaded ?? this.uploaded,
+      photoFailure:
+          photoFailure == _unset ? this.photoFailure : photoFailure as String?,
     );
   }
 
@@ -53,9 +70,13 @@ class DraftState {
 }
 
 class DraftController extends StateNotifier<DraftState> {
-  DraftController(this._repository) : super(const DraftState());
+  DraftController(this._repository, this._picker) : super(const DraftState());
 
   final ListingRepository _repository;
+  final PhotoPicker _picker;
+
+  /// The API's ceiling. Matches MAX_PHOTOS in listings.service.ts.
+  static const int maxPhotos = 5;
 
   void _edit(ListingDraft next) {
     // Errors are recomputed rather than kept: once a field is fixed its message
@@ -119,6 +140,55 @@ class DraftController extends StateNotifier<DraftState> {
     _edit(state.draft.copyWith(attributes: next));
   }
 
+  // --- photos ---------------------------------------------------------
+
+  int get remainingPhotoSlots => maxPhotos - state.draft.photos.length;
+
+  Future<void> addFromCamera() async {
+    if (remainingPhotoSlots <= 0) {
+      return;
+    }
+    final photo = await _picker.takePhoto();
+    if (photo != null) {
+      _addPhotos([photo]);
+    }
+  }
+
+  Future<void> addFromGallery() async {
+    final slots = remainingPhotoSlots;
+    if (slots <= 0) {
+      return;
+    }
+    _addPhotos(await _picker.pickFromGallery(limit: slots));
+  }
+
+  void removePhoto(DraftPhoto photo) {
+    _edit(
+      state.draft.copyWith(
+        photos: [...state.draft.photos]..remove(photo),
+      ),
+    );
+  }
+
+  /// Promotes a photo to the front, which is what the feed shows.
+  void makeCover(DraftPhoto photo) {
+    final rest = [...state.draft.photos]..remove(photo);
+    _edit(state.draft.copyWith(photos: [photo, ...rest]));
+  }
+
+  void _addPhotos(List<DraftPhoto> incoming) {
+    // Picking the same file twice is easy to do in a gallery grid, and two
+    // identical photos on a listing look like a mistake because they are one.
+    final existing = state.draft.photos;
+    final fresh = incoming.where((photo) => !existing.contains(photo));
+
+    _edit(
+      state.draft.copyWith(
+        photos: [...existing, ...fresh].take(maxPhotos).toList(),
+      ),
+    );
+  }
+
   /// Validates, then publishes. Returns true when the listing exists.
   Future<bool> submit() async {
     if (state.submitting) {
@@ -135,10 +205,9 @@ class DraftController extends StateNotifier<DraftState> {
 
     state = state.copyWith(submitting: true, errors: const {}, failure: null);
 
+    final Listing listing;
     try {
-      final listing = await _repository.create(state.draft);
-      state = state.copyWith(submitting: false, published: listing);
-      return true;
+      listing = await _repository.create(state.draft);
     } on ListingValidationException catch (error) {
       state = state.copyWith(submitting: false, errors: error.errors);
       return false;
@@ -149,10 +218,45 @@ class DraftController extends StateNotifier<DraftState> {
       );
       return false;
     }
+
+    // The listing is live from here on. Photos are a separate call, and it
+    // failing must not read as the post having failed — that would send the
+    // seller round to publish a duplicate.
+    if (state.draft.photos.isEmpty) {
+      state = state.copyWith(submitting: false, published: listing);
+      return true;
+    }
+
+    try {
+      final withPhotos =
+          await _repository.addPhotos(listing.id, state.draft.photos);
+      state = state.copyWith(
+        submitting: false,
+        published: withPhotos,
+        uploaded: state.draft.photos.length,
+      );
+    } on Object {
+      state = state.copyWith(
+        submitting: false,
+        published: listing,
+        photoFailure:
+            "E'lon joylandi, lekin rasmlar yuklanmadi. Keyinroq qo'shishingiz mumkin",
+      );
+    }
+    return true;
   }
 }
 
+/// The seam where the real camera is swapped for a fake in tests — the
+/// platform channel behind `image_picker` does not exist under `flutter test`.
+final photoPickerProvider = Provider<PhotoPicker>((ref) {
+  return DevicePhotoPicker();
+});
+
 final draftControllerProvider =
     StateNotifierProvider.autoDispose<DraftController, DraftState>((ref) {
-  return DraftController(ref.watch(listingRepositoryProvider));
+  return DraftController(
+    ref.watch(listingRepositoryProvider),
+    ref.watch(photoPickerProvider),
+  );
 });

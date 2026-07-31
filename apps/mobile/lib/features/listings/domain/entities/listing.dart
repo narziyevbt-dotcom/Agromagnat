@@ -106,7 +106,15 @@ class Listing {
   /// "8 t at 11 000" is really comparing these two numbers.
   num get totalValue => quantity * price;
 
-  Listing copyWith({bool? isFavorite}) {
+  /// Returns the listing with its photo set replaced.
+  ///
+  /// Photos arrive after create, so this is the one field that changes on an
+  /// otherwise immutable listing during a single posting flow.
+  Listing withPhotos(List<ListingPhoto> next) => _copy(photos: next);
+
+  Listing copyWith({bool? isFavorite}) => _copy(isFavorite: isFavorite);
+
+  Listing _copy({bool? isFavorite, List<ListingPhoto>? photos}) {
     return Listing(
       id: id,
       title: title,
@@ -130,7 +138,7 @@ class Listing {
       isFavorite: isFavorite ?? this.isFavorite,
       createdAt: createdAt,
       expiresAt: expiresAt,
-      photos: photos,
+      photos: photos ?? this.photos,
     );
   }
 

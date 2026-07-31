@@ -11,6 +11,7 @@ import '../domain/entities/listing.dart';
 import 'favorite_action.dart';
 import 'providers/listing_providers.dart';
 import 'widgets/listing_card.dart';
+import 'widgets/photo_gallery.dart';
 
 /// One listing, in full.
 ///
@@ -59,103 +60,109 @@ class _Content extends StatelessWidget {
     final daysLeft = UzFormat.daysUntil(listing.expiresAt);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.xl,
-      ),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       children: [
-        Row(
-          children: [
-            if (listing.isPromoted) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.saffron,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                ),
-                child: Text(
-                  AppStrings.topBadge,
-                  style: AppTypography.body(
-                    size: 11,
-                    weight: FontWeight.w700,
-                    color: Colors.white,
+        // Full-bleed, and absent entirely when there are no photos.
+        if (listing.photos.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+            child: PhotoGallery(photos: listing.photos),
+          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  if (listing.isPromoted) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.saffron,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      ),
+                      child: Text(
+                        AppStrings.topBadge,
+                        style: AppTypography.body(
+                          size: 11,
+                          weight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
+                  Expanded(
+                    child: Text(
+                      listing.category.nameUz,
+                      style: AppTypography.body(size: 13, color: AppColors.inkMuted),
+                    ),
                   ),
+                  Text(
+                    UzFormat.timeAgo(listing.createdAt),
+                    style: AppTypography.body(size: 12, color: AppColors.inkFaint),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              Text(listing.title, style: AppTypography.heading(size: 24)),
+              const SizedBox(height: AppSpacing.lg),
+
+              _PricePanel(listing: listing),
+              const SizedBox(height: AppSpacing.lg),
+
+              _FactRow(icon: Icons.place_outlined, label: listing.locationLabel),
+              if (listing.minOrder != null)
+                _FactRow(
+                  icon: Icons.inventory_2_outlined,
+                  label: AppStrings.minOrder,
+                  value: UzFormat.quantity(listing.minOrder, listing.quantityUnit),
+                  isNumber: true,
                 ),
+              if (listing.harvestDate != null)
+                _FactRow(
+                  icon: Icons.agriculture_outlined,
+                  label: AppStrings.harvestDate,
+                  value: UzFormat.date(listing.harvestDate),
+                  isNumber: true,
+                ),
+              _FactRow(
+                icon: Icons.local_shipping_outlined,
+                label: AppStrings.delivery,
+                value: listing.delivery.label,
               ),
-              const SizedBox(width: AppSpacing.sm),
+              if (daysLeft != null)
+                _FactRow(
+                  icon: Icons.schedule_rounded,
+                  label: AppStrings.expiresIn,
+                  value: '$daysLeft ${AppStrings.daysShort}',
+                  isNumber: true,
+                ),
+
+              if (listing.description?.trim().isNotEmpty == true) ...[
+                const SizedBox(height: AppSpacing.xl),
+                Text(AppStrings.descriptionTitle, style: AppTypography.heading(size: 17)),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  listing.description!,
+                  style: AppTypography.body(size: 15, height: 1.55),
+                ),
+              ],
+
+              const SizedBox(height: AppSpacing.xl),
+              Text(AppStrings.sellerTitle, style: AppTypography.heading(size: 17)),
+              const SizedBox(height: AppSpacing.sm),
+              _SellerPanel(listing: listing),
+
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                '${UzFormat.money(listing.viewCount)} ${AppStrings.views}',
+                style: AppTypography.body(size: 12, color: AppColors.inkFaint),
+              ),
             ],
-            Expanded(
-              child: Text(
-                listing.category.nameUz,
-                style: AppTypography.body(size: 13, color: AppColors.inkMuted),
-              ),
-            ),
-            Text(
-              UzFormat.timeAgo(listing.createdAt),
-              style: AppTypography.body(size: 12, color: AppColors.inkFaint),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-
-        Text(listing.title, style: AppTypography.heading(size: 24)),
-        const SizedBox(height: AppSpacing.lg),
-
-        _PricePanel(listing: listing),
-        const SizedBox(height: AppSpacing.lg),
-
-        _FactRow(
-          icon: Icons.place_outlined,
-          label: listing.locationLabel,
-        ),
-        if (listing.minOrder != null)
-          _FactRow(
-            icon: Icons.inventory_2_outlined,
-            label: AppStrings.minOrder,
-            value: UzFormat.quantity(listing.minOrder, listing.quantityUnit),
-            isNumber: true,
           ),
-        if (listing.harvestDate != null)
-          _FactRow(
-            icon: Icons.agriculture_outlined,
-            label: AppStrings.harvestDate,
-            value: UzFormat.date(listing.harvestDate),
-            isNumber: true,
-          ),
-        _FactRow(
-          icon: Icons.local_shipping_outlined,
-          label: AppStrings.delivery,
-          value: listing.delivery.label,
-        ),
-        if (daysLeft != null)
-          _FactRow(
-            icon: Icons.schedule_rounded,
-            label: AppStrings.expiresIn,
-            value: '$daysLeft ${AppStrings.daysShort}',
-            isNumber: true,
-          ),
-
-        if (listing.description?.trim().isNotEmpty == true) ...[
-          const SizedBox(height: AppSpacing.xl),
-          Text(AppStrings.descriptionTitle, style: AppTypography.heading(size: 17)),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            listing.description!,
-            style: AppTypography.body(size: 15, height: 1.55),
-          ),
-        ],
-
-        const SizedBox(height: AppSpacing.xl),
-        Text(AppStrings.sellerTitle, style: AppTypography.heading(size: 17)),
-        const SizedBox(height: AppSpacing.sm),
-        _SellerPanel(listing: listing),
-
-        const SizedBox(height: AppSpacing.lg),
-        Text(
-          '${UzFormat.money(listing.viewCount)} ${AppStrings.views}',
-          style: AppTypography.body(size: 12, color: AppColors.inkFaint),
         ),
       ],
     );
@@ -277,10 +284,7 @@ class _SellerPanel extends StatelessWidget {
                       const SizedBox(width: 2),
                       Text(
                         seller.ratingAvg.toStringAsFixed(1),
-                        style: AppTypography.number(
-                          size: 12,
-                          color: AppColors.inkMuted,
-                        ),
+                        style: AppTypography.number(size: 12, color: AppColors.inkMuted),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                     ],

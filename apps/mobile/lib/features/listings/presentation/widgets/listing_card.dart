@@ -9,6 +9,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../domain/entities/listing.dart';
 import '../../domain/entities/units.dart';
 import '../providers/listing_providers.dart';
+import 'photo_gallery.dart';
 
 /// The one card the whole feed is made of.
 ///
@@ -98,18 +99,9 @@ class _Thumbnail extends StatelessWidget {
                       style: const TextStyle(fontSize: 32),
                     ),
                   )
-                : Image.network(
-                    photo.feedUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AppColors.mint,
-                      alignment: Alignment.center,
-                      child: Text(
-                        listing.category.emoji ?? '🌾',
-                        style: const TextStyle(fontSize: 32),
-                      ),
-                    ),
-                  ),
+                // Handles both a URL from the API and an on-device path from
+                // a listing posted moments ago.
+                : ListingPhotoView(photo: photo),
           ),
         ),
         if (listing.isPromoted)

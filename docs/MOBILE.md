@@ -13,6 +13,7 @@ one codebase. Uzbek UI throughout.
 | Sign in — phone + SMS OTP | built · [MOBILE-AUTH.md](MOBILE-AUTH.md) |
 | Profile — account, sign out | built |
 | Add listing — category-aware form | built · [MOBILE-POSTING.md](MOBILE-POSTING.md) |
+| Photos — camera, gallery, gallery view | built · [MOBILE-PHOTOS.md](MOBILE-PHOTOS.md) |
 | Messages | gated placeholder |
 
 Everything runs on mock repositories. No backend is needed to open the app.
@@ -94,7 +95,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 123 tests
+flutter test          # 147 tests
 flutter analyze       # clean
 ```
 
@@ -149,7 +150,7 @@ time it is compiled.
 
 ## Next
 
-1. Photos on a listing — picker plus the S3 presign flow
-2. Voice-first posting — the mic on Add Listing, `POST /ai/draft`
-3. Real API behind the existing repository interfaces, including token refresh
+1. Voice-first posting — the mic on Add Listing, `POST /ai/draft`
+2. Real API behind the existing repository interfaces, including token refresh
+3. My listings — edit, mark sold, retry a failed photo upload
 4. Messages

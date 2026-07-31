@@ -29,6 +29,11 @@ dependencies:
   # handset — so the session goes to the Keystore/Keychain instead.
   flutter_secure_storage: ^10.3.1
 
+  # Camera and gallery. Its maxWidth/imageQuality do the downscaling in
+  # native code before the file ever reaches Dart — see PhotoPicker for why
+  # that matters more here than the size limit on the server.
+  image_picker: ^1.2.3
+
   intl: ^0.20.2
   cupertino_icons: ^1.0.8
 

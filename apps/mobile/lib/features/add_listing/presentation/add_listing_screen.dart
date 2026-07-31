@@ -14,6 +14,7 @@ import '../../listings/presentation/providers/listing_providers.dart';
 import 'providers/draft_controller.dart';
 import 'widgets/attribute_fields.dart';
 import 'widgets/measure_field.dart';
+import 'widgets/photo_picker_field.dart';
 
 /// Posting a listing.
 ///
@@ -86,6 +87,12 @@ class _Form extends ConsumerWidget {
               // a question the seller cannot answer yet.
               if (spec != null) ...[
                 const SizedBox(height: AppSpacing.xl),
+                // Above the title because a listing with a photo is the one
+                // buyers call — but optional, because one bar of signal in a
+                // field is the common case.
+                const PhotoPickerField(),
+
+                const SizedBox(height: AppSpacing.lg),
                 _TitleField(
                   key: ValueKey('title-${draft.category!.id}'),
                   initial: draft.title,
@@ -460,13 +467,31 @@ class _SubmitBar extends ConsumerWidget {
           child: ElevatedButton(
             onPressed: state.submitting ? null : () => _submit(context, ref),
             child: state.submitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.onLime,
-                    ),
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.onLime,
+                        ),
+                      ),
+                      if (state.draft.photos.isNotEmpty) ...[
+                        const SizedBox(width: AppSpacing.md),
+                        // Uploading five photos on EDGE is slow enough that a
+                        // bare spinner reads as a hang.
+                        Text(
+                          AppStrings.uploadingPhotos,
+                          style: AppTypography.body(
+                            size: 14,
+                            weight: FontWeight.w600,
+                            color: AppColors.onLime,
+                          ),
+                        ),
+                      ],
+                    ],
                   )
                 : const Text(AppStrings.publish),
           ),
@@ -490,14 +515,18 @@ class _SubmitBar extends ConsumerWidget {
       return;
     }
 
-    final listing = ref.read(draftControllerProvider).published!;
+    final result = ref.read(draftControllerProvider);
     // The feed is stale the moment a listing joins it.
     ref.invalidate(listingFeedProvider);
 
-    await _showPublished(context, listing.id);
+    await _showPublished(context, result.published!.id, result.photoFailure);
   }
 
-  Future<void> _showPublished(BuildContext context, String id) async {
+  Future<void> _showPublished(
+    BuildContext context,
+    String id,
+    String? photoFailure,
+  ) async {
     final action = await showModalBottomSheet<String>(
       context: context,
       isDismissible: false,
@@ -521,6 +550,14 @@ class _SubmitBar extends ConsumerWidget {
                 textAlign: TextAlign.center,
                 style: AppTypography.body(size: 14, color: AppColors.inkMuted),
               ),
+              if (photoFailure != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  photoFailure,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.body(size: 13, color: AppColors.danger),
+                ),
+              ],
               const SizedBox(height: AppSpacing.xl),
               SizedBox(
                 width: double.infinity,

@@ -1,12 +1,15 @@
 import 'package:agromagnat/core/localization/app_strings.dart';
 import 'package:agromagnat/features/add_listing/presentation/add_listing_screen.dart';
+import 'package:agromagnat/features/add_listing/presentation/providers/draft_controller.dart';
 import 'package:agromagnat/features/add_listing/presentation/widgets/attribute_fields.dart';
+import 'package:agromagnat/features/add_listing/presentation/widgets/photo_picker_field.dart';
 import 'package:agromagnat/features/auth/data/mock_auth_repository.dart';
 import 'package:agromagnat/features/auth/data/token_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/test_harness.dart';
+import 'photos_test.dart' show FakePhotoPicker, photo;
 
 /// The screen's job is to render whatever the category's spec says and collect
 /// the answers. These tests hold it to that: nothing here asserts that a
@@ -36,6 +39,10 @@ void main() {
   /// default 800x600 that makes `findsNothing` meaningless — a field could be
   /// absent because the spec omitted it or because it is simply below the
   /// fold, and these tests turn on telling those apart.
+  late FakePhotoPicker picker;
+
+  setUp(() => picker = FakePhotoPicker());
+
   Future<void> pumpForm(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1000, 4000);
     tester.view.devicePixelRatio = 1;
@@ -50,11 +57,35 @@ void main() {
       const AddListingScreen(),
       auth: repository,
       tokenStore: store,
+      overrides: [photoPickerProvider.overrideWithValue(picker)],
     );
   }
 
   Future<void> chooseCategory(WidgetTester tester, String label) async {
     await tester.tap(find.textContaining(label).first);
+    await tester.pumpAndSettle();
+  }
+
+  /// Fills in everything the produce spec requires and taps publish.
+  Future<void> completeForm(WidgetTester tester) async {
+    await chooseCategory(tester, 'Sabzavotlar');
+
+    await tester.enterText(find.byType(TextFormField).first, 'Urgut pomidori');
+    await tester.pumpAndSettle();
+
+    // Volume, then price — the two numeric fields the spec put in order.
+    final numbers = find.byType(TextFormField);
+    await tester.enterText(numbers.at(1), '12');
+    await tester.pumpAndSettle();
+    await tester.enterText(numbers.at(2), '9500');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Samarqand'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Urgut'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(AppStrings.publish));
     await tester.pumpAndSettle();
   }
 
@@ -167,6 +198,44 @@ void main() {
     });
   });
 
+  group('photos', () {
+    testWidgets('offers a picker once a category is chosen', (tester) async {
+      await pumpForm(tester);
+      expect(find.byType(PhotoPickerField), findsNothing);
+
+      await chooseCategory(tester, 'Sabzavotlar');
+
+      expect(find.byType(PhotoPickerField), findsOneWidget);
+      expect(find.text(AppStrings.addPhoto), findsOneWidget);
+      expect(find.text(AppStrings.photosRemaining(5)), findsOneWidget);
+    });
+
+    testWidgets('a gallery pick shows thumbnails and marks the cover',
+        (tester) async {
+      picker.galleryResults = [photo('a'), photo('b')];
+
+      await pumpForm(tester);
+      await chooseCategory(tester, 'Sabzavotlar');
+
+      await tester.tap(find.text(AppStrings.addPhoto));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.fromGallery));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.coverPhoto), findsOneWidget);
+      expect(find.text(AppStrings.photosRemaining(3)), findsOneWidget);
+    });
+
+    testWidgets('publishing without a photo is allowed', (tester) async {
+      // One bar of signal in a field is the common case; requiring a photo
+      // would keep the listings that matter most off the market.
+      await pumpForm(tester);
+      await completeForm(tester);
+
+      expect(find.text(AppStrings.published), findsOneWidget);
+    });
+  });
+
   group('submitting', () {
     testWidgets('an empty form reports every missing field at once',
         (tester) async {
@@ -182,29 +251,7 @@ void main() {
     testWidgets('a complete listing publishes and offers to open it',
         (tester) async {
       await pumpForm(tester);
-      await chooseCategory(tester, 'Sabzavotlar');
-
-      await tester.enterText(
-        find.byType(TextFormField).first,
-        'Urgut pomidori',
-      );
-      await tester.pumpAndSettle();
-
-      // Volume, then price — the two numeric fields the spec put in order.
-      final numbers = find.byType(TextFormField);
-      await tester.enterText(numbers.at(1), '12');
-      await tester.pumpAndSettle();
-      await tester.enterText(numbers.at(2), '9500');
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Samarqand'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Urgut'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text(AppStrings.publish));
-      await tester.pumpAndSettle();
+      await completeForm(tester);
 
       expect(find.text(AppStrings.published), findsOneWidget);
       expect(find.text(AppStrings.viewListing), findsOneWidget);

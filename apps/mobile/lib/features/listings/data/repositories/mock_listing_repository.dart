@@ -1,4 +1,5 @@
 import '../../../../core/pagination/paginated.dart';
+import '../../domain/entities/draft_photo.dart';
 import '../../domain/entities/listing.dart';
 import '../../domain/entities/listing_draft.dart';
 import '../../domain/entities/units.dart';
@@ -107,6 +108,34 @@ class MockListingRepository implements ListingRepository {
     // Newest first, which is where the feed will look for it.
     _listings.insert(0, listing);
     return listing;
+  }
+
+  @override
+  Future<Listing> addPhotos(String listingId, List<DraftPhoto> photos) async {
+    // One request per photo in the real client too: a farmer watching a
+    // progress bar move after each one is a better failure mode than a single
+    // upload that dies at 90% and takes all five with it.
+    for (var i = 0; i < photos.length; i++) {
+      await Future<void>.delayed(latency);
+    }
+
+    final index = _listings.indexWhere((listing) => listing.id == listingId);
+    if (index == -1) {
+      throw ListingNotFoundException(listingId);
+    }
+
+    final listing = _listings[index];
+    final updated = listing.withPhotos([
+      for (var i = 0; i < photos.length; i++)
+        ListingPhoto(
+          id: '$listingId-photo-$i',
+          // The mock keeps the on-device path; the API would return an S3 URL.
+          url: photos[i].path,
+        ),
+    ]);
+
+    _listings[index] = updated;
+    return _withFavorite(updated);
   }
 
   Listing _withFavorite(Listing listing) =>

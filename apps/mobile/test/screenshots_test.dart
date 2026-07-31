@@ -2,6 +2,7 @@
 library;
 
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:agromagnat/features/add_listing/presentation/add_listing_screen.dart';
 import 'package:agromagnat/features/auth/data/mock_auth_repository.dart';
@@ -13,6 +14,7 @@ import 'package:agromagnat/features/listings/presentation/listing_detail_screen.
 import 'package:agromagnat/features/profile/presentation/profile_screen.dart';
 import 'package:agromagnat/features/search/presentation/search_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,13 +23,15 @@ import 'support/test_harness.dart';
 
 /// Renders each screen to a PNG so the app can be reviewed without a device.
 ///
-/// Not a golden test — nothing is compared, and nothing fails on a pixel
-/// change. It exists so the product can be looked at: an emulator needs a
-/// machine with hardware acceleration, and an APK needs an Android phone in
-/// hand, while this runs anywhere `flutter test` does.
+/// Not a golden test. `matchesGoldenFile` would compare against a checked-in
+/// image and fail the suite on any layout change — useful for catching
+/// regressions, and not what this is for. These write unconditionally into
+/// `build/`, which is gitignored, so they cost nothing on a normal run and
+/// never gate a change.
 ///
-/// Tagged so a normal `flutter test` skips it — writing eight PNGs on every
-/// run would put binaries in every diff.
+/// It exists so the product can be looked at: an emulator needs a machine with
+/// hardware acceleration and an APK needs an Android phone in hand, while this
+/// runs anywhere `flutter test` does.
 ///
 ///     flutter test --tags screenshots
 void main() {
@@ -48,10 +52,20 @@ void main() {
   });
 
   Future<void> shoot(WidgetTester tester, String name) async {
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('../build/screenshots/$name.png'),
+    final boundary = tester.renderObject<RenderRepaintBoundary>(
+      find.byType(RepaintBoundary).first,
     );
+
+    // toImage goes through the real GPU pipeline, which the fake async zone
+    // cannot drive — runAsync is what lets it complete.
+    final bytes = await tester.runAsync(() async {
+      final image = await boundary.toImage();
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      return data!.buffer.asUint8List();
+    });
+
+    File('build/screenshots/$name.png').writeAsBytesSync(bytes!);
   }
 
   Future<InMemoryTokenStore> signedIn(

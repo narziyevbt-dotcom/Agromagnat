@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/pagination/paginated.dart';
+import '../entities/draft_photo.dart';
 import '../entities/listing.dart';
 import '../entities/listing_draft.dart';
 import '../entities/units.dart';
@@ -173,4 +174,12 @@ abstract interface class ListingRepository {
   /// client checks the same rules first, but it is the server's answer that
   /// decides — the spec can move between app releases.
   Future<Listing> create(ListingDraft draft);
+
+  /// Attaches photos to a listing that already exists.
+  ///
+  /// Separate from [create] because the API keys them on a listing id, and
+  /// because the two fail differently: a listing without its photos is still a
+  /// listing, and losing the whole post because the third upload timed out on
+  /// EDGE would be the worse outcome by far.
+  Future<Listing> addPhotos(String listingId, List<DraftPhoto> photos);
 }

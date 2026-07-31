@@ -35,6 +35,13 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- iOS terminates the app on the spot if it asks for the camera or the
+	     photo library without a reason string. Uzbek, because it is shown in
+	     the system prompt the seller reads. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Mahsulotingiz rasmini olish uchun kamera kerak</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>E'longa rasm qo'shish uchun galereyaga ruxsat kerak</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

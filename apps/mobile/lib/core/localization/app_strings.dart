@@ -106,6 +106,20 @@ abstract final class AppStrings {
   static const String signInRequiredMessages =
       'Xabarlashish uchun kiring';
 
+  // Photos
+  static const String photos = 'Rasmlar';
+  static const String photosHint =
+      "Rasmli e'lonlarga 3 barobar ko'p qo'ng'iroq qilinadi";
+  static const String photosCoverHint =
+      "Birinchi rasm asosiy — boshqasini bosib almashtiring";
+  static const String addPhoto = "Rasm qo'shish";
+  static const String takePhoto = 'Suratga olish';
+  static const String fromGallery = 'Galereyadan tanlash';
+  static const String coverPhoto = 'ASOSIY';
+  static const String removePhoto = "Rasmni o'chirish";
+  static const String photosFull = "Ko'proq rasm qo'shib bo'lmaydi";
+  static const String uploadingPhotos = 'Rasmlar yuklanmoqda…';
+
   // Posting a listing
   static const String chooseCategory = 'Nima sotmoqchisiz?';
   static const String listingTitle = 'Sarlavha';
@@ -133,4 +147,8 @@ abstract final class AppStrings {
   /// Result counts read naturally in Uzbek without a plural form — the noun
   /// does not inflect after a number.
   static String resultCount(int count) => "$count ta e'lon";
+
+  static String photosRemaining(int slots) => "Yana $slots ta rasm qo'shsa bo'ladi";
+
+  static String photoOf(int index, int total) => '$index / $total';
 }
