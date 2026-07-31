@@ -6,9 +6,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { TooManyRequestsException } from '../../common/exceptions/too-many-requests.exception';
 import { RedisService } from '../../redis/redis.service';
+import { ListingPhoto } from '../listings/entities/listing-photo.entity';
 import { Listing, ListingStatus } from '../listings/entities/listing.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { User } from '../users/entities/user.entity';
@@ -47,6 +48,7 @@ export class ChatService {
     @InjectRepository(Chat) private readonly chats: Repository<Chat>,
     @InjectRepository(Message) private readonly messages: Repository<Message>,
     @InjectRepository(Listing) private readonly listings: Repository<Listing>,
+    @InjectRepository(ListingPhoto) private readonly photos: Repository<ListingPhoto>,
     @InjectRepository(User) private readonly users: Repository<User>,
     private readonly notifications: NotificationsService,
     private readonly redis: RedisService,
@@ -100,20 +102,74 @@ export class ChatService {
    *
    * Ordered by COALESCE(last_message_at, created_at) so a thread opened but not
    * yet written in still appears at the top, where the user just put it.
+   *
+   * Paged in two phases, the same shape ListingsService uses. Phase one orders
+   * and limits over the chats table alone; phase two hydrates the survivors.
+   *
+   * That split is not an optimisation here, it is the only thing that works:
+   * `take` combined with any joined relation sends TypeORM down its
+   * DISTINCT-subquery pagination path, which re-parses every ORDER BY as
+   * `alias.column` and reads this COALESCE as an alias literally named
+   * "COALESCE(chat". Raw ids with a plain LIMIT keep the expression intact.
    */
   async findInbox(userId: string, limit = 50): Promise<ChatSummaryDto[]> {
-    const chats = await this.chats
+    const rows = await this.chats
       .createQueryBuilder('chat')
-      .leftJoinAndSelect('chat.listing', 'listing')
-      .leftJoinAndSelect('listing.photos', 'photo')
-      .leftJoinAndSelect('chat.buyer', 'buyer')
-      .leftJoinAndSelect('chat.seller', 'seller')
+      .select('chat.id', 'id')
       .where('(chat.buyer_id = :userId OR chat.seller_id = :userId)', { userId })
       .orderBy('COALESCE(chat.last_message_at, chat.created_at)', 'DESC')
-      .take(limit)
-      .getMany();
+      .limit(limit)
+      .getRawMany<{ id: string }>();
 
+    if (!rows.length) {
+      return [];
+    }
+
+    const ids = rows.map((row) => row.id);
+    const chats = await this.chats.find({
+      where: { id: In(ids) },
+      relations: { listing: true, buyer: true, seller: true },
+    });
+
+    // IN does not preserve order; phase one's ranking is the one that counts.
+    const position = new Map(ids.map((id, index) => [id, index]));
+    chats.sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
+
+    await this.attachCoverPhotos(chats);
     return chats.map((chat) => this.toSummary(chat, userId));
+  }
+
+  /**
+   * Hangs each thread's cover photo on its listing, in one query for the whole
+   * page. The inbox shows the listing photo rather than an avatar, because a
+   * seller recognises a conversation by which of their lots it is about.
+   */
+  private async attachCoverPhotos(chats: Chat[]): Promise<void> {
+    const listingIds = [
+      ...new Set(chats.map((chat) => chat.listingId).filter(Boolean)),
+    ];
+    if (!listingIds.length) {
+      return;
+    }
+
+    const photos = await this.photos.find({
+      where: { listingId: In(listingIds) },
+      order: { sortOrder: 'ASC' },
+    });
+
+    const cover = new Map<string, ListingPhoto>();
+    for (const photo of photos) {
+      if (!cover.has(photo.listingId)) {
+        cover.set(photo.listingId, photo);
+      }
+    }
+
+    for (const chat of chats) {
+      if (chat.listing) {
+        const photo = cover.get(chat.listingId);
+        chat.listing.photos = photo ? [photo] : [];
+      }
+    }
   }
 
   async findOneForUser(chatId: string, userId: string): Promise<ChatSummaryDto> {

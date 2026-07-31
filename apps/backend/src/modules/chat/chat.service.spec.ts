@@ -8,6 +8,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { TooManyRequestsException } from '../../common/exceptions/too-many-requests.exception';
 import { RedisService } from '../../redis/redis.service';
+import { ListingPhoto } from '../listings/entities/listing-photo.entity';
 import { Listing, ListingStatus } from '../listings/entities/listing.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { User } from '../users/entities/user.entity';
@@ -55,6 +56,7 @@ describe('ChatService', () => {
   let chats: MockRepo<Chat>;
   let messages: MockRepo<Message>;
   let listings: MockRepo<Listing>;
+  let photos: MockRepo<ListingPhoto>;
   let users: MockRepo<User>;
   let notifications: { notifyNewMessage: jest.Mock };
   let redis: { incrWithTtl: jest.Mock };
@@ -69,6 +71,8 @@ describe('ChatService', () => {
     chats = createRepo<Chat>();
     messages = createRepo<Message>();
     listings = createRepo<Listing>();
+    photos = createRepo<ListingPhoto>();
+    photos.find!.mockResolvedValue([]);
     users = createRepo<User>();
     notifications = { notifyNewMessage: jest.fn().mockResolvedValue(undefined) };
     redis = { incrWithTtl: jest.fn().mockResolvedValue(1) };
@@ -96,6 +100,7 @@ describe('ChatService', () => {
         { provide: getRepositoryToken(Chat), useValue: chats },
         { provide: getRepositoryToken(Message), useValue: messages },
         { provide: getRepositoryToken(Listing), useValue: listings },
+        { provide: getRepositoryToken(ListingPhoto), useValue: photos },
         { provide: getRepositoryToken(User), useValue: users },
         { provide: NotificationsService, useValue: notifications },
         { provide: RedisService, useValue: redis },
