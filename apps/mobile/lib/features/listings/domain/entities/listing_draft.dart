@@ -104,6 +104,11 @@ class ListingDraft {
   /// API rejects it, but only after the seller has filled the whole form.
   ListingDraft withCategory(ListingCategory next) {
     final spec = next.form;
+    if (spec == null) {
+      // Only reachable with a category taken off a listing rather than out of
+      // the catalogue; the posting form never has one of those.
+      return copyWith(category: next);
+    }
 
     // Units are constrained per kind. Keeping "kg" while moving to machinery
     // would leave an illegal value selected and invisible.

@@ -32,29 +32,29 @@ void main() {
 
   group('the spec decides which questions get asked', () {
     test('produce is asked for a picking date, machinery is not', () {
-      expect(produce.form.optional.harvestDate, isTrue);
-      expect(machinery.form.optional.harvestDate, isFalse);
+      expect(produce.form!.optional.harvestDate, isTrue);
+      expect(machinery.form!.optional.harvestDate, isFalse);
     });
 
     test('machinery is counted in dona and nothing else', () {
-      expect(machinery.form.quantity.units, [QuantityUnit.dona]);
-      expect(machinery.form.quantity.isLocked, isTrue);
+      expect(machinery.form!.quantity.units, [QuantityUnit.dona]);
+      expect(machinery.form!.quantity.isLocked, isTrue);
     });
 
     test('land is measured in hectares and offers no delivery', () {
-      expect(land.form.quantity.units, [QuantityUnit.ga]);
-      expect(land.form.optional.delivery, isFalse);
+      expect(land.form!.quantity.units, [QuantityUnit.ga]);
+      expect(land.form!.optional.delivery, isFalse);
     });
 
     test('produce offers a real choice of unit, so nothing is locked', () {
-      expect(produce.form.quantity.units.length, greaterThan(1));
-      expect(produce.form.quantity.isLocked, isFalse);
+      expect(produce.form!.quantity.units.length, greaterThan(1));
+      expect(produce.form!.quantity.isLocked, isFalse);
     });
 
     test('only machinery and land require an attribute', () {
-      expect(machinery.form.requiredAttributes.map((a) => a.key), contains('condition'));
-      expect(land.form.requiredAttributes.map((a) => a.key), contains('tenure'));
-      expect(produce.form.requiredAttributes, isEmpty);
+      expect(machinery.form!.requiredAttributes.map((a) => a.key), contains('condition'));
+      expect(land.form!.requiredAttributes.map((a) => a.key), contains('tenure'));
+      expect(produce.form!.requiredAttributes, isEmpty);
     });
   });
 

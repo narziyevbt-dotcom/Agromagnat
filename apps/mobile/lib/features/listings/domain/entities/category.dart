@@ -17,7 +17,7 @@ class ListingCategory {
     required this.slug,
     required this.kind,
     required this.unitDefault,
-    required this.form,
+    this.form,
     this.emoji,
     this.isFeatured = false,
     this.sortOrder = 0,
@@ -32,7 +32,11 @@ class ListingCategory {
   final QuantityUnit unitDefault;
 
   /// Which questions this category's posting form asks.
-  final CategoryFormSpec form;
+  ///
+  /// Null on the category nested inside a listing: `GET /listings` returns the
+  /// category row without expanding its spec, and only the posting form needs
+  /// one. `GET /categories` always carries it.
+  final CategoryFormSpec? form;
 
   /// Stands in for the icon until the real icon set is drawn. The API sends an
   /// `icon` name; mapping it to an asset is a job for the design pass.

@@ -217,5 +217,6 @@ class _UploadFailsRepository implements ListingRepository {
   Future<Paginated<Listing>> search(ListingQuery query) => _inner.search(query);
 
   @override
-  Future<Listing> toggleFavorite(String id) => _inner.toggleFavorite(id);
+  Future<void> setFavorite(String id, {required bool saved}) =>
+      _inner.setFavorite(id, saved: saved);
 }

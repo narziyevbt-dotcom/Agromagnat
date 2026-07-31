@@ -133,16 +133,6 @@ void main() {
       }
     });
 
-    test('orders by volume descending', () async {
-      final page = await repository.search(
-        const ListingQuery(sort: ListingSort.volumeDesc, limit: 100),
-      );
-      final rest = page.items.where((listing) => !listing.isPromoted).toList();
-
-      for (var i = 1; i < rest.length; i++) {
-        expect(rest[i].quantity <= rest[i - 1].quantity, isTrue);
-      }
-    });
   });
 
   group('paging', () {
@@ -174,22 +164,21 @@ void main() {
   });
 
   group('favorites', () {
-    test('toggles on and off, and survives a refetch', () async {
+    test('saving survives a refetch, and unsaving undoes it', () async {
       final page = await repository.search(const ListingQuery(limit: 1));
       final id = page.items.first.id;
 
       expect(page.items.first.isFavorite, isFalse);
 
-      final saved = await repository.toggleFavorite(id);
-      expect(saved.isFavorite, isTrue);
+      await repository.setFavorite(id, saved: true);
 
       // The state lives in the repository, not on the entity, so a fresh read
       // has to still report it — same as the API does with a token.
       final refetched = await repository.byId(id);
       expect(refetched.isFavorite, isTrue);
 
-      final unsaved = await repository.toggleFavorite(id);
-      expect(unsaved.isFavorite, isFalse);
+      await repository.setFavorite(id, saved: false);
+      expect((await repository.byId(id)).isFavorite, isFalse);
     });
   });
 

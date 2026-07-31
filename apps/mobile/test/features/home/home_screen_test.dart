@@ -93,7 +93,8 @@ class _FailingListingRepository implements ListingRepository {
   Future<Listing> byId(String id) => Future.error(const _Offline());
 
   @override
-  Future<Listing> toggleFavorite(String id) => Future.error(const _Offline());
+  Future<void> setFavorite(String id, {required bool saved}) =>
+      Future.error(const _Offline());
 
   @override
   Future<Listing> create(ListingDraft draft) => Future.error(const _Offline());

@@ -15,9 +15,11 @@ one codebase. Uzbek UI throughout.
 | Add listing — category-aware form | built · [MOBILE-POSTING.md](MOBILE-POSTING.md) |
 | Photos — camera, gallery, gallery view | built · [MOBILE-PHOTOS.md](MOBILE-PHOTOS.md) |
 | Voice-first posting — say it, form fills | built · [MOBILE-VOICE.md](MOBILE-VOICE.md) |
+| Real API — feed, auth, posting, AI | built · [MOBILE-API.md](MOBILE-API.md) |
 | Messages | gated placeholder |
 
-Everything runs on mock repositories. No backend is needed to open the app.
+Runs against the real API when one is configured, and on mock repositories
+when not. No backend is needed to open the app.
 
 Browsing is open to everyone; only the parts that write something ask for an
 account. See [MOBILE-AUTH.md](MOBILE-AUTH.md).
@@ -26,7 +28,7 @@ account. See [MOBILE-AUTH.md](MOBILE-AUTH.md).
 
 ```
 lib/
-  core/            theme · localization · format · pagination
+  core/            theme · localization · format · pagination · network
   features/
     listings/      domain → data → presentation      ← owns the listing model
     auth/          domain → data → presentation      ← owns the session
@@ -47,13 +49,16 @@ views of one thing. The dependency runs one way: `presentation` knows `domain`,
 
 ```dart
 final listingRepositoryProvider = Provider<ListingRepository>((ref) {
-  return MockListingRepository();
+  if (!ApiConfig.isConfigured) return MockListingRepository();
+  return ApiListingRepository(ref.watch(apiClientProvider));
 });
 ```
 
-Wiring the real API is this line plus a Dio-backed class implementing the same
-interface. No screen changes, because no screen names an implementation. Tests
-override the same provider.
+Both sides are live. `--dart-define=API_URL=…` picks the real backend; without
+it every repository stays on its mock, which is how the screens were built and
+what keeps the app openable with nothing behind it. No screen names an
+implementation, so wiring the API changed none of them —
+[MOBILE-API.md](MOBILE-API.md).
 
 `MockListingRepository` implements filtering, sorting and cursor paging for
 real rather than returning a fixed list. A mock that ignored its query would
@@ -97,7 +102,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 187 tests
+flutter test          # 211 tests
 flutter analyze       # clean
 ```
 
@@ -152,7 +157,7 @@ time it is compiled.
 
 ## Next
 
-1. Real API behind the existing repository interfaces — every one of them is
-   already a provider override away
+1. Offline caching — a feed opened with no signal is empty rather than stale,
+   which for this audience is the next thing worth doing
 2. My listings — edit, mark sold, retry a failed photo upload
 3. Messages

@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/api_config.dart';
+import '../../../../core/network/api_providers.dart';
+import '../../data/api_auth_repository.dart';
 import '../../data/mock_auth_repository.dart';
 import '../../data/token_store.dart';
 import '../../domain/entities/auth_user.dart';
@@ -8,7 +11,10 @@ import '../../domain/repositories/auth_repository.dart';
 
 /// The seam where the mock becomes the real API, same as the listing side.
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return MockAuthRepository();
+  if (!ApiConfig.isConfigured) {
+    return MockAuthRepository();
+  }
+  return ApiAuthRepository(ref.watch(apiClientProvider));
 });
 
 final tokenStoreProvider = Provider<TokenStore>((ref) {
@@ -75,6 +81,20 @@ class AuthController extends StateNotifier<AuthState> {
       await _store.clear();
       state = const AuthSignedOut();
     }
+  }
+
+  /// Stores a refreshed token pair, keeping the user as they are.
+  ///
+  /// Called by the HTTP client after a 401 was recovered. Deliberately does
+  /// not refetch the user: a token rotation is not a profile change, and a
+  /// round trip here would run inside somebody else's request.
+  Future<void> replaceSession(AuthSession session) async {
+    final current = state;
+    if (current is! AuthSignedIn) {
+      return;
+    }
+    await _store.write(session);
+    state = AuthSignedIn(current.user, session);
   }
 
   /// Called by the login flow once a code has been accepted.

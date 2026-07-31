@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/api_config.dart';
+import '../../../../core/network/api_providers.dart';
+import '../../data/api_ai_repository.dart';
 import '../../data/dictation.dart';
 import '../../data/mock_ai_repository.dart';
 import '../../domain/entities/ai_draft.dart';
@@ -8,7 +11,11 @@ import '../../domain/repositories/ai_repository.dart';
 
 /// The seams where the mock and the platform get swapped out.
 final aiRepositoryProvider = Provider<AiRepository>((ref) {
-  return MockAiRepository();
+  if (!ApiConfig.isConfigured) {
+    return MockAiRepository();
+  }
+  // The API first, the on-device lexicon underneath — see ApiAiRepository.
+  return ApiAiRepository(ref.watch(apiClientProvider));
 });
 
 final dictationProvider = Provider<Dictation>((ref) {

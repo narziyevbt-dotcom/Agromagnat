@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/pagination/paginated.dart';
+import '../../../../core/network/api_config.dart';
+import '../../../../core/network/api_providers.dart';
+import '../../data/repositories/api_catalog_repository.dart';
+import '../../data/repositories/api_listing_repository.dart';
 import '../../data/repositories/mock_catalog_repository.dart';
 import '../../data/repositories/mock_listing_repository.dart';
 import '../../domain/entities/category.dart';
@@ -15,11 +19,17 @@ import '../../domain/repositories/listing_repository.dart';
 /// wiring the backend is an override here plus a Dio-backed class — no screen
 /// changes. Tests override them the same way.
 final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
-  return MockCatalogRepository();
+  if (!ApiConfig.isConfigured) {
+    return MockCatalogRepository();
+  }
+  return ApiCatalogRepository(ref.watch(apiClientProvider));
 });
 
 final listingRepositoryProvider = Provider<ListingRepository>((ref) {
-  return MockListingRepository();
+  if (!ApiConfig.isConfigured) {
+    return MockListingRepository();
+  }
+  return ApiListingRepository(ref.watch(apiClientProvider));
 });
 
 // --- Reference data ---------------------------------------------------------
@@ -147,8 +157,7 @@ class FavoritesNotifier extends StateNotifier<Map<String, bool>> {
     state = {...state, listing.id: !before};
 
     try {
-      final updated = await _repository.toggleFavorite(listing.id);
-      state = {...state, listing.id: updated.isFavorite};
+      await _repository.setFavorite(listing.id, saved: !before);
     } on Object {
       // Put it back rather than leaving a lie on screen — the listing is not
       // saved, and the next app launch would show that.

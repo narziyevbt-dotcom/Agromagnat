@@ -59,18 +59,17 @@ class MockListingRepository implements ListingRepository {
   }
 
   @override
-  Future<Listing> toggleFavorite(String id) async {
+  Future<void> setFavorite(String id, {required bool saved}) async {
     // No latency here on purpose: the heart has to respond to the tap, and the
     // screen reconciles with the server afterwards.
-    final listing = _listings.firstWhere(
-      (candidate) => candidate.id == id,
-      orElse: () => throw ListingNotFoundException(id),
-    );
-
-    if (!_favorites.remove(id)) {
-      _favorites.add(id);
+    if (!_listings.any((candidate) => candidate.id == id)) {
+      throw ListingNotFoundException(id);
     }
-    return _withFavorite(listing);
+    if (saved) {
+      _favorites.add(id);
+    } else {
+      _favorites.remove(id);
+    }
   }
 
   @override
@@ -208,7 +207,6 @@ class MockListingRepository implements ListingRepository {
         ListingSort.newest => b.createdAt.compareTo(a.createdAt),
         ListingSort.priceAsc => a.price.compareTo(b.price),
         ListingSort.priceDesc => b.price.compareTo(a.price),
-        ListingSort.volumeDesc => b.quantity.compareTo(a.quantity),
       };
     });
   }

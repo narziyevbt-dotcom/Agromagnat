@@ -1,0 +1,350 @@
+[
+ {
+  "id": "08b523f0-d689-4dad-abd5-a27df3e7a4d7",
+  "createdAt": "2026-07-31T08:43:19.290Z",
+  "updatedAt": "2026-07-31T08:43:19.290Z",
+  "nameUz": "Mevalar",
+  "nameRu": "Фрукты",
+  "slug": "mevalar",
+  "icon": "apple",
+  "unitDefault": "kg",
+  "parentId": null,
+  "sortOrder": 0,
+  "isFeatured": true,
+  "kind": "produce",
+  "form": {
+   "kind": "produce",
+   "quantity": {
+    "labelUz": "Hajm",
+    "hintUz": "Sotuvga tayyor umumiy hajm",
+    "units": [
+     "kg",
+     "t",
+     "quti",
+     "qop",
+     "l",
+     "dona"
+    ],
+    "placeholder": "12"
+   },
+   "price": {
+    "labelUz": "Narx",
+    "hintUz": "1 birlik uchun so'mda",
+    "units": [
+     "kg",
+     "t",
+     "quti",
+     "qop",
+     "l",
+     "dona"
+    ],
+    "placeholder": "14000"
+   },
+   "optional": {
+    "minOrder": true,
+    "wholesalePrice": true,
+    "harvestDate": true,
+    "seasonMonths": true,
+    "delivery": true
+   },
+   "attributes": [
+    {
+     "key": "grade",
+     "labelUz": "Navi",
+     "type": "select",
+     "required": false,
+     "options": [
+      {
+       "value": "first",
+       "labelUz": "1-nav"
+      },
+      {
+       "value": "second",
+       "labelUz": "2-nav"
+      },
+      {
+       "value": "third",
+       "labelUz": "3-nav"
+      }
+     ]
+    },
+    {
+     "key": "packaging",
+     "labelUz": "Qadoq",
+     "type": "select",
+     "required": false,
+     "options": [
+      {
+       "value": "box",
+       "labelUz": "Quti"
+      },
+      {
+       "value": "bag",
+       "labelUz": "Qop"
+      },
+      {
+       "value": "crate",
+       "labelUz": "Yashik"
+      },
+      {
+       "value": "pallet",
+       "labelUz": "Palet"
+      },
+      {
+       "value": "bulk",
+       "labelUz": "Qadoqsiz"
+      }
+     ]
+    },
+    {
+     "key": "organic",
+     "labelUz": "Yetishtirish",
+     "type": "select",
+     "required": false,
+     "options": [
+      {
+       "value": "organic",
+       "labelUz": "Kimyosiz"
+      },
+      {
+       "value": "standard",
+       "labelUz": "Odatiy"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "9d7712b1-1a45-40d8-8f32-bbafe56bbc6f",
+  "createdAt": "2026-07-31T08:43:19.295Z",
+  "updatedAt": "2026-07-31T08:43:19.295Z",
+  "nameUz": "Sabzavotlar",
+  "nameRu": "Овощи",
+  "slug": "sabzavotlar",
+  "icon": "carrot",
+  "unitDefault": "kg",
+  "parentId": null,
+  "sortOrder": 1,
+  "isFeatured": true,
+  "kind": "produce",
+  "form": {
+   "kind": "produce",
+   "quantity": {
+    "labelUz": "Hajm",
+    "hintUz": "Sotuvga tayyor umumiy hajm",
+    "units": [
+     "kg",
+     "t",
+     "quti",
+     "qop",
+     "l",
+     "dona"
+    ],
+    "placeholder": "12"
+   },
+   "price": {
+    "labelUz": "Narx",
+    "hintUz": "1 birlik uchun so'mda",
+    "units": [
+     "kg",
+     "t",
+     "quti",
+     "qop",
+     "l",
+     "dona"
+    ],
+    "placeholder": "14000"
+   },
+   "optional": {
+    "minOrder": true,
+    "wholesalePrice": true,
+    "harvestDate": true,
+    "seasonMonths": true,
+    "delivery": true
+   },
+   "attributes": [
+    {
+     "key": "grade",
+     "labelUz": "Navi",
+     "type": "select",
+     "required": false,
+     "options": [
+      {
+       "value": "first",
+       "labelUz": "1-nav"
+      },
+      {
+       "value": "second",
+       "labelUz": "2-nav"
+      },
+      {
+       "value": "third",
+       "labelUz": "3-nav"
+      }
+     ]
+    },
+    {
+     "key": "packaging",
+     "labelUz": "Qadoq",
+     "type": "select",
+     "required": false,
+     "options": [
+      {
+       "value": "box",
+       "labelUz": "Quti"
+      },
+      {
+       "value": "bag",
+       "labelUz": "Qop"
+      },
+      {
+       "value": "crate",
+       "labelUz": "Yashik"
+      },
+      {
+       "value": "pallet",
+       "labelUz": "Palet"
+      },
+      {
+       "value": "bulk",
+       "labelUz": "Qadoqsiz"
+      }
+     ]
+    },
+    {
+     "key": "organic",
+     "labelUz": "Yetishtirish",
+     "type": "select",
+     "required": false,
+     "options": [
+      {
+       "value": "organic",
+       "labelUz": "Kimyosiz"
+      },
+      {
+       "value": "standard",
+       "labelUz": "Odatiy"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "d4b6080f-c8cd-44aa-a6cd-05c99a743eaf",
+  "createdAt": "2026-07-31T08:43:19.359Z",
+  "updatedAt": "2026-07-31T08:43:19.359Z",
+  "nameUz": "Poliz",
+  "nameRu": "Бахчевые",
+  "slug": "poliz",
+  "icon": "melon",
+  "unitDefault": "kg",
+  "parentId": null,
+  "sortOrder": 2,
+  "isFeatured": true,
+  "kind": "produce",
+  "form": {
+   "kind": "produce",
+   "quantity": {
+    "labelUz": "Hajm",
+    "hintUz": "Sotuvga tayyor umumiy hajm",
+    "units": [
+     "kg",
+     "t",
+     "quti",
+     "qop",
+     "l",
+     "dona"
+    ],
+    "placeholder": "12"
+   },
+   "price": {
+    "labelUz": "Narx",
+    "hintUz": "1 birlik uchun so'mda",
+    "units": [
+     "kg",
+     "t",
+     "quti",
+     "qop",
+     "l",
+     "dona"
+    ],
+    "placeholder": "14000"
+   },
+   "optional": {
+    "minOrder": true,
+    "wholesalePrice": true,
+    "harvestDate": true,
+    "seasonMonths": true,
+    "delivery": true
+   },
+   "attributes": [
+    {
+     "key": "grade",
+     "labelUz": "Navi",
+     "type": "select",
+     "required": false,
+     "options": [
+      {
+       "value": "first",
+       "labelUz": "1-nav"
+      },
+      {
+       "value": "second",
+       "labelUz": "2-nav"
+      },
+      {
+       "value": "third",
+       "labelUz": "3-nav"
+      }
+     ]
+    },
+    {
+     "key": "packaging",
+     "labelUz": "Qadoq",
+     "type": "select",
+     "required": false,
+     "options": [
+      {
+       "value": "box",
+       "labelUz": "Quti"
+      },
+      {
+       "value": "bag",
+       "labelUz": "Qop"
+      },
+      {
+       "value": "crate",
+       "labelUz": "Yashik"
+      },
+      {
+       "value": "pallet",
+       "labelUz": "Palet"
+      },
+      {
+       "value": "bulk",
+       "labelUz": "Qadoqsiz"
+      }
+     ]
+    },
+    {
+     "key": "organic",
+     "labelUz": "Yetishtirish",
+     "type": "select",
+     "required": false,
+     "options": [
+      {
+       "value": "organic",
+       "labelUz": "Kimyosiz"
+      },
+      {
+       "value": "standard",
+       "labelUz": "Odatiy"
+      }
+     ]
+    }
+   ]
+  }
+ }
+]

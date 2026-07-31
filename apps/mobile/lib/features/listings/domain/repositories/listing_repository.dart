@@ -6,14 +6,17 @@ import '../entities/listing.dart';
 import '../entities/listing_draft.dart';
 import '../entities/units.dart';
 
-/// How the feed is ordered. The default is newest-first; a wholesale buyer
-/// hunting for a bargain switches to price, and a trader needing a full truck
-/// switches to volume.
+/// How the feed is ordered.
+///
+/// Exactly the three the API supports. A volume ordering would suit a trader
+/// filling a truck, but `GET /listings` has no such sort, and doing it on the
+/// client would sort one page of the newest listings and call the result "the
+/// biggest volumes" — a wrong answer presented confidently. Until the backend
+/// grows the option, that need is served by the minimum-volume filter.
 enum ListingSort {
   newest,
   priceAsc,
-  priceDesc,
-  volumeDesc;
+  priceDesc;
 }
 
 /// Everything the feed and search screens can ask for.
@@ -165,8 +168,13 @@ abstract interface class ListingRepository {
 
   Future<Listing> byId(String id);
 
-  /// Toggles the saved state and returns the listing as it now stands.
-  Future<Listing> toggleFavorite(String id);
+  /// Saves or unsaves a listing.
+  ///
+  /// Told which way rather than asked to toggle, because the API has two
+  /// endpoints — POST to save, DELETE to unsave — and the caller already knows
+  /// the current state. A toggle would have to read it back first, which is a
+  /// round trip spent on something the UI is holding.
+  Future<void> setFavorite(String id, {required bool saved});
 
   /// Publishes a draft and returns the listing it became.
   ///

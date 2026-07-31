@@ -52,7 +52,6 @@ abstract final class AppStrings {
   static const String sortNewest = 'Yangilari';
   static const String sortPriceAsc = 'Arzonlari';
   static const String sortPriceDesc = 'Qimmatlari';
-  static const String sortVolumeDesc = 'Katta hajmlar';
   static const String region = 'Viloyat';
   static const String district = 'Tuman';
   static const String category = 'Kategoriya';

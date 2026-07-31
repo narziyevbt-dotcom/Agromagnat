@@ -275,7 +275,6 @@ class _ResultBar extends ConsumerWidget {
     ListingSort.newest: AppStrings.sortNewest,
     ListingSort.priceAsc: AppStrings.sortPriceAsc,
     ListingSort.priceDesc: AppStrings.sortPriceDesc,
-    ListingSort.volumeDesc: AppStrings.sortVolumeDesc,
   };
 
   @override
