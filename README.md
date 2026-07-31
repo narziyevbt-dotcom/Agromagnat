@@ -118,6 +118,8 @@ than writing them inline — that is what keeps saffron confined to CTAs.
 | Auth — SMS OTP + JWT | ✅ |
 | Listings, search, favorites | ✅ |
 | **Public web marketplace** | ✅ |
+| Landing page + seller dashboard | ✅ |
+| Production deploy artifacts (Docker, nginx, CI/CD, backups) | ✅ |
 | Admin panel | ⬜ |
 | Chat, reviews, push | ⬜ |
 | AI: voice listing, pricing, moderation, search | ⬜ |
@@ -126,6 +128,14 @@ than writing them inline — that is what keeps saffron confined to CTAs.
 
 Order changed from the playbook: web ships before mobile, so the admin panel and the
 AI features land on top of a working public site rather than waiting on the app.
+
+## Deploying
+
+Production runs as Docker containers behind nginx with Let's Encrypt TLS —
+`docker-compose.prod.yml` plus `deploy/`. The full step-by-step for a fresh
+Ubuntu 24 server is in [docs/DEPLOY.md](docs/DEPLOY.md). User data must be
+hosted inside Uzbekistan, which constrains the choice of provider — see the
+note at the top of that document.
 
 ## Conventions
 

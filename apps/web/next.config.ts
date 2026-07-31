@@ -18,6 +18,10 @@ const imageHost = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  // Emits .next/standalone with a self-contained server.js — what the
+  // production Docker image runs, instead of shipping node_modules wholesale.
+  output: 'standalone',
+
   images: {
     remotePatterns: [imageHost],
     // WebP is already what the backend stores; AVIF buys little for the extra CPU.

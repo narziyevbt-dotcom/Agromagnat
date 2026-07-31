@@ -1,0 +1,108 @@
+# CI + deploy. Tests and builds run on every push and PR to main; the deploy
+# job runs only on a push to main, over SSH to the production server.
+#
+# Required repository secrets for deploy:
+#   DEPLOY_HOST      server address (the Uzbekistan-hosted machine)
+#   DEPLOY_USER      ssh user, e.g. deploy
+#   DEPLOY_SSH_KEY   private key whose public half is in authorized_keys
+name: CI & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: agromagnat
+          POSTGRES_PASSWORD: agromagnat
+          POSTGRES_DB: agromagnat
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U agromagnat" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 3s --health-retries 10
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/backend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      # e2e needs Postgres + Redis (services above) but not MinIO — photo
+      # upload is exercised at unit level; the full path runs on the server.
+      - run: |
+          npx typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run 2>/dev/null \
+            || npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/database/data-source.ts migration:run
+          npm run seed
+          npm run test:e2e
+        env:
+          DB_HOST: localhost
+          REDIS_HOST: localhost
+          SMS_PROVIDER: mock
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      # Build-time values are placeholders — CI only proves the build compiles;
+      # the real values are baked on the server by docker compose build.
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://agromagnat.uz/api
+          NEXT_PUBLIC_S3_URL: https://agromagnat.uz
+          NEXT_PUBLIC_SITE_URL: https://agromagnat.uz
+
+  deploy:
+    needs: [backend, web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            cd /opt/agromagnat
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose -f docker-compose.prod.yml build backend web
+            docker compose -f docker-compose.prod.yml up -d
+            docker image prune -f
+            # The backend entrypoint runs migrations before serving.
+            sleep 20
+            curl -fsS http://localhost/health || (docker compose -f docker-compose.prod.yml logs --tail 50 backend; exit 1)
