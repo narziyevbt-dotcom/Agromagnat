@@ -5,14 +5,19 @@ import type {
   AdminUser,
   AuthTokens,
   Category,
+  ChatMessage,
+  ChatSummary,
   CurrentUser,
   District,
   Listing,
   ListingFilters,
+  MessagePage,
   Paginated,
   PriceTrend,
   Region,
   ReportReason,
+  Review,
+  SellerReviews,
   SellerStats,
 } from './types';
 
@@ -227,6 +232,73 @@ export const reportListing = (
     token,
   });
 
+/* ------------------------------------------------------------------ chat */
+
+/** Idempotent: returns the existing conversation about this listing if there is one. */
+export const openChat = (listingId: string, token: string) =>
+  apiFetch<{ id: string }>(`/listings/${listingId}/chat`, { method: 'POST', token });
+
+export const getChats = (token: string) =>
+  apiFetch<ChatSummary[]>('/chats', { token, revalidate: 0 });
+
+export const getChat = (chatId: string, token: string) =>
+  apiFetch<ChatSummary>(`/chats/${chatId}`, { token, revalidate: 0 });
+
+export const getMessages = (
+  chatId: string,
+  token: string,
+  params: { cursor?: string; limit?: number } = {},
+) => {
+  const search = new URLSearchParams();
+  if (params.cursor) search.set('cursor', params.cursor);
+  if (params.limit) search.set('limit', String(params.limit));
+  const query = search.toString();
+
+  return apiFetch<MessagePage>(`/chats/${chatId}/messages${query ? `?${query}` : ''}`, {
+    token,
+    revalidate: 0,
+  });
+};
+
+/**
+ * The clientId is what makes a retry safe. On a weak connection the request
+ * often succeeds while the response is lost; without it, the user's second tap
+ * posts the message twice.
+ */
+export const sendMessage = (chatId: string, body: string, clientId: string, token: string) =>
+  apiFetch<ChatMessage>(`/chats/${chatId}/messages`, {
+    method: 'POST',
+    body: { body, clientId },
+    token,
+  });
+
+export const markChatRead = (chatId: string, token: string) =>
+  apiFetch<{ unread: number }>(`/chats/${chatId}/read`, { method: 'POST', token });
+
+export const getUnreadCount = (token: string) =>
+  apiFetch<{ unread: number }>('/chats/unread-count', { token, revalidate: 0 });
+
+/* --------------------------------------------------------------- reviews */
+
+/** Public: a seller's rating is what a buyer checks before calling. */
+export const getSellerReviews = (sellerId: string, page = 1) =>
+  apiFetch<SellerReviews>(`/sellers/${sellerId}/reviews?page=${page}`, { revalidate: 60 });
+
+export const createReview = (
+  listingId: string,
+  rating: number,
+  comment: string | undefined,
+  token: string,
+) =>
+  apiFetch<Review>(`/listings/${listingId}/review`, {
+    method: 'POST',
+    body: { rating, ...(comment ? { comment } : {}) },
+    token,
+  });
+
+export const getMyReview = (listingId: string, token: string) =>
+  apiFetch<Review | null>(`/listings/${listingId}/review`, { token, revalidate: 0 });
+
 /* ---------------------------------------------------------------- admin */
 
 const adminQuery = (params: Record<string, string | number | undefined>) => {
@@ -286,6 +358,15 @@ export const getAdminReports = (
     token,
     revalidate: 0,
   });
+
+export const getAdminReviews = (token: string, params: { page?: number } = {}) =>
+  apiFetch<AdminPage<Review>>(`/admin/reviews${adminQuery(params)}`, {
+    token,
+    revalidate: 0,
+  });
+
+export const adminHideReview = (id: string, value: boolean, token: string) =>
+  apiFetch<Review>(`/admin/reviews/${id}/hide`, { method: 'POST', body: { value }, token });
 
 export const adminResolveReport = (
   id: string,

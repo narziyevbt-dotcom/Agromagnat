@@ -1,10 +1,20 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ListingCard } from '@/components/ListingCard';
-import { getListings } from '@/lib/api';
+import { ReviewList } from '@/components/reviews/ReviewList';
+import { Stars } from '@/components/reviews/Stars';
+import { getListings, getSellerReviews } from '@/lib/api';
 import { initials } from '@/lib/format';
 import { getAccessToken, isSignedIn } from '@/lib/session';
 import { t } from '@/lib/strings';
+import type { SellerReviews } from '@/lib/types';
+
+const NO_REVIEWS: SellerReviews = {
+  items: [],
+  total: 0,
+  average: '0.00',
+  breakdown: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 },
+};
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,7 +34,11 @@ export default async function SellerPage({ params }: Props) {
   const signedIn = await isSignedIn();
   const token = signedIn ? await getAccessToken() : undefined;
 
-  const feed = await getListings({ sellerId: id, limit: 24 }, token).catch(() => null);
+  const [feed, reviews] = await Promise.all([
+    getListings({ sellerId: id, limit: 24 }, token).catch(() => null),
+    getSellerReviews(id).catch(() => NO_REVIEWS),
+  ]);
+
   if (!feed || feed.items.length === 0) {
     notFound();
   }
@@ -46,10 +60,13 @@ export default async function SellerPage({ params }: Props) {
               </span>
             )}
           </h1>
-          <p className="numeric text-sm text-ink-muted">
-            ★ {Number(seller?.ratingAvg ?? 0).toFixed(1)} · {seller?.salesCount ?? 0}{' '}
-            {t.listing.sales}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Stars value={Number(reviews.average)} size={16} />
+            <p className="numeric text-sm text-ink-muted">
+              {Number(reviews.average).toFixed(1)} · {reviews.total} {t.reviews.count} ·{' '}
+              {seller?.salesCount ?? 0} {t.listing.sales}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -61,6 +78,10 @@ export default async function SellerPage({ params }: Props) {
           </li>
         ))}
       </ul>
+
+      <div className="mt-8">
+        <ReviewList reviews={reviews} />
+      </div>
     </div>
   );
 }

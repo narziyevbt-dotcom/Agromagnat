@@ -5,6 +5,7 @@ import {
   ApiError,
   adminApproveListing,
   adminBlockListing,
+  adminHideReview,
   adminPromoteListing,
   adminResolveReport,
   adminSetUserBlocked,
@@ -69,3 +70,13 @@ export const resolveReportAction = async (
   outcome: 'resolved' | 'rejected',
   note?: string,
 ) => run((token) => adminResolveReport(id, outcome, note, token), ['/admin/shikoyatlar', '/admin']);
+
+/**
+ * Hiding a review changes the seller's public average, so their profile page
+ * has to be dropped from the cache alongside the moderation queue.
+ */
+export const hideReviewAction = async (id: string, value: boolean, sellerId: string) =>
+  run((token) => adminHideReview(id, value, token), [
+    '/admin/baholar',
+    `/sotuvchi/${sellerId}`,
+  ]);

@@ -34,6 +34,16 @@ export function Header({ signedIn }: { signedIn: boolean }) {
             + {t.nav.add}
           </Link>
 
+          {/* Desktop only — small screens reach the inbox from the bottom bar. */}
+          {signedIn && (
+            <Link
+              href="/xabarlar"
+              className="tap-target hidden items-center justify-center rounded-lg px-3 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 sm:inline-flex"
+            >
+              {t.chat.title}
+            </Link>
+          )}
+
           <Link
             href={signedIn ? '/profil' : '/kirish'}
             className="tap-target inline-flex items-center justify-center rounded-lg px-3 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"

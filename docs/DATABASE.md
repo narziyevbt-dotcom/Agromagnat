@@ -23,6 +23,7 @@ npm run seed               # reference data, idempotent
 | `reviews` | One per (listing, author), rating 1–5 enforced by a check constraint |
 | `price_index` | Daily median/quartile prices per category+region+unit |
 | `reports` | User complaints feeding the admin moderation queue |
+| `device_tokens` | One row per installation, for FCM push — see docs/PUSH.md |
 
 ## Listings
 

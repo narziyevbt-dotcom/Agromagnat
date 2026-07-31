@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       // Private and transactional pages have nothing to index, and crawling
       // them would only burn budget that belongs to listing pages.
-      disallow: ['/api/', '/profil', '/sevimlilar', '/joylash', '/kirish'],
+      disallow: ['/api/', '/profil', '/sevimlilar', '/joylash', '/kirish', '/xabarlar'],
     },
     sitemap: `${SITE}/sitemap.xml`,
   };

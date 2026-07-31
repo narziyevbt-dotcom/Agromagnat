@@ -163,6 +163,74 @@ export interface ListingFilters {
   limit?: number;
 }
 
+/* ----------------------------------------------------------------- chat */
+
+export interface ChatParticipant {
+  id: string;
+  name: string | null;
+  phone: string;
+  isVerified: boolean;
+}
+
+export interface ChatSummary {
+  id: string;
+  listingId: string;
+  listingTitle: string;
+  listingPhotoUrl: string | null;
+  listingPrice: string | null;
+  listingPriceUnit: PriceUnit | null;
+  counterpart: ChatParticipant;
+  /** Which side of the conversation the viewer is on. */
+  role: 'buyer' | 'seller';
+  lastMessageText: string | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  chatId: string;
+  senderId: string;
+  type: 'text' | 'image' | 'system';
+  body: string;
+  clientId: string | null;
+  readAt: string | null;
+  createdAt: string;
+  /** Set locally on an optimistic message that has not been acknowledged yet. */
+  pending?: boolean;
+}
+
+export interface MessagePage {
+  items: ChatMessage[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+/* --------------------------------------------------------------- reviews */
+
+export interface Review {
+  id: string;
+  listingId: string;
+  authorId: string;
+  sellerId: string;
+  rating: number;
+  comment: string | null;
+  isHidden: boolean;
+  createdAt: string;
+  author?: { id: string; name: string | null };
+  listing?: { id: string; title: string };
+}
+
+export type RatingBreakdown = Record<'1' | '2' | '3' | '4' | '5', number>;
+
+export interface SellerReviews {
+  items: Review[];
+  total: number;
+  /** Two decimals, computed over the visible reviews only. */
+  average: string;
+  breakdown: RatingBreakdown;
+}
+
 /* ---------------------------------------------------------------- admin */
 
 export interface AdminOverview {

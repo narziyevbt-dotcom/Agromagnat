@@ -17,7 +17,9 @@ const NAV = [
   { href: '/dashboard', label: 'Asosiy panel', icon: LayoutDashboard },
   { href: '/dashboard/elonlar', label: "E'lonlarim", icon: Package },
   { href: '/dashboard/narxlar', label: 'Bozor narxlari', icon: LineChart },
-  { href: '/dashboard/xabarlar', label: 'Xabarlar', icon: MessageSquare },
+  // Chat is one screen for buyers and sellers alike, so it lives on the public
+  // site rather than being rebuilt inside the dashboard shell.
+  { href: '/xabarlar', label: 'Xabarlar', icon: MessageSquare },
   { href: '/dashboard/analitika', label: 'Analitika', icon: BarChart3 },
   { href: '/dashboard/sozlamalar', label: 'Sozlamalar', icon: Settings },
 ] as const;

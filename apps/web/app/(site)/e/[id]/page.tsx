@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CallButton } from '@/components/CallButton';
+import { ChatButton } from '@/components/ChatButton';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { PhotoGallery } from '@/components/PhotoGallery';
 import { ReportButton } from '@/components/ReportButton';
+import { ReviewForm } from '@/components/reviews/ReviewForm';
 import { SeasonStrip } from '@/components/SeasonStrip';
-import { ApiError, getListing } from '@/lib/api';
+import { ApiError, getListing, getMe, getMyReview } from '@/lib/api';
 import {
   formatDate,
   formatDelivery,
@@ -79,6 +81,15 @@ export default async function ListingPage({ params }: Props) {
 
   const signedIn = await isSignedIn();
   const inactive = listing.status !== 'active';
+
+  const token = await getAccessToken();
+  const me = token ? await getMe(token).catch(() => null) : null;
+  const isOwner = me !== null && me.id === listing.seller?.id;
+
+  // A rating is offered exactly where a deal ends: on the listing the seller
+  // just marked sold, to the signed-in buyer who is not that seller.
+  const canReview = listing.status === 'sold' && me !== null && !isOwner;
+  const myReview = canReview && token ? await getMyReview(listing.id, token).catch(() => null) : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-5 sm:py-8">
@@ -169,19 +180,35 @@ export default async function ListingPage({ params }: Props) {
           )}
 
           {listing.seller && !inactive && (
-            <div className="flex gap-2">
-              <CallButton
-                listingId={listing.id}
-                phone={listing.seller.phone}
-                sellerName={listing.seller.name}
-              />
-              <FavoriteButton
-                listingId={listing.id}
-                initial={listing.isFavorite ?? false}
-                signedIn={signedIn}
-                large
-              />
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <CallButton
+                  listingId={listing.id}
+                  phone={listing.seller.phone}
+                  sellerName={listing.seller.name}
+                />
+                <FavoriteButton
+                  listingId={listing.id}
+                  initial={listing.isFavorite ?? false}
+                  signedIn={signedIn}
+                  large
+                />
+              </div>
+              {/* Hidden from the owner: a seller has no one to write to here. */}
+              {!isOwner && (
+                <div className="flex">
+                  <ChatButton listingId={listing.id} />
+                </div>
+              )}
             </div>
+          )}
+
+          {canReview && listing.seller && (
+            <ReviewForm
+              listingId={listing.id}
+              sellerId={listing.seller.id}
+              existingRating={myReview?.rating ?? null}
+            />
           )}
         </div>
       </div>

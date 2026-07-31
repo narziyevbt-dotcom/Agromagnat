@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Package,
   ShieldCheck,
+  Star,
   Users,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
@@ -18,6 +19,7 @@ const NAV = [
   { href: '/admin/elonlar', label: "E'lonlar", icon: Package },
   { href: '/admin/foydalanuvchilar', label: 'Foydalanuvchilar', icon: Users },
   { href: '/admin/shikoyatlar', label: 'Shikoyatlar', icon: Flag },
+  { href: '/admin/baholar', label: 'Baholar', icon: Star },
 ] as const;
 
 export function AdminSidebar({ name }: { name: string | null }) {

@@ -144,6 +144,41 @@ export const t = {
     confirmDelete: "E'lonni o'chirmoqchimisiz?",
   },
 
+  chat: {
+    title: 'Xabarlar',
+    empty: "Yozishmalar yo'q",
+    emptyHint:
+      "E'lonni ochib «Yozish» tugmasini bosing — savolingizni sotuvchiga shu yerda yozasiz.",
+    write: 'Yozish',
+    placeholder: 'Xabar yozing...',
+    send: 'Yuborish',
+    sending: 'Yuborilmoqda...',
+    loadEarlier: 'Oldingi xabarlar',
+    notDelivered: 'Yuborilmadi',
+    retry: 'Qayta yuborish',
+    backToInbox: 'Barcha yozishmalar',
+    youAreBuyer: 'Xaridor sifatida',
+    youAreSeller: 'Sotuvchi sifatida',
+    aboutListing: "E'lon",
+    unreadBadge: "o'qilmagan",
+  },
+
+  reviews: {
+    title: 'Baholar',
+    empty: "Hali baho yo'q",
+    emptyHint: 'Birinchi bo‘lib baho qoldiring — savdo yakunlangach.',
+    leave: 'Baho qoldirish',
+    yours: 'Sizning bahoyingiz',
+    ratingLabel: 'Baho',
+    commentLabel: 'Izoh',
+    commentPlaceholder: 'Mahsulot sifati, yetkazib berish — qisqacha yozing',
+    submit: 'Yuborish',
+    thanks: 'Rahmat! Bahoyingiz qabul qilindi.',
+    onlySold: "Baho faqat sotilgan e'lon uchun qo'yiladi",
+    count: 'baho',
+    hidden: 'Yashirilgan',
+  },
+
   common: {
     loading: 'Yuklanmoqda...',
     error: 'Xatolik yuz berdi',

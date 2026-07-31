@@ -45,6 +45,13 @@ export interface SmsConfig {
   eskizFrom: string;
 }
 
+export interface PushConfig {
+  provider: 'mock' | 'fcm';
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+}
+
 export interface AiConfig {
   baseUrl: string;
   apiKey: string;
@@ -97,6 +104,12 @@ export default () => ({
     eskizBaseUrl: process.env.ESKIZ_BASE_URL ?? 'https://notify.eskiz.uz/api',
     eskizFrom: process.env.ESKIZ_FROM ?? '4546',
   } satisfies SmsConfig,
+  push: {
+    provider: (process.env.PUSH_PROVIDER ?? 'mock') as 'mock' | 'fcm',
+    projectId: process.env.FCM_PROJECT_ID ?? '',
+    clientEmail: process.env.FCM_CLIENT_EMAIL ?? '',
+    privateKey: process.env.FCM_PRIVATE_KEY ?? '',
+  } satisfies PushConfig,
   ai: {
     baseUrl: process.env.AI_BASE_URL ?? 'https://api.openai.com/v1',
     apiKey: process.env.AI_API_KEY ?? '',

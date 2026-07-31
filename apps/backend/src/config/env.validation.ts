@@ -47,6 +47,14 @@ export const envValidationSchema = Joi.object({
   ESKIZ_BASE_URL: Joi.string().default('https://notify.eskiz.uz/api'),
   ESKIZ_FROM: Joi.string().default('4546'),
 
+  // Push (Firebase Cloud Messaging) — mocked in dev.
+  // The FCM_* values come from a service-account JSON key; the private key keeps
+  // its literal \n escapes in the env file and is unescaped before signing.
+  PUSH_PROVIDER: Joi.string().valid('mock', 'fcm').default('mock'),
+  FCM_PROJECT_ID: Joi.string().allow('').default(''),
+  FCM_CLIENT_EMAIL: Joi.string().allow('').default(''),
+  FCM_PRIVATE_KEY: Joi.string().allow('').default(''),
+
   // AI (OpenAI-compatible)
   AI_BASE_URL: Joi.string().default('https://api.openai.com/v1'),
   AI_API_KEY: Joi.string().allow('').default(''),

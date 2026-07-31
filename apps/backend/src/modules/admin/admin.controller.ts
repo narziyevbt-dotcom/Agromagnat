@@ -14,6 +14,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ListingStatus } from '../listings/entities/listing.entity';
 import { ReportStatus } from '../reports/entities/report.entity';
+import { ReviewsService } from '../reviews/reviews.service';
 import { UserRole } from '../users/entities/user.entity';
 import { AdminService } from './admin.service';
 
@@ -55,7 +56,10 @@ class ResolveReportDto {
 @ApiTags('admin')
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(
+    private readonly admin: AdminService,
+    private readonly reviews: ReviewsService,
+  ) {}
 
   @Get('stats')
   @ApiOperation({ summary: 'Platform-wide counters for the admin dashboard' })
@@ -140,5 +144,21 @@ export class AdminController {
     @Body() dto: ResolveReportDto,
   ) {
     return this.admin.resolveReport(id, adminId, dto.outcome, dto.note);
+  }
+
+  // ----------------------------------------------------------------- reviews
+
+  @Get('reviews')
+  @ApiOperation({ summary: 'All seller reviews, newest first, hidden ones included' })
+  findReviews(@Query('page') page?: string) {
+    return this.reviews.findAllForModeration(page ? parseInt(page, 10) : 1);
+  }
+
+  @Post('reviews/:id/hide')
+  @ApiOperation({
+    summary: 'Hide or restore a review; the seller rating is recomputed either way',
+  })
+  hideReview(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetFlagDto) {
+    return this.reviews.setHidden(id, dto.value === true);
   }
 }

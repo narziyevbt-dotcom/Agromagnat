@@ -42,7 +42,7 @@ docker compose up -d
 cd apps/backend
 npm install
 cp ../../.env .env
-npm run migration:run     # creates all 12 tables
+npm run migration:run     # creates all 13 tables
 npm run seed              # 14 regions, 198 districts, 12 categories
 npm run start:dev
 ```
@@ -76,7 +76,7 @@ curl http://localhost:3000/api/regions            # 14
 ```
 
 ```bash
-cd apps/backend && npm test && npm run test:e2e   # 22 unit + 44 e2e
+cd apps/backend && npm test && npm run test:e2e   # 55 unit, 92 e2e
 cd apps/web && npx tsc --noEmit && npm run build
 cd apps/mobile && flutter analyze && flutter test
 ```
@@ -121,7 +121,7 @@ than writing them inline — that is what keeps saffron confined to CTAs.
 | Landing page + seller dashboard | ✅ |
 | Production deploy artifacts (Docker, nginx, CI/CD, backups) | ✅ |
 | Admin panel (moderation, users, reports) | ✅ |
-| Chat, reviews, push | ⬜ |
+| **Chat, reviews, push** | ✅ |
 | AI: voice listing, pricing, moderation, search | ⬜ |
 | Mobile screens + wiring | ⬜ |
 | Hardening, deploy, release, launch | ⬜ |
