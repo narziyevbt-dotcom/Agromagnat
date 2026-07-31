@@ -36,6 +36,26 @@ The API stores the id uniquely and returns the message already stored, so a
 retry is safe by construction rather than by luck. The mock implements the same
 rule, so the behaviour is exercised without a backend.
 
+## The list reads like a chat
+
+The message list is **reversed**, which does two things at once: a
+conversation opens on the newest message the way every chat app does, and
+prepending older history does not jerk the reader's position.
+
+It was not, at first. The thread opened on the oldest message and made you
+scroll down to find out what had been said — obvious the moment it is on a
+phone, invisible in a widget test that only asks whether the text is present.
+
+Scrolling to the top fetches the page before it. `load()` keeps the older
+pages already on screen, so the ten-second poll cannot throw away history the
+reader just scrolled up for — with the boundary handled by *not older than*
+rather than *older than*, because a burst of messages can share a timestamp to
+the second and the ones on the edge would vanish.
+
+The mock pages for real (30 a page, cursor and all). A mock that handed back
+the whole history at once would let a broken "load older" ship and only fail
+against the API.
+
 ## Polling, not sockets
 
 The backend has no gateway, so the open conversation refetches every ten
@@ -69,12 +89,13 @@ lost.
 
 ## Tests
 
-20 tests in `test/features/messages/messages_test.dart`.
+24 tests in `test/features/messages/messages_test.dart`.
 
 The ones worth having: a failed send keeps its words and offers a retry, the
 retry goes out under the same client id and lands once, a poll during a send
 does not swallow the pending bubble, a failed poll does not blank the thread,
-and opening a chat twice returns one conversation.
+opening a chat twice returns one conversation, and a poll fired after
+scrolling up does not throw the older pages away.
 
 ## Not done yet
 
@@ -84,5 +105,3 @@ and opening a chat twice returns one conversation.
   sends text.
 - **Offline queueing.** A failed message is kept and retried by hand. It is not
   written to disk, so closing the app loses it — unlike a queued listing.
-- **Paging.** The conversation loads the newest page and does not fetch older
-  history when scrolled to the top.

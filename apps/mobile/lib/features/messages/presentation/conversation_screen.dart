@@ -48,6 +48,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       ConversationScreen.pollInterval,
       (_) => ref.read(conversationProvider(widget.chatId).notifier).load(),
     );
+    // The list is reversed, so "scrolled to the end" is the top of the
+    // conversation — where older messages belong.
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >=
+          _scroll.position.maxScrollExtent - 200) {
+        ref.read(conversationProvider(widget.chatId).notifier).loadOlder();
+      }
+    });
   }
 
   @override
@@ -112,12 +120,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     _scrollToEnd();
   }
 
+  /// Back to the newest message. Zero, not maxScrollExtent: the list is
+  /// reversed, so the newest is at offset 0.
   void _scrollToEnd() {
     if (!_scroll.hasClients) {
       return;
     }
     _scroll.animateTo(
-      _scroll.position.maxScrollExtent,
+      0,
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
     );
@@ -214,12 +224,30 @@ class _Messages extends StatelessWidget {
       );
     }
 
+    // Reversed, which does two things at once: the conversation opens on the
+    // newest message the way every chat app does, and prepending older
+    // history does not jerk the reader's position — the old list opened on
+    // the oldest message and made you scroll down to find out what was said.
     return ListView.builder(
       controller: scroll,
+      reverse: true,
       padding: const EdgeInsets.all(AppSpacing.lg),
-      itemCount: state.messages.length,
+      itemCount: state.messages.length + (state.loadingOlder ? 1 : 0),
       itemBuilder: (context, index) {
-        final message = state.messages[index];
+        if (index >= state.messages.length) {
+          return const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        final message = state.messages[state.messages.length - 1 - index];
         return _Bubble(
           message: message,
           mine: message.senderId == viewerId,

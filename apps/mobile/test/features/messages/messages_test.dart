@@ -234,6 +234,61 @@ void main() {
     });
   });
 
+  group('older history', () {
+    test('the newest page comes first, with a cursor behind it', () async {
+      repository.seedLongThread('chat-1', 70);
+      final controller = await open('chat-1');
+
+      expect(controller.state.messages, hasLength(MockChatRepository.pageSize));
+      expect(controller.state.hasOlder, isTrue);
+
+      // The newest page: what a reader opening a thread wants to see.
+      expect(controller.state.messages.last.body, contains('Manzilni'));
+    });
+
+    test('scrolling up prepends the page before it', () async {
+      repository.seedLongThread('chat-1', 70);
+      final controller = await open('chat-1');
+      final newest = controller.state.messages.first;
+
+      await controller.loadOlder();
+
+      expect(
+        controller.state.messages,
+        hasLength(MockChatRepository.pageSize * 2),
+      );
+      // Prepended, not appended: older messages belong above.
+      expect(controller.state.messages.last.id, isNot(newest.id));
+      expect(
+        controller.state.messages.indexWhere((m) => m.id == newest.id),
+        MockChatRepository.pageSize,
+      );
+    });
+
+    test('it stops at the beginning of the conversation', () async {
+      repository.seedLongThread('chat-1', 40);
+      final controller = await open('chat-1');
+
+      await controller.loadOlder();
+      await controller.loadOlder();
+
+      expect(controller.state.hasOlder, isFalse);
+    });
+
+    test('a poll does not throw the older pages away', () async {
+      repository.seedLongThread('chat-1', 70);
+      final controller = await open('chat-1');
+      await controller.loadOlder();
+      final before = controller.state.messages.length;
+
+      await controller.load();
+
+      // Ten seconds after scrolling up, the poll fires. Losing the history
+      // the reader just fetched would send them scrolling again.
+      expect(controller.state.messages, hasLength(before));
+    });
+  });
+
   group('opening a chat from a listing', () {
     test('twice lands in the same conversation', () async {
       final chats = await repository.inbox();

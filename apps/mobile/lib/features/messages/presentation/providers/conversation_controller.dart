@@ -14,6 +14,8 @@ class ConversationState {
     this.loading = true,
     this.failed = false,
     this.sending = false,
+    this.olderCursor,
+    this.loadingOlder = false,
   });
 
   /// Oldest first — the order they are read in, and the order the list paints
@@ -24,19 +26,34 @@ class ConversationState {
   final bool failed;
   final bool sending;
 
+  /// Where the next page of *older* messages starts, or null at the beginning
+  /// of the conversation.
+  final String? olderCursor;
+
+  final bool loadingOlder;
+
+  bool get hasOlder => olderCursor != null;
+
   ConversationState copyWith({
     List<ChatMessage>? messages,
     bool? loading,
     bool? failed,
     bool? sending,
+    Object? olderCursor = _unset,
+    bool? loadingOlder,
   }) {
     return ConversationState(
       messages: messages ?? this.messages,
       loading: loading ?? this.loading,
       failed: failed ?? this.failed,
       sending: sending ?? this.sending,
+      olderCursor:
+          olderCursor == _unset ? this.olderCursor : olderCursor as String?,
+      loadingOlder: loadingOlder ?? this.loadingOlder,
     );
   }
+
+  static const Object _unset = Object();
 }
 
 /// One open conversation.
@@ -69,10 +86,27 @@ class ConversationController extends StateNotifier<ConversationState> {
           if (message.delivery != MessageDelivery.sent) message,
       ];
 
+      // Older pages already on screen are kept in front of the refreshed
+      // newest page. A poll must not throw away history the reader scrolled
+      // up to fetch.
+      final older = [
+        for (final message in state.messages)
+          if (message.delivery == MessageDelivery.sent &&
+              !history.any((fresh) => fresh.id == message.id) &&
+              // Not `isBefore`: a burst of messages can share a timestamp to
+              // the second, and the ones on the boundary would be dropped.
+              (history.isEmpty ||
+                  !message.createdAt.isAfter(history.first.createdAt)))
+            message,
+      ];
+
       state = state.copyWith(
-        messages: [...history, ...pending],
+        messages: [...older, ...history, ...pending],
         loading: false,
         failed: false,
+        // Only set on the first load: a poll returns the newest page, whose
+        // cursor points at history that is already on screen.
+        olderCursor: state.olderCursor ?? page.nextCursor,
       );
       unawaited(_repository.markRead(chatId));
     } on Object {
@@ -82,6 +116,28 @@ class ConversationController extends StateNotifier<ConversationState> {
         // error page because one poll timed out is the worse outcome.
         failed: state.messages.isEmpty,
       );
+    }
+  }
+
+  /// Fetches the page before the oldest message on screen.
+  Future<void> loadOlder() async {
+    final cursor = state.olderCursor;
+    if (cursor == null || state.loadingOlder) {
+      return;
+    }
+
+    state = state.copyWith(loadingOlder: true);
+    try {
+      final page = await _repository.messages(chatId, cursor: cursor);
+      state = state.copyWith(
+        messages: [...page.items.reversed, ...state.messages],
+        olderCursor: page.nextCursor,
+        loadingOlder: false,
+      );
+    } on Object {
+      // Nothing is removed and nothing is said: the reader still has what
+      // they had, and they will scroll again.
+      state = state.copyWith(loadingOlder: false);
     }
   }
 

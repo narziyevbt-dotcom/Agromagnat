@@ -182,12 +182,40 @@ class MockChatRepository implements ChatRepository {
     return _chats.firstWhere((chat) => chat.id == chatId);
   }
 
+  /// The API's default page size.
+  static const int pageSize = 30;
+
   @override
   Future<Paginated<ChatMessage>> messages(String chatId, {String? cursor}) async {
     await Future<void>.delayed(latency);
-    // Newest first, the way the API returns them.
+
+    // Newest first, the way the API returns them, and paged for real: a mock
+    // that hands back the whole history at once would let a broken "load
+    // older" ship and only fail against the API.
     final all = [...(_messages[chatId] ?? const <ChatMessage>[])].reversed.toList();
-    return Paginated<ChatMessage>(items: all);
+    final start = int.tryParse(cursor ?? '') ?? 0;
+    final end = (start + pageSize).clamp(0, all.length);
+
+    return Paginated<ChatMessage>(
+      items: all.sublist(start.clamp(0, all.length), end),
+      nextCursor: end < all.length ? '$end' : null,
+    );
+  }
+
+  /// Seeds a long thread, for exercising history paging.
+  void seedLongThread(String chatId, int count) {
+    final existing = _messages[chatId] ?? const <ChatMessage>[];
+    _messages[chatId] = [
+      for (var i = 0; i < count; i++)
+        ChatMessage(
+          id: '$chatId-old$i',
+          chatId: chatId,
+          senderId: i.isEven ? viewerId : 'usr-9',
+          body: 'Eski xabar $i',
+          createdAt: _now.subtract(Duration(days: 30 - (i ~/ 10))),
+        ),
+      ...existing,
+    ];
   }
 
   @override
