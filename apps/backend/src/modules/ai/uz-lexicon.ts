@@ -70,6 +70,21 @@ export const CATEGORY_KEYWORDS: Record<string, string[]> = {
   yer: ['yer', 'maydon', 'gektar yer', 'uchastka', 'tomorqa', 'fermer xo\'jaligi yeri'],
 };
 
+/**
+ * How much one matched stem is worth on its own.
+ *
+ * Length is a proxy for how unlikely an accidental substring hit is: "pomidor"
+ * inside a title is a tomato, whereas "yer" is inside "yerto'la" and half a
+ * dozen ordinary words. A multi-word phrase is stronger still — nothing matches
+ * "yuk mashina" by accident.
+ */
+function specificity(needle: string): number {
+  if (needle.includes(' ')) return 0.95;
+  if (needle.length >= 6) return 0.9;
+  if (needle.length === 5) return 0.8;
+  return 0.5;
+}
+
 export interface KeywordMatch {
   slug: string;
   /** 0-1. Rises with how many stems matched and how specific they were. */
@@ -91,28 +106,42 @@ export function matchCategories(text: string): KeywordMatch[] {
 
   for (const [slug, stems] of Object.entries(CATEGORY_KEYWORDS)) {
     const matched: string[] = [];
-    let score = 0;
+    let best = 0;
 
     for (const stem of stems) {
       const needle = normalizeUz(stem);
       if (!haystack.includes(needle)) continue;
 
       matched.push(stem);
-      // A multi-word phrase ("yuk mashina") is far more telling than a short
-      // stem that could be part of another word, so it scores higher.
-      score += needle.includes(' ') ? 3 : needle.length >= 5 ? 2 : 1;
+      best = Math.max(best, specificity(needle));
     }
 
     if (matched.length) {
-      scored.push({ slug, matched, confidence: Math.min(1, score / 4) });
+      // Driven by the single most specific stem that hit, not by how many did.
+      //
+      // Summing hits was the obvious first cut and it calibrated badly: the
+      // commonest input of all — one clean product name, "Urgut pomidori" —
+      // matched exactly one stem and landed at 0.5, below the auto-select bar,
+      // so the case the feature exists to nail was the case that asked the
+      // farmer to tap again. What actually makes a match uncertain is
+      // ambiguity, not brevity, and that is penalised below instead.
+      let confidence = best;
+
+      // Corroboration: a second stem from the same category ("traktor" and
+      // "MTZ") is genuine extra evidence, but it is a nudge, not the basis.
+      if (matched.length > 1) confidence = Math.min(1, confidence + 0.05);
+
+      scored.push({ slug, matched, confidence });
     }
   }
 
   scored.sort((a, b) => b.confidence - a.confidence);
 
-  // A clear winner should not look like a coin toss next to a weak runner-up.
-  if (scored.length > 1 && scored[0].confidence > scored[1].confidence) {
-    scored[0].confidence = Math.min(1, scored[0].confidence + 0.15);
+  // Two categories both claiming the text is the real uncertainty — "qovoq"
+  // reads as both a vegetable and a melon. Only a runner-up that is genuinely
+  // competitive counts; a weak second hit should not spoil a decisive first.
+  if (scored.length > 1 && scored[1].confidence >= scored[0].confidence - 0.1) {
+    scored[0].confidence = Math.max(0.4, scored[0].confidence - 0.25);
   }
 
   return scored.slice(0, 3);

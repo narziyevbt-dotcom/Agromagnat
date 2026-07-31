@@ -360,3 +360,31 @@ export interface AssistAnswer {
   answerUz: string;
   source: 'canned' | 'model';
 }
+
+/* --------------------------------------------------------------- pricing */
+
+/** Which population a recommendation came from, strongest first. */
+export type PriceBasis =
+  | 'sold_local'
+  | 'sold_national'
+  | 'active_local'
+  | 'active_national';
+
+export interface PriceSuggestion {
+  range: { min: string; suggested: string; max: string } | null;
+  unit: QuantityUnit;
+  basis: PriceBasis | null;
+  sampleSize: number;
+  /** 0-1. Below 0.5 the UI hedges rather than presenting it as the market price. */
+  confidence: number;
+  trendPct: number | null;
+  reasonUz: string;
+}
+
+export interface PriceIndexPoint {
+  day: string;
+  priceMin: string;
+  priceAvg: string;
+  priceMax: string;
+  sampleSize: number;
+}

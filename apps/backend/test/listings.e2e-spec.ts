@@ -252,14 +252,27 @@ describe('Listings (e2e)', () => {
         .expect(200);
     });
 
-    it('sorts cheapest first', async () => {
+    it('sorts cheapest first within a promotion tier, and puts TOP listings above it', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/listings')
         .query({ sort: 'cheapest', limit: 20 })
         .expect(200);
 
-      const prices = response.body.items.map((i: { price: string }) => Number(i.price));
-      expect([...prices].sort((a, b) => a - b)).toEqual(prices);
+      const items: Array<{ price: string; isPromoted: boolean }> = response.body.items;
+
+      // Paid TOP placement outranks price — that is what the placement is sold
+      // for, and the feed's ORDER BY leads with the promotion rank for every
+      // sort. Asserting a single globally ascending run passed only while no
+      // listing in the database happened to be promoted, so it was checking
+      // the fixture rather than the ranking.
+      const promoted = items.filter((item) => item.isPromoted);
+      const rest = items.filter((item) => !item.isPromoted);
+      expect(items.slice(0, promoted.length)).toEqual(promoted);
+
+      for (const tier of [promoted, rest]) {
+        const prices = tier.map((item) => Number(item.price));
+        expect([...prices].sort((a, b) => a - b)).toEqual(prices);
+      }
     });
 
     it('walks pages without repeating or skipping an item', async () => {

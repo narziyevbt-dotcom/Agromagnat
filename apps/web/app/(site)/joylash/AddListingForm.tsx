@@ -6,6 +6,7 @@ import { AiComposer } from '@/components/listing-form/AiComposer';
 import { AttributeFields } from '@/components/listing-form/AttributeFields';
 import { CategoryPicker } from '@/components/listing-form/CategoryPicker';
 import { type PhotoItem, PhotoPanel } from '@/components/listing-form/PhotoPanel';
+import { PriceHint } from '@/components/listing-form/PriceHint';
 import { t } from '@/lib/strings';
 import type {
   Category,
@@ -271,6 +272,10 @@ export function AddListingForm({
                 </div>
               </Field>
 
+              {/* The price cell is a fragment rather than one Field so the
+                  field's own hint stays attached to the input and the market
+                  card sits below both, instead of between them. */}
+              <div>
               <Field
                 label={`${spec.price.labelUz} *`}
                 hint={spec.price.hintUz}
@@ -298,7 +303,20 @@ export function AddListingForm({
                     {unitOptions(spec.price.units)}
                   </select>
                 </div>
+
               </Field>
+
+              {/* The market price, right where the number is decided. */}
+              {draft.categoryId && (
+                <PriceHint
+                  categoryId={draft.categoryId}
+                  regionId={regionId || undefined}
+                  unit={draft.priceUnit ?? spec.price.units[0]}
+                  quantity={Number(draft.quantity) || undefined}
+                  onApply={set('price')}
+                />
+              )}
+              </div>
 
               <Field label={`${t.addListing.regionLabel} *`} error={state.fieldErrors?.regionId}>
                 <select

@@ -44,6 +44,8 @@ npm install
 cp ../../.env .env
 npm run migration:run     # creates all 13 tables
 npm run seed              # 14 regions, 198 districts, 12 categories
+npm run seed:demo         # optional: 6 months of listings and sales
+npm run price:snapshot 2026-06-01 2026-07-31   # optional: fill the price index
 npm run start:dev
 ```
 
@@ -76,7 +78,7 @@ curl http://localhost:3000/api/regions            # 14
 ```
 
 ```bash
-cd apps/backend && npm test && npm run test:e2e   # 99 unit, 117 e2e
+cd apps/backend && npm test && npm run test:e2e   # 122 unit, 134 e2e
 cd apps/web && npx tsc --noEmit && npm run build
 cd apps/mobile && flutter analyze && flutter test
 ```
@@ -131,7 +133,8 @@ them inline — that is what keeps lime confined to CTAs.
 | Admin panel (moderation, users, reports) | ✅ |
 | **Chat, reviews, push** | ✅ |
 | **AI: category suggestion, voice listing, help assistant** | ✅ |
-| AI: pricing, moderation, search | ⬜ |
+| **Price recommendation + market index** | ✅ |
+| AI: moderation, smart search, image validation | ⬜ |
 | Mobile screens + wiring | ⬜ |
 | Hardening, deploy, release, launch | ⬜ |
 
@@ -153,6 +156,19 @@ It powers three things: the category that gets selected as a seller types, the
 "AI writes the listing" panel (with browser dictation, in Uzbek), and the help
 assistant in the corner of every signed-in page. Details, cost and the
 structured-output gotchas are in [docs/AI.md](docs/AI.md).
+
+## Price recommendation
+
+The one number a horizontal classifieds site cannot produce: what this crop
+actually sold for, in this region, over the last two months. It sits under the
+price field on the posting form, with its range, its sample size and where the
+figure came from.
+
+It is percentiles over real listings, not a model — a language model asked what
+tomatoes should cost returns a confident number with nothing behind it, and a
+farmer would act on it. A nightly job snapshots the index into `price_index` so
+today cannot retroactively change what last month looked like. See
+[docs/PRICING.md](docs/PRICING.md).
 
 ## Category-aware forms
 

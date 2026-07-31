@@ -17,6 +17,8 @@ import type {
   ListingFilters,
   MessagePage,
   Paginated,
+  PriceIndexPoint,
+  PriceSuggestion,
   PriceTrend,
   Region,
   ReportReason,
@@ -134,6 +136,38 @@ export const getDistricts = (regionId: string) =>
  */
 export const getCategoryForm = (idOrSlug: string) =>
   apiFetch<CategoryFormSpec>(`/categories/${idOrSlug}/form`, { revalidate: 3600 });
+
+/* ----------------------------------------------------------------- pricing */
+
+/**
+ * Public and cached for ten minutes server-side, so this is safe to call as the
+ * seller changes category or unit. No token: the index is an aggregate over
+ * listings that are themselves public.
+ */
+export const getPriceSuggestion = (body: {
+  categoryId: string;
+  regionId?: string;
+  unit: string;
+  quantity?: number;
+}) =>
+  apiFetch<PriceSuggestion>('/pricing/suggest', {
+    method: 'POST',
+    body,
+    revalidate: 0,
+  });
+
+export const getPriceHistory = (params: {
+  categoryId: string;
+  regionId?: string;
+  unit?: string;
+  days?: number;
+}) => {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') search.set(key, String(value));
+  }
+  return apiFetch<PriceIndexPoint[]>(`/pricing/history?${search}`, { revalidate: 900 });
+};
 
 /* ---------------------------------------------------------------------- ai */
 

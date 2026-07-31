@@ -21,7 +21,7 @@ npm run seed               # reference data, idempotent
 | `favorites` | Unique per (user, listing) |
 | `chats` / `messages` | One chat per (listing, buyer); unread counts on the chat |
 | `reviews` | One per (listing, author), rating 1–5 enforced by a check constraint |
-| `price_index` | Daily median/quartile prices per category+region+unit |
+| `price_index` | Daily median/quartile prices per category+region+unit — see docs/PRICING.md |
 | `reports` | User complaints feeding the admin moderation queue |
 | `device_tokens` | One row per installation, for FCM push — see docs/PUSH.md |
 

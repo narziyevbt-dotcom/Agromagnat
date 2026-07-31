@@ -225,6 +225,17 @@ async function main(): Promise<void> {
         const category = categories.get(template.categorySlug);
         if (!category) continue;
 
+        // Recent months get a real market rather than a single data point.
+        //
+        // One listing per template per month drew a chart but produced two
+        // sales per category inside the recommender's 60-day window — below
+        // its five-row floor, so the headline feature reported "not enough
+        // data" on a freshly seeded install. Six a month for the last two is
+        // what a single district actually looks like, and it is the difference
+        // between demoing the product and demoing an empty state.
+        const perMonth = monthsAgo <= 1 ? 6 : 1;
+
+        for (let copy = 0; copy < perMonth; copy += 1) {
         index += 1;
         const monthsElapsed = 5 - monthsAgo;
         const drifted =
@@ -237,12 +248,27 @@ async function main(): Promise<void> {
         const createdAt = new Date();
         createdAt.setDate(1);
         createdAt.setMonth(createdAt.getMonth() - monthsAgo);
-        createdAt.setDate(Math.min(5 + (index % 20), 28));
+        createdAt.setDate(Math.min(2 + (index % 26), 28));
 
         const expiresAt = new Date(createdAt);
         expiresAt.setDate(expiresAt.getDate() + 14);
 
         const isCurrentMonth = monthsAgo === 0;
+
+        // Roughly two in three past listings sold; the rest expired unsold.
+        //
+        // Without this every historical listing was `expired`, and the price
+        // recommender — which ranks real sales above asking prices — had no
+        // sold population to draw on. A demo of a marketplace with zero sales
+        // cannot show the one number that marketplace exists to produce, so a
+        // fresh install rendered "not enough data" on its headline feature.
+        const sold = !isCurrentMonth && index % 3 !== 0;
+        const soldAt = sold ? new Date(createdAt) : null;
+        if (soldAt) {
+          // Cleared somewhere inside its 14-day window, not on day zero.
+          soldAt.setDate(soldAt.getDate() + 3 + (index % 9));
+        }
+
         const seller = sellers[index % sellers.length];
         const district = districts[index % districts.length];
 
@@ -261,7 +287,12 @@ async function main(): Promise<void> {
           minOrder: String(Math.max(1, Math.round(template.quantity / 6))),
           seasonMonths: template.seasonMonths,
           delivery: index % 3 === 0 ? DeliveryOption.BOTH : DeliveryOption.PICKUP,
-          status: isCurrentMonth ? ListingStatus.ACTIVE : ListingStatus.EXPIRED,
+          status: isCurrentMonth
+            ? ListingStatus.ACTIVE
+            : sold
+              ? ListingStatus.SOLD
+              : ListingStatus.EXPIRED,
+          soldAt,
           expiresAt,
           viewCount: 40 + Math.round(Math.abs(jitter(index, 1)) * 900),
           callCount: 2 + Math.round(Math.abs(jitter(index + 7, 1)) * 40),
@@ -273,12 +304,16 @@ async function main(): Promise<void> {
         // second statement.
         await listingRepo.update(saved.id, { createdAt });
         created += 1;
+        }
       }
     }
 
     console.log('Demo seed complete:');
     console.log(`  sellers:  ${sellers.length}`);
     console.log(`  listings: ${created} across 6 months`);
+    console.log(`  sold:     ${
+      await listingRepo.count({ where: { status: ListingStatus.SOLD } })
+    } (feeds the price recommender)`);
     console.log(`  active:   ${TEMPLATES.length} (current month)`);
   } finally {
     await ds.destroy();
