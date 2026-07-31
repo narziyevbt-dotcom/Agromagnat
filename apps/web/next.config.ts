@@ -20,7 +20,10 @@ const imageHost = (() => {
 const nextConfig: NextConfig = {
   // Emits .next/standalone with a self-contained server.js — what the
   // production Docker image runs, instead of shipping node_modules wholesale.
-  output: 'standalone',
+  //
+  // Skipped on Vercel, which builds to its own output format and only has to
+  // trace the bundle a second time when standalone is left on.
+  ...(process.env.VERCEL ? {} : { output: 'standalone' as const }),
 
   images: {
     remotePatterns: [imageHost],
