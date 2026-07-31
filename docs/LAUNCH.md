@@ -12,7 +12,11 @@ Hozir `mock`. **Kod har doim `000000`.** Ya'ni saytni topgan har kim istalgan
 telefon raqamni kiritib, o'sha odam sifatida kiradi — shu jumladan admin
 sifatida.
 
-Kerak: Eskiz.uz akkaunti, so'ng bu o'zgaruvchilar:
+Kerak: Eskiz.uz akkaunti. **To'liq qadamlar: [docs/ESKIZ.md](ESKIZ.md)** —
+u yerda eng ko'p o'tkazib yuboriladigan qadam ham bor (SMS matnini shablon
+sifatida tasdiqlash; tasdiqlanmasa Eskiz "yubordim" deydi, lekin yubormaydi).
+
+So'ng bu o'zgaruvchilar:
 
 ```
 SMS_PROVIDER=eskiz
@@ -20,6 +24,8 @@ ESKIZ_EMAIL=...
 ESKIZ_PASSWORD=...
 ESKIZ_FROM=4546
 ```
+
+Tekshirish: `cd apps/backend && npm run sms:check +998901234567`
 
 Ilova `NODE_ENV=production` bilan `SMS_PROVIDER=mock` da **umuman ishga
 tushmaydi** — bu ataylab shunday qilingan (`env.validation.ts`). Ya'ni bu

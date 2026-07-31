@@ -1,0 +1,128 @@
+# Eskiz.uz — SMS ulash
+
+Bu — bugungi eng muhim ish. Bularsiz hech kim ro'yxatdan o'ta olmaydi, va
+hozirgi `mock` rejimda kod har doim `000000` — ya'ni istalgan odam istalgan
+hisobga kiradi.
+
+Kod tomondan hammasi tayyor. Qolgani — akkaunt.
+
+---
+
+## 1. Akkaunt oching
+
+<https://eskiz.uz> → ro'yxatdan o'tish.
+
+Yuridik shaxs uchun odatda talab qilinadi:
+
+- STIR (INN)
+- Bank rekvizitlari
+- Kompaniya nomi va manzili
+- Mas'ul shaxs telefoni
+
+Eskiz shartnoma yuboradi, siz imzolab qaytarasiz. **Bu bir kunda bo'lmasligi
+mumkin** — reklama muddatini shunga qarab rejalashtiring.
+
+## 2. Balans to'ldiring
+
+SMS pul turadi. Balans tugasa **hech kim kira olmaydi** — bu login yo'lidagi
+yagona nuqta. Kamida bir necha minglik zaxira qoldiring va kuzatib boring.
+
+## 3. Jo'natuvchi nomi (sender / `from`)
+
+Standart `4546` — Eskiz'ning umumiy test raqami. O'z nomingiz (masalan
+`AGROMAGNAT`) alohida tasdiqlanadi va vaqt oladi.
+
+Boshlash uchun `4546` yetarli. Keyin `ESKIZ_FROM` ni o'zgartirasiz, kodga
+tegilmaydi.
+
+## 4. ⚠️ SMS matnini shablon sifatida tasdiqlang
+
+**Bu — eng ko'p o'tkazib yuboriladigan qadam, va u butun ishga tushishni
+o'ldiradi.**
+
+Eskiz faqat **oldindan tasdiqlangan** matnlarni yuboradi. Tasdiqlanmagan matn
+uchun Eskiz **HTTP 200 qaytaradi** — ya'ni "qabul qildim" deydi — lekin SMS
+hech qachon yetib bormaydi. Loglarda xato yo'q. Siz buni faqat "SMS kelmayapti"
+degan qo'ng'iroqdan bilib olasiz.
+
+Kabinetda shablonlar bo'limiga aynan shu matnni qo'shing:
+
+```
+Agromagnat tasdiqlash kodi: %s. Kodni hech kimga bermang.
+```
+
+`%s` — kod o'rniga. Matn **aynan shunday** bo'lishi kerak: bitta vergul yoki
+nuqta farq qilsa ham, tasdiqlanmagan matn hisoblanadi.
+
+> Ilova aynan shu matnni yuboradi — manba:
+> `apps/backend/src/modules/auth/otp-channels/sms-otp.channel.ts`.
+> Matnni o'zgartirsangiz, shablonni ham yangilang.
+
+Moderatsiya bir necha soatdan bir kungacha vaqt oladi.
+
+## 5. Kalitlarni qo'ying
+
+```bash
+SMS_PROVIDER=eskiz
+ESKIZ_EMAIL=<kabinetdagi email>
+ESKIZ_PASSWORD=<parol>
+ESKIZ_BASE_URL=https://notify.eskiz.uz/api
+ESKIZ_FROM=4546
+```
+
+## 6. Tekshiring — bitta buyruq
+
+```bash
+cd apps/backend
+
+# Faqat kalitlarni tekshiradi: kirish, hisob, balans
+npm run sms:check
+
+# Haqiqiy SMS yuboradi — moderatsiyani faqat shu isbotlaydi
+npm run sms:check +998901234567
+```
+
+Nima ko'rasiz:
+
+| Natija | Ma'nosi |
+|---|---|
+| `❌ Token olinmadi` + `Неверный Email или пароль` | Email yoki parol xato |
+| `✅ Kalitlar ishlaydi` | Kirish joyida, lekin matn hali tekshirilmagan |
+| `❌ Eskiz xabarni rad etdi (status: rejected)` | **Matn shablon sifatida tasdiqlanmagan** — 4-qadamga qayting |
+| `✅ Eskiz xabarni qabul qildi` **va telefonga SMS keldi** | Tayyor |
+| `✅ qabul qildi` **lekin SMS kelmadi** | Baribir moderatsiya. Eskiz "qabul qildim" deydi, lekin yubormaydi |
+
+**Oxirgi qatorga alohida e'tibor bering.** Yashil belgi yetarli emas —
+telefonni qo'lingizga oling va SMS kelganini ko'ring. Bu ishga tushirishdagi
+yagona haqiqiy tekshiruv.
+
+## 7. Ishga tushiring
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build backend
+```
+
+Ilova `NODE_ENV=production` va `SMS_PROVIDER=mock` bilan **ataylab ishga
+tushmaydi** — bu xatoni sezmay qolish mumkin emas.
+
+---
+
+## Kod nima qiladi
+
+- **Kirish tokeni keshlanadi** va 401 kelganda bir marta qayta olinadi. Bir
+  vaqtda faqat bitta kirish so'rovi ketadi — reklama boshlanganda kelgan
+  navbat Eskiz'ning kirish cheklovini urib qo'ymasligi uchun
+- **Javob tanasi o'qiladi**, faqat HTTP kodi emas. `rejected` → xatolik logga
+  yoziladi va xabar muvaffaqiyatsiz hisoblanadi
+- **Notanish javob** — logga to'liq yoziladi, lekin kirish yo'li to'xtatilmaydi
+- **SMS yuborilmasa** OTP dispetcheri Telegram kanaliga o'tadi (agar bot
+  sozlangan bo'lsa) — `docs/AUTH.md`
+
+Testlar: `apps/backend/src/modules/auth/sms/eskiz-sms.service.spec.ts`
+
+## Telegram — SMS'ga arzon muqobil
+
+`TELEGRAM_BOT_TOKEN` qo'yilsa, botni ishga tushirgan foydalanuvchilarga kodlar
+**bepul** Telegram orqali boradi, SMS esa zaxira bo'lib qoladi. Fermerlarning
+katta qismi Telegram'da — bu SMS xarajatini sezilarli kamaytiradi.
+Sozlash: `docs/AUTH.md`.
