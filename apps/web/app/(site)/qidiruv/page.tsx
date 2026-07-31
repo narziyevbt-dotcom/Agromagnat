@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { ListingCard, ListingCardSkeleton } from '@/components/ListingCard';
 import { SearchFilters } from '@/components/SearchFilters';
+import { SmartSearch } from '@/components/SmartSearch';
 import { getCategories, getListings, getRegions } from '@/lib/api';
 import { getAccessToken, isSignedIn } from '@/lib/session';
 import { t } from '@/lib/strings';
@@ -47,9 +48,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const params = await searchParams;
   const filters = toFilters(params);
 
-  const [categories, regions] = await Promise.all([
+  const [categories, regions, signedIn] = await Promise.all([
     getCategories().catch(() => []),
     getRegions().catch(() => []),
+    isSignedIn(),
   ]);
 
   return (
@@ -58,9 +60,16 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
         {filters.q ? `"${filters.q}"` : t.search.title}
       </h1>
 
-      <Suspense fallback={<div className="h-11" />}>
-        <SearchFilters categories={categories} regions={regions} />
-      </Suspense>
+      {/* Above the filter bar rather than replacing it. The panel answers the
+          buyer who can describe what they want; the filters serve the one who
+          would rather point at it, and taking either away costs a real user. */}
+      <SmartSearch signedIn={signedIn} />
+
+      <div className="mt-5">
+        <Suspense fallback={<div className="h-11" />}>
+          <SearchFilters categories={categories} regions={regions} />
+        </Suspense>
+      </div>
 
       <div className="mt-5">
         <Suspense key={JSON.stringify(filters)} fallback={<ResultsSkeleton />}>

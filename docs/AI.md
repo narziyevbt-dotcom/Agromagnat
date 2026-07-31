@@ -1,9 +1,10 @@
 # AI
 
-Three things a seller can ask for: which category this belongs in, a listing
-written from one sentence, and an answer to a question about selling here.
+Four things: which category a listing belongs in, a listing written from one
+sentence, an answer to a question about selling here, and a search query read
+as filters rather than as keywords.
 
-All three sit behind one interface, `AiService`, with two implementations. The
+All four sit behind one interface, `AiService`, with two implementations. The
 choice is made once at boot from `AI_PROVIDER` and is invisible to every caller.
 
 ## Providers
@@ -40,15 +41,56 @@ warning and returns the local result. A missing key with `AI_PROVIDER=anthropic`
 logs a warning at boot and uses `local` rather than refusing to start. An AI
 outage must never be able to stop somebody posting a listing.
 
+## Smart search
+
+`POST /api/ai/search` turns a sentence into the feed's own filters and runs it.
+
+```
+"Samarqanddan 5 tonnadan ko'p oq kartoshka, 12 mingdan arzon"
+  → regionId=Samarqand, quantityMin=5, categoryId=sabzavotlar,
+    priceMax=12000, q="oq"
+```
+
+Every one of those is a filter the feed already supports. Keyword search throws
+them away and matches the words against a tsvector, which is why that query
+returns nothing useful on a general classifieds board.
+
+Three things make it work rather than merely demo:
+
+- **The keyword pass runs first and usually wins.** Most real queries are short
+  and formulaic; the model is only called when the local pass found no category
+  or no constraint. Search is the highest-volume AI surface in the product, so
+  paying per query would be the largest line on the bill for the least
+  interesting answers.
+- **`leftoverQ`.** Words not consumed by a filter still reach the full-text
+  index. Without it "oq kartoshka" silently widens from white potatoes to all
+  potatoes once "kartoshka" becomes a category.
+- **The interpretation is always shown.** Natural-language search fails
+  silently otherwise: a misread query returns the wrong listings and looks like
+  an empty market. `summaryUz` is written from the filters by
+  `describeIntent`, never by a provider, so it cannot disagree with what was
+  actually applied.
+
+It is the one AI route that is **public**. A buyer evaluating the platform will
+not sign up before their first query, and that query is the whole pitch. The
+rate limit falls back to the caller's IP when there is no user to key it on.
+
+Two parsing rules earned their comments the hard way. Money requires a scale or
+currency word (`ming`, `mln`, `so'm`) — without it "5 tonnadan ko'p" parsed as
+a price floor of 5 so'm, because a bare number beside a comparison word is
+exactly the shape a volume takes. And volume is parsed before money, so the
+volume phrase is consumed first.
+
 ## Endpoints
 
-All authenticated. All rate-limited per user per hour, in Redis.
+Rate-limited per user per hour, in Redis. All authenticated except search.
 
-| Route | Limit/hour | Returns |
-|---|---|---|
-| `POST /api/ai/category` | 120 | ranked candidates + `source` |
-| `POST /api/ai/draft` | 30 | a full listing draft + `missingUz` |
-| `POST /api/ai/assist` | 60 | one Uzbek answer |
+| Route | Auth | Limit/hour | Returns |
+|---|---|---|---|
+| `POST /api/ai/search` | public | 120 | parsed `intent` + a page of listings |
+| `POST /api/ai/category` | yes | 120 | ranked candidates + `source` |
+| `POST /api/ai/draft` | yes | 30 | a full listing draft + `missingUz` |
+| `POST /api/ai/assist` | yes | 60 | one Uzbek answer |
 
 The limits are generous for a person and tight for a runaway client, which is
 the failure mode that actually costs money. Over the limit returns 429 with an

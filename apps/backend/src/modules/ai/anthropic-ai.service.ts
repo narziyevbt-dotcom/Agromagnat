@@ -11,6 +11,8 @@ import {
   CategorySuggestion,
   DraftContext,
   ListingDraft,
+  SearchContext,
+  SearchIntent,
 } from './ai.types';
 import { LocalAiService } from './local-ai.service';
 
@@ -220,6 +222,137 @@ export class AnthropicAiService implements AiService {
       this.logger.warn(`draftListing fell back to keywords: ${String(error)}`);
       return this.local.draftListing(text, context);
     }
+  }
+
+  // --------------------------------------------------------------- search
+
+  /**
+   * The keyword parser runs first and the model only fills what it missed.
+   *
+   * Most real queries here are short and formulaic — a product, a region, a
+   * price bound — and the lexicon handles those for nothing. The model earns
+   * its cost on the sentences that are actually sentences, and on the ones
+   * whose vocabulary is not in the lexicon at all.
+   */
+  async parseSearch(text: string, context: SearchContext): Promise<SearchIntent> {
+    const keyword = await this.local.parseSearch(text, context);
+
+    // The local pass understood the product and a constraint. Anything the
+    // model added on top of that would be a rewording, not an improvement.
+    if (keyword.categoryId && this.hasConstraint(keyword)) {
+      return keyword;
+    }
+
+    try {
+      const parsed = await this.json<{
+        categorySlug: string | null;
+        regionSlug: string | null;
+        priceMin: number | null;
+        priceMax: number | null;
+        quantityMin: number | null;
+        withDelivery: boolean | null;
+        verifiedOnly: boolean | null;
+        sort: string | null;
+        leftoverQ: string | null;
+      }>(
+        this.fastModel,
+        {
+          type: 'object',
+          properties: {
+            categorySlug: {
+              anyOf: [
+                { type: 'string', enum: context.categories.map((c) => c.slug) },
+                { type: 'null' },
+              ],
+            },
+            regionSlug: {
+              anyOf: [
+                { type: 'string', enum: context.regions.map((r) => r.slug) },
+                { type: 'null' },
+              ],
+            },
+            priceMin: { type: ['number', 'null'] },
+            priceMax: { type: ['number', 'null'] },
+            quantityMin: { type: ['number', 'null'] },
+            withDelivery: { type: ['boolean', 'null'] },
+            verifiedOnly: { type: ['boolean', 'null'] },
+            sort: {
+              anyOf: [
+                { type: 'string', enum: ['newest', 'cheapest', 'expensive'] },
+                { type: 'null' },
+              ],
+            },
+            leftoverQ: { type: ['string', 'null'] },
+          },
+          required: [
+            'categorySlug',
+            'regionSlug',
+            'priceMin',
+            'priceMax',
+            'quantityMin',
+            'withDelivery',
+            'verifiedOnly',
+            'sort',
+            'leftoverQ',
+          ],
+          additionalProperties: false,
+        },
+        this.searchPrompt(text, context),
+        700,
+      );
+
+      const category = context.categories.find((row) => row.slug === parsed.categorySlug);
+      const region = context.regions.find((row) => row.slug === parsed.regionSlug);
+
+      return {
+        categoryId: category?.id ?? keyword.categoryId,
+        categorySlug: category?.slug ?? keyword.categorySlug,
+        regionId: region?.id ?? keyword.regionId,
+        regionName: region?.nameUz ?? keyword.regionName,
+        priceMin: parsed.priceMin ?? keyword.priceMin,
+        priceMax: parsed.priceMax ?? keyword.priceMax,
+        quantityMin: parsed.quantityMin ?? keyword.quantityMin,
+        withDelivery: parsed.withDelivery ?? keyword.withDelivery,
+        verifiedOnly: parsed.verifiedOnly ?? keyword.verifiedOnly,
+        sort: (parsed.sort as SearchIntent['sort']) ?? keyword.sort,
+        leftoverQ: parsed.leftoverQ?.trim() || keyword.leftoverQ,
+        summaryUz: '',
+        source: 'model',
+      };
+    } catch (error) {
+      this.logger.warn(`parseSearch fell back to keywords: ${String(error)}`);
+      return keyword;
+    }
+  }
+
+  private hasConstraint(intent: SearchIntent): boolean {
+    return (
+      intent.regionId !== null ||
+      intent.priceMax !== null ||
+      intent.priceMin !== null ||
+      intent.quantityMin !== null
+    );
+  }
+
+  private searchPrompt(text: string, context: SearchContext): string {
+    return [
+      "Xaridor qidiruv so'rovi yozdi. Uni filtrlarga ajrat.",
+      '',
+      `So'rov: "${text}"`,
+      '',
+      'Kategoriyalar:',
+      context.categories.map((c) => `- ${c.slug}: ${c.nameUz}`).join('\n'),
+      '',
+      'Viloyatlar:',
+      context.regions.map((r) => `- ${r.slug}: ${r.nameUz}`).join('\n'),
+      '',
+      'Qoidalar:',
+      "- Aytilmagan maydonni null qoldir. Taxmin qilma.",
+      "- priceMin/priceMax: so'mda, to'liq son. «10 ming» = 10000.",
+      "- «arzon», «gacha», «kam» — bu priceMax. «qimmat», «dan ko'p» — priceMin.",
+      '- quantityMin: tonnada.',
+      "- leftoverQ: kategoriya va viloyatdan keyin qolgan mahsulot so'zlari (masalan «oq»).",
+    ].join('\n');
   }
 
   // --------------------------------------------------------------- assist

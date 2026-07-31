@@ -78,7 +78,7 @@ curl http://localhost:3000/api/regions            # 14
 ```
 
 ```bash
-cd apps/backend && npm test && npm run test:e2e   # 122 unit, 157 e2e
+cd apps/backend && npm test && npm run test:e2e   # 141 unit, 157 e2e
 cd apps/web && npx tsc --noEmit && npm run build
 cd apps/mobile && flutter analyze && flutter test
 ```
@@ -135,7 +135,8 @@ them inline — that is what keeps lime confined to CTAs.
 | **AI: category suggestion, voice listing, help assistant** | ✅ |
 | **Price recommendation + market index** | ✅ |
 | **Offers, negotiation and deal completion** | ✅ |
-| AI: moderation, smart search, image validation | ⬜ |
+| **AI smart search (natural language → filters)** | ✅ |
+| AI: moderation, image validation | ⬜ |
 | Mobile screens + wiring | ⬜ |
 | Hardening, deploy, release, launch | ⬜ |
 

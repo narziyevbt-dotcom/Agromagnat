@@ -54,6 +54,35 @@ export interface DraftContext {
   districtId?: string | null;
 }
 
+/**
+ * A search query understood as filters rather than as keywords.
+ *
+ * Everything is optional: the parser fills what the sentence actually said and
+ * leaves the rest alone. `leftoverQ` carries the words that were not consumed
+ * by a filter, so they still reach the full-text index — "oq kartoshka" keeps
+ * "oq" as a term after "kartoshka" resolves to a category.
+ */
+export interface SearchIntent {
+  categoryId: string | null;
+  categorySlug: string | null;
+  regionId: string | null;
+  regionName: string | null;
+  priceMin: number | null;
+  priceMax: number | null;
+  quantityMin: number | null;
+  withDelivery: boolean | null;
+  verifiedOnly: boolean | null;
+  sort: 'newest' | 'cheapest' | 'expensive' | null;
+  leftoverQ: string | null;
+  /** One Uzbek line telling the searcher what was understood. */
+  summaryUz: string;
+  source: 'keyword' | 'model';
+}
+
+export interface SearchContext extends DraftContext {
+  regions: Array<{ id: string; slug: string; nameUz: string }>;
+}
+
 export interface AssistTurn {
   role: 'user' | 'assistant';
   content: string;
@@ -73,4 +102,7 @@ export interface AiService {
 
   /** Answers a seller's question about using Agromagnat, in Uzbek. */
   assist(question: string, history: AssistTurn[]): Promise<AssistAnswer>;
+
+  /** A sentence a buyer would say, turned into the feed's own filters. */
+  parseSearch(text: string, context: SearchContext): Promise<SearchIntent>;
 }

@@ -137,12 +137,25 @@ export function matchCategories(text: string): KeywordMatch[] {
 
   scored.sort((a, b) => b.confidence - a.confidence);
 
-  // Two categories both claiming the text is the real uncertainty — "qovoq"
-  // reads as both a vegetable and a melon. Only a runner-up that is genuinely
-  // competitive counts; a weak second hit should not spoil a decisive first.
-  if (scored.length > 1 && scored[1].confidence >= scored[0].confidence - 0.1) {
-    scored[0].confidence = Math.max(0.4, scored[0].confidence - 0.25);
+  // Two categories both claiming the text is the real uncertainty — "qovoq va
+  // tarvuz" is a vegetable and a melon, and neither reading is safe to apply
+  // on its own. A weak second hit is not competition and leaves the leader
+  // alone.
+  //
+  // Every candidate inside the band is discounted, not just the leader.
+  // Penalising the leader alone simply handed the top slot to the runner-up at
+  // full confidence, which auto-selected the very query that had just been
+  // judged ambiguous. Order is then restored, because the discount can reorder
+  // the list — that is how "yetkazib berish" once outranked "pomidor" after
+  // being demoted for ambiguity.
+  const leader = scored[0]?.confidence ?? 0;
+  const contested = scored.filter((match) => match.confidence >= leader - 0.1);
+  if (contested.length > 1) {
+    for (const match of contested) {
+      match.confidence = Math.max(0.4, match.confidence - 0.25);
+    }
   }
+  scored.sort((a, b) => b.confidence - a.confidence);
 
   return scored.slice(0, 3);
 }

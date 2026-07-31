@@ -25,6 +25,7 @@ import type {
   ReportReason,
   Review,
   SellerReviews,
+  SmartSearchResult,
   SellerStats,
 } from './types';
 
@@ -184,6 +185,18 @@ export const aiDraftListing = (text: string, token: string) =>
   apiFetch<ListingDraft>('/ai/draft', {
     method: 'POST',
     body: { text },
+    token,
+    revalidate: 0,
+  });
+
+/**
+ * Natural-language search. Public — a buyer evaluating the platform will not
+ * sign in before their first query, and that query is the whole pitch.
+ */
+export const aiSmartSearch = (q: string, limit = 20, token?: string) =>
+  apiFetch<SmartSearchResult>('/ai/search', {
+    method: 'POST',
+    body: { q, limit },
     token,
     revalidate: 0,
   });

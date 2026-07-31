@@ -409,3 +409,27 @@ export interface PriceIndexPoint {
   priceMax: string;
   sampleSize: number;
 }
+
+/* ------------------------------------------------------------ smart search */
+
+/** A search sentence understood as the feed's own filters. */
+export interface SearchIntent {
+  categoryId: string | null;
+  categorySlug: string | null;
+  regionId: string | null;
+  regionName: string | null;
+  priceMin: number | null;
+  priceMax: number | null;
+  quantityMin: number | null;
+  withDelivery: boolean | null;
+  verifiedOnly: boolean | null;
+  sort: ListingSort | null;
+  leftoverQ: string | null;
+  /** One Uzbek line telling the searcher what was understood. */
+  summaryUz: string;
+  source: 'keyword' | 'model';
+}
+
+export interface SmartSearchResult extends Paginated<Listing> {
+  intent: SearchIntent;
+}

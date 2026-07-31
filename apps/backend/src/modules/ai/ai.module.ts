@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiConfig } from '../../config/configuration';
 import { CatalogModule } from '../catalog/catalog.module';
+import { ListingsModule } from '../listings/listings.module';
 import { User } from '../users/entities/user.entity';
 import { AiController } from './ai.controller';
 import { AiFacade } from './ai.facade';
@@ -19,7 +20,9 @@ import { LocalAiService } from './local-ai.service';
  * key is a deploy problem; an unpostable listing is a lost seller.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), CatalogModule],
+  // ListingsModule for smart search, which runs the parsed filters through the
+  // ordinary feed query rather than reimplementing it.
+  imports: [TypeOrmModule.forFeature([User]), CatalogModule, ListingsModule],
   controllers: [AiController],
   providers: [
     LocalAiService,

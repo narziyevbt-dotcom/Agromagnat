@@ -4,9 +4,12 @@ import {
   ArrayMaxSize,
   IsArray,
   IsIn,
+  IsInt,
   IsOptional,
   IsString,
   Length,
+  Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -51,4 +54,19 @@ export class AssistDto {
   @ValidateNested({ each: true })
   @Type(() => AssistTurnDto)
   history?: AssistTurnDto[];
+}
+
+export class SmartSearchDto {
+  @ApiProperty({ example: "Samarqanddan 5 tonnadan ko'p oq kartoshka, 10 mingdan arzon" })
+  @IsString()
+  @Length(2, 300, { message: "So'rov 2 tadan 300 tagacha belgidan iborat bo'lsin" })
+  q: string;
+
+  @ApiPropertyOptional({ default: 20, maximum: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number;
 }
