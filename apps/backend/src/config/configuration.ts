@@ -44,7 +44,13 @@ export interface JwtConfig {
 }
 
 export interface SmsConfig {
-  provider: 'mock' | 'eskiz';
+  /**
+   * `none` is not a broken deployment — it is a launch that reaches people over
+   * Telegram Gateway alone, before an aggregator contract exists. Anyone whose
+   * number has no Telegram simply cannot sign up yet, which is a smaller
+   * problem than not launching.
+   */
+  provider: 'mock' | 'eskiz' | 'none';
   eskizEmail: string;
   eskizPassword: string;
   eskizBaseUrl: string;
@@ -67,6 +73,15 @@ export interface TelegramConfig {
   botToken: string;
   /** Echoed by Telegram on every webhook call, so we can reject forgeries. */
   webhookSecret: string;
+}
+
+export interface TelegramGatewayConfig {
+  /** From gateway.telegram.org. Empty disables the channel entirely. */
+  token: string;
+  /** A verified channel's username, shown as the sender. Optional. */
+  senderUsername: string;
+  /** How long the code stays valid on Telegram's side, 30-3600. */
+  ttlSeconds: number;
 }
 
 export interface AiConfig {
@@ -136,7 +151,7 @@ export default () => ({
     refreshTtl: process.env.JWT_REFRESH_TTL ?? '30d',
   } satisfies JwtConfig,
   sms: {
-    provider: (process.env.SMS_PROVIDER ?? 'mock') as 'mock' | 'eskiz',
+    provider: (process.env.SMS_PROVIDER ?? 'mock') as 'mock' | 'eskiz' | 'none',
     eskizEmail: process.env.ESKIZ_EMAIL ?? '',
     eskizPassword: process.env.ESKIZ_PASSWORD ?? '',
     eskizBaseUrl: process.env.ESKIZ_BASE_URL ?? 'https://notify.eskiz.uz/api',
@@ -155,6 +170,13 @@ export default () => ({
     botToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
     webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? '',
   } satisfies TelegramConfig,
+  telegramGateway: {
+    token: process.env.TELEGRAM_GATEWAY_TOKEN ?? '',
+    senderUsername: process.env.TELEGRAM_GATEWAY_SENDER ?? '',
+    // Matches the OTP's own five-minute life; a code Telegram still shows
+    // after ours has expired is a code that will be rejected.
+    ttlSeconds: parseInt(process.env.TELEGRAM_GATEWAY_TTL ?? '300', 10),
+  } satisfies TelegramGatewayConfig,
 
   ai: {
     provider: (process.env.AI_PROVIDER ?? 'local') as 'local' | 'anthropic',

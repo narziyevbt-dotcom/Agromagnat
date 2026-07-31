@@ -6,11 +6,28 @@ ularni faqat asoschi qila oladi.
 
 ## 🔴 To'sqinlik qiladi — bularsiz reklama qilib bo'lmaydi
 
-### 1. `SMS_PROVIDER=eskiz`
+### 1. Kodni haqiqiy kanal orqali yuborish
 
-Hozir `mock`. **Kod har doim `000000`.** Ya'ni saytni topgan har kim istalgan
-telefon raqamni kiritib, o'sha odam sifatida kiradi — shu jumladan admin
-sifatida.
+Hozir `SMS_PROVIDER=mock`. **Kod har doim `000000`.** Ya'ni saytni topgan har
+kim istalgan telefon raqamni kiritib, o'sha odam sifatida kiradi — shu jumladan
+admin sifatida.
+
+**Ikki yo'l bor, va tezrog'i Eskiz emas:**
+
+**a) Telegram Gateway — bugun ishga tushadi.** Shartnoma, hujjat, moderatsiya
+kerak emas; token <https://gateway.telegram.org> dan olinadi, kod ~$0.01.
+Telegram'i bor raqamlarga yetadi — bu bozorda ko'pchilik.
+
+```
+SMS_PROVIDER=none
+TELEGRAM_GATEWAY_TOKEN=<token>
+```
+
+**b) Eskiz SMS — hammaga yetadi, lekin vaqt oladi.** Shartnoma va matn
+moderatsiyasi tufayli bir kunda bo'lmasligi mumkin.
+
+Eng yaxshisi — ikkalasi: Gateway oldinda, Eskiz orqada. Kod ularni ketma-ket
+sinaydi.
 
 Kerak: Eskiz.uz akkaunti. **To'liq qadamlar: [docs/ESKIZ.md](ESKIZ.md)** —
 u yerda eng ko'p o'tkazib yuboriladigan qadam ham bor (SMS matnini shablon

@@ -100,16 +100,20 @@ export const envValidationSchema = Joi.object({
   // concatenates schemas and merges `valid()` sets rather than intersecting
   // them, so a base of ('mock', 'eskiz') narrowed to ('eskiz') still accepted
   // 'mock' — the guard read correctly and did nothing.
+  // `none` is a real option, not a broken one: it is a launch that reaches
+  // people over Telegram Gateway alone, before an aggregator contract exists.
+  // `mock` stays fatal in production whatever else is configured — it is the
+  // one setting that accepts 000000 from anybody.
   SMS_PROVIDER: Joi.string()
     .default('mock')
     .when('NODE_ENV', {
       is: 'production',
-      then: Joi.string().valid('eskiz').messages({
+      then: Joi.string().valid('eskiz', 'none').messages({
         'any.only':
           'SMS_PROVIDER=mock accepts 000000 for every phone number. ' +
-          'Production must use a real provider.',
+          'Use eskiz, or none if codes go over Telegram Gateway only.',
       }),
-      otherwise: Joi.string().valid('mock', 'eskiz'),
+      otherwise: Joi.string().valid('mock', 'eskiz', 'none'),
     }),
   ESKIZ_EMAIL: Joi.string()
     .allow('')
@@ -121,6 +125,30 @@ export const envValidationSchema = Joi.object({
     .when('SMS_PROVIDER', { is: 'eskiz', then: Joi.string().required() }),
   ESKIZ_BASE_URL: Joi.string().default('https://notify.eskiz.uz/api'),
   ESKIZ_FROM: Joi.string().default('4546'),
+
+  // Telegram Gateway. Turning SMS off entirely is only sane when something
+  // else can still deliver a code — without this, `SMS_PROVIDER=none` would
+  // boot happily into a site nobody can sign in to.
+  // `allow('')` lives in the branches, never in the base. Joi's `when()`
+  // concatenates rather than replaces, so a base that permits an empty string
+  // permits it inside `then` as well — the guard would read correctly and do
+  // nothing. Same trap as SMS_PROVIDER above.
+  TELEGRAM_GATEWAY_TOKEN: Joi.string()
+    .default('')
+    .when('SMS_PROVIDER', {
+      is: 'none',
+      then: Joi.string().required().messages({
+        'any.required':
+          'SMS_PROVIDER=none leaves Telegram Gateway as the only way to send a ' +
+          'code, so TELEGRAM_GATEWAY_TOKEN is required.',
+        'string.empty':
+          'SMS_PROVIDER=none leaves Telegram Gateway as the only way to send a ' +
+          'code, so TELEGRAM_GATEWAY_TOKEN cannot be empty.',
+      }),
+      otherwise: Joi.string().allow(''),
+    }),
+  TELEGRAM_GATEWAY_SENDER: Joi.string().allow('').default(''),
+  TELEGRAM_GATEWAY_TTL: Joi.number().min(30).max(3600).default(300),
 
   // Push (Firebase Cloud Messaging) — mocked in dev.
   // The FCM_* values come from a service-account JSON key; the private key keeps

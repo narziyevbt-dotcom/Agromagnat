@@ -1,10 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomInt } from 'node:crypto';
-import type { SmsConfig } from '../../config/configuration';
+import type { AppConfig, SmsConfig } from '../../config/configuration';
 import { RedisService } from '../../redis/redis.service';
 import { OtpDispatcher } from './otp-channels/otp-dispatcher.service';
-import { OtpRecipient } from './otp-channels/otp-channel';
+import { OtpChannel, OtpRecipient } from './otp-channels/otp-channel';
 
 /** OTP lifetime. Long enough for a slow SMS on a weak network. */
 export const OTP_TTL_SECONDS = 300;
@@ -25,7 +25,7 @@ export interface OtpRequestResult {
    * "SMS'ni tekshiring" accordingly — telling somebody to check the wrong place
    * is the fastest way to make a working code look broken.
    */
-  channel: 'telegram' | 'sms' | null;
+  channel: OtpChannel['name'] | null;
 }
 
 export enum OtpVerifyResult {
@@ -125,12 +125,21 @@ export class OtpService {
   }
 
   /**
-   * In dev the code is fixed at 000000 so the flow can be walked without an SMS;
-   * in production it is drawn from a CSPRNG.
+   * In development the code is fixed at 000000 so the flow can be walked
+   * without spending a message; everywhere else it comes from a CSPRNG.
+   *
+   * Keyed on the environment, not on the SMS provider. Those used to be the
+   * same question and are not any more: a deployment can now reach people over
+   * Telegram Gateway with no SMS provider at all, and tying the fixed code to
+   * `SMS_PROVIDER` would have made that deployment accept 000000 from anyone.
+   * `env.validation.ts` refuses to boot production with the mock provider, so
+   * the two guards agree rather than overlapping by accident.
    */
   private generateCode(): string {
     const { provider } = this.config.getOrThrow<SmsConfig>('sms');
-    if (provider === 'mock') {
+    const { nodeEnv } = this.config.getOrThrow<AppConfig>('app');
+
+    if (provider === 'mock' && nodeEnv !== 'production') {
       return '000000';
     }
     return randomInt(0, 1_000_000).toString().padStart(6, '0');

@@ -18,10 +18,12 @@ import { RolesGuard } from './guards/roles.guard';
 import { OTP_CHANNELS, OtpChannel } from './otp-channels/otp-channel';
 import { OtpDispatcher } from './otp-channels/otp-dispatcher.service';
 import { SmsOtpChannel } from './otp-channels/sms-otp.channel';
+import { TelegramGatewayOtpChannel } from './otp-channels/telegram-gateway-otp.channel';
 import { TelegramOtpChannel } from './otp-channels/telegram-otp.channel';
 import { OtpService } from './otp.service';
 import { EskizSmsService } from './sms/eskiz-sms.service';
 import { MockSmsService } from './sms/mock-sms.service';
+import { NullSmsService } from './sms/null-sms.service';
 import { SMS_SERVICE } from './sms/sms.service';
 import { TokenService } from './token.service';
 
@@ -47,26 +49,38 @@ import { TokenService } from './token.service';
       // free and instant, an SMS is neither. At volume the gap between them is
       // most of the OTP bill.
       provide: OTP_CHANNELS,
-      inject: [TelegramOtpChannel, SmsOtpChannel],
-      useFactory: (telegram: TelegramOtpChannel, sms: SmsOtpChannel): OtpChannel[] => [
-        telegram,
-        sms,
-      ],
+      inject: [TelegramGatewayOtpChannel, TelegramOtpChannel, SmsOtpChannel],
+      // Order is the cost ladder, and it is the whole point of the list.
+      // Gateway reaches a brand-new visitor for a penny; the bot is free but
+      // only for somebody who has already started it; SMS reaches everyone and
+      // costs the most. Each falls through to the next when it cannot deliver.
+      useFactory: (
+        gateway: TelegramGatewayOtpChannel,
+        bot: TelegramOtpChannel,
+        sms: SmsOtpChannel,
+      ): OtpChannel[] => [gateway, bot, sms],
     },
+    TelegramGatewayOtpChannel,
     MockSmsService,
+    NullSmsService,
     EskizSmsService,
     {
       // Provider is chosen by env, so dev never spends SMS credit and prod
       // never silently logs codes to a console.
       provide: SMS_SERVICE,
-      inject: [ConfigService, MockSmsService, EskizSmsService],
+      inject: [ConfigService, MockSmsService, EskizSmsService, NullSmsService],
       useFactory: (
         config: ConfigService,
         mock: MockSmsService,
         eskiz: EskizSmsService,
+        none: NullSmsService,
       ) => {
         const { provider } = config.getOrThrow<SmsConfig>('sms');
-        return provider === 'eskiz' ? eskiz : mock;
+        if (provider === 'eskiz') return eskiz;
+        // Refuses honestly rather than pretending, which is what makes it
+        // safe to run in production while Telegram Gateway carries the load.
+        if (provider === 'none') return none;
+        return mock;
       },
     },
     // Authentication is the default; @Public() is the documented exception.

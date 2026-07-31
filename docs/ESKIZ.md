@@ -1,3 +1,75 @@
+# Kodni yetkazish — Telegram Gateway va Eskiz
+
+> **Eskizni kutmasdan ham ishga tushish mumkin.** Pastdagi "Telegram Gateway"
+> bo'limini avval o'qing: u shartnoma, hujjat va moderatsiya talab qilmaydi,
+> bugun sozlanadi va bitta kod ~$0.01 turadi. Eskiz esa Telegram'i yo'q
+> raqamlar uchun keyin qo'shiladi.
+
+---
+
+## Telegram Gateway — bugun ishga tushadigan yo'l
+
+Telegram'ning rasmiy xizmati: kod to'g'ridan-to'g'ri **telefon raqamining
+Telegram akkauntiga** boradi. Bot bilan adashtirmang — bot faqat uni ilgari
+ishga tushirgan odamga yozadi, ya'ni birinchi kod uchun foydasiz. Gateway
+raqamdan akkauntni o'zi topadi, shuning uchun **yangi kelgan odam uchun ham
+ishlaydi**.
+
+| | Telegram Gateway | Eskiz SMS |
+|---|---|---|
+| Shartnoma, STIR, imzo | ❌ kerak emas | ✅ kerak |
+| Matn moderatsiyasi | ❌ kerak emas | ✅ kerak, kutish bilan |
+| Bugun ishga tushadimi | ✅ ha | ❌ yo'q |
+| Narxi (taxminan) | ~$0.01 | sezilarli qimmatroq |
+| Yetkazilmasa | pul olinmaydi | pul ketishi mumkin |
+| Kimga yetadi | Telegram'i borlarga | hammaga |
+
+Oxirgi qator muhim: **Gateway Eskizni to'liq almashtirmaydi.** Telegram'i yo'q
+raqam kod ololmaydi. Shuning uchun kod ikkalasini ham biladi va ketma-ket
+sinaydi:
+
+```
+1. Telegram Gateway   — yangi odamga ham yetadi, ~$0.01
+2. Telegram bot       — bepul, lekin botni ishga tushirganlarga
+3. SMS (Eskiz)        — hammaga, eng qimmat
+```
+
+Biri yetkaza olmasa, keyingisi sinaladi.
+
+### Sozlash
+
+1. <https://gateway.telegram.org> — kiring va token oling
+2. O'z raqamingizga yuborish **bepul** — sinash uchun shundan boshlang
+3. `.env`:
+
+```bash
+TELEGRAM_GATEWAY_TOKEN=<token>
+TELEGRAM_GATEWAY_SENDER=          # ixtiyoriy, tasdiqlangan kanal nomi
+TELEGRAM_GATEWAY_TTL=300
+```
+
+### Eskizsiz ishga tushirish
+
+Agar Eskiz hali tayyor bo'lmasa:
+
+```bash
+SMS_PROVIDER=none
+TELEGRAM_GATEWAY_TOKEN=<token>
+```
+
+`none` — bu buzilgan sozlama emas, ataylab qo'yilgan variant: SMS umuman
+yuborilmaydi, kodlar faqat Telegram orqali ketadi. Telegram'i yo'q odam
+hozircha ro'yxatdan o'ta olmaydi — bu **umuman ishga tushmaslikdan kichikroq
+muammo**, va Eskiz ulangan kuni o'z-o'zidan hal bo'ladi.
+
+Ilova `SMS_PROVIDER=none` bilan **Gateway tokenisiz ishga tushmaydi** — aks
+holda sayt ochiladi-yu, hech kim kirolmaydi.
+
+`SMS_PROVIDER=mock` esa production'da **har doim taqiqlangan**, Gateway bor
+yoki yo'qligidan qat'i nazar: mock har bir kodni `000000` qilib qo'yadi.
+
+---
+
 # Eskiz.uz — SMS ulash
 
 Bu — bugungi eng muhim ish. Bularsiz hech kim ro'yxatdan o'ta olmaydi, va

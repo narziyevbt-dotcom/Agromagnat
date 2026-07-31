@@ -109,4 +109,39 @@ describe('env validation — development stays convenient', () => {
   it('allows the placeholders in test, which is where they belong', () => {
     expect(validate({ NODE_ENV: 'test' }).error).toBeUndefined();
   });
+
+  describe('a launch with no SMS provider', () => {
+    // Eskiz is not part of this shape: the whole point is launching without it.
+    const gatewayOnly = {
+      NODE_ENV: 'production',
+      JWT_ACCESS_SECRET: 'a'.repeat(64),
+      JWT_REFRESH_SECRET: 'b'.repeat(64),
+      SMS_PROVIDER: 'none',
+      TELEGRAM_GATEWAY_TOKEN: 'gw-token',
+    };
+
+    it('accepts SMS_PROVIDER=none when Telegram Gateway is configured', () => {
+      // Reaching people over Telegram before an aggregator contract exists is
+      // a smaller problem than not launching.
+      expect(validate(gatewayOnly).error).toBeUndefined();
+    });
+
+    it('refuses SMS_PROVIDER=none with no Telegram Gateway', () => {
+      // Otherwise the site boots happily with no way to send a code at all,
+      // and the first anybody hears of it is that nobody can register.
+      const { error } = validate({ ...gatewayOnly, TELEGRAM_GATEWAY_TOKEN: '' });
+
+      expect(error).toBeDefined();
+      expect(error!.message).toContain('TELEGRAM_GATEWAY_TOKEN');
+    });
+
+    it('still refuses the mock provider, Gateway or not', () => {
+      // Gateway does not make the mock safe: the mock fixes every code at
+      // 000000 for every number, whichever channel ends up delivering it.
+      const { error } = validate({ ...gatewayOnly, SMS_PROVIDER: 'mock' });
+
+      expect(error).toBeDefined();
+      expect(error!.message).toContain('000000');
+    });
+  });
 });

@@ -1,11 +1,19 @@
 /**
  * How a one-time code reaches a person.
  *
- * Two implementations today, chosen per user rather than per deployment:
- * Telegram when we know their chat, SMS otherwise. That order is a cost
- * decision as much as a delivery one — Telegram is free and instant, an SMS is
- * neither, and in this market Telegram is on nearly every phone. At any real
- * volume the difference between the two is most of the OTP bill.
+ * Three implementations today, chosen per person rather than per deployment,
+ * and ordered by cost:
+ *
+ * 1. Telegram Gateway — takes a phone number and finds the Telegram account
+ *    itself, so it works for a brand-new visitor. ~$0.01 a code, no local
+ *    aggregator contract, no template moderation.
+ * 2. The bot — free, but only reaches somebody who has already started it,
+ *    which they can only do once they have an account.
+ * 3. SMS — works for everyone and costs the most.
+ *
+ * That order is a cost decision as much as a delivery one, and in this market
+ * Telegram is on nearly every phone. At any real volume the difference between
+ * the first and the last is most of the OTP bill.
  *
  * The interface exists so a third channel — a push to an installed app, say —
  * is a new class rather than an edit to the auth service.
@@ -21,7 +29,7 @@ export interface OtpRecipient {
 
 export interface OtpChannel {
   /** Stable name, used in logs and in the response so clients can say where to look. */
-  readonly name: 'telegram' | 'sms';
+  readonly name: 'telegram_gateway' | 'telegram' | 'sms';
 
   /** Whether this channel can reach this particular person right now. */
   canReach(recipient: OtpRecipient): boolean;
