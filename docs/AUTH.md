@@ -77,10 +77,22 @@ public feed mark listings the caller has already favorited without demanding a l
   participating action refused, verification attaching the identity and
   reissuing the pair
 
-The web has no test runner yet. Everything above is backend; the sign-in screen,
-the gate redirects and the token renewal are covered by typecheck, build and a
-manual pass, which is not the same thing. It is the largest hole in the project's
-testing and it is tracked as such.
+Web (`npm test` in `apps/web`, Vitest + Testing Library):
+
+- `proxy.test.ts` — renewal ahead of expiry, no call when there is nothing to
+  renew, cookies cleared on a dead session, session left alone when the API is
+  unreachable, the new token forwarded to the page being rendered
+- `gate.test.ts` — the 403 code read off the envelope, an ordinary 403 *not*
+  mistaken for it, and `next` refusing absolute and protocol-relative URLs
+- `auth-actions.test.ts` — no session is ever stored on a failed proof, no
+  redirect ever leaves the site, the phone-attach path uses the account token
+  rather than the anonymous endpoint
+- `auth-fields.test.tsx` — auto-advance, paste, auto-submit on the sixth digit,
+  correction after a failed attempt, the resend countdown
+- `favorite-button.test.tsx` — optimistic fill, rollback on failure, and the
+  gate's hardest path: a background fetch that cannot redirect itself
+
+See `docs/TESTING.md`.
 
 ## Identity vs proof
 

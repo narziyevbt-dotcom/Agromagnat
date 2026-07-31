@@ -65,20 +65,22 @@ export function CodeField() {
   const write = (index: number, raw: string) => {
     const clean = raw.replace(/\D/g, '');
     if (!clean) {
-      setDigits((prev) => prev.map((d, i) => (i === index ? '' : d)));
+      setDigits(digits.map((digit, i) => (i === index ? '' : digit)));
+      submitted.current = false;
       return;
     }
 
-    let filled: string[] = [];
-    setDigits((prev) => {
-      const next = [...prev];
-      // A pasted code fills forward from the box it landed in.
-      for (let i = 0; i < clean.length && index + i < 6; i += 1) {
-        next[index + i] = clean[i];
-      }
-      filled = next;
-      return next;
-    });
+    // Built here rather than inside a state updater. React does not run the
+    // updater when `setState` is called — it runs it during the next render —
+    // so reading the result back out of one gives an empty array, and
+    // `[].every(Boolean)` is `true`. That submitted the form on the first
+    // keystroke with a one-digit code.
+    const next = [...digits];
+    // A pasted code fills forward from the box it landed in.
+    for (let i = 0; i < clean.length && index + i < 6; i += 1) {
+      next[index + i] = clean[i];
+    }
+    setDigits(next);
 
     const landing = Math.min(index + clean.length, 5);
     refs.current[landing]?.focus();
@@ -87,7 +89,7 @@ export function CodeField() {
     // "Tayyor" after it is pure friction, and it is what every OTP screen
     // people already use does. Guarded so a correction after a failed attempt
     // does not fire a second submit while the first is still in flight.
-    if (filled.every(Boolean) && !submitted.current) {
+    if (next.every(Boolean) && !submitted.current) {
       submitted.current = true;
       refs.current[landing]?.form?.requestSubmit();
     }
@@ -95,7 +97,6 @@ export function CodeField() {
 
   const onKeyDown = (index: number) => (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Backspace' && !digits[index] && index > 0) {
-      submitted.current = false;
       refs.current[index - 1]?.focus();
     }
   };

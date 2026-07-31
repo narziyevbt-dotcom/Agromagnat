@@ -78,10 +78,12 @@ curl http://localhost:3000/api/regions            # 14
 ```
 
 ```bash
-cd apps/backend && npm test && npm run test:e2e   # 153 unit, 171 e2e
-cd apps/web && npx tsc --noEmit && npm run build
+cd apps/backend && npm test && npm run test:e2e   # 155 unit, 173 e2e
+cd apps/web && npm test && npx tsc --noEmit && npm run build   # 55
 cd apps/mobile && flutter analyze && flutter test
 ```
+
+Conventions and known gaps are in [docs/TESTING.md](docs/TESTING.md).
 
 The e2e suite runs against the real Postgres, Redis and MinIO from docker-compose,
 so bring the stack up first.

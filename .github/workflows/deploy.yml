@@ -72,6 +72,9 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - run: npm ci
       - run: npx tsc --noEmit
+      # Before the build, not after: a failing test should not wait on a
+      # ninety-second compile to report.
+      - run: npm test
       # Build-time values are placeholders — CI only proves the build compiles;
       # the real values are baked on the server by docker compose build.
       - run: npm run build
