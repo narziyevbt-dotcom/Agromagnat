@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequiresPhone } from '../auth/decorators/requires-phone.decorator';
+import { RateLimit } from '../../common/rate-limit/rate-limit.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CreateListingDto, UpdateListingDto } from './dto/create-listing.dto';
 import { PaginatedListingsDto, QueryListingsDto } from './dto/query-listings.dto';
@@ -69,6 +70,10 @@ export class ListingsController {
   }
 
   @RequiresPhone()
+  // Twenty listings an hour is far above any real seller and far below what a
+  // script needs to be worth writing. Shared with editing so a bot cannot post
+  // twenty and then rewrite them into twenty more.
+  @RateLimit({ bucket: 'listing:write', limit: 20, windowSeconds: 3600 })
   @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: "Publish a listing (active, expires in 14 days)" })
@@ -81,6 +86,7 @@ export class ListingsController {
   }
 
   @RequiresPhone()
+  @RateLimit({ bucket: 'listing:write', limit: 20, windowSeconds: 3600 })
   @Patch(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Edit own listing' })
@@ -159,6 +165,9 @@ export class ListingsController {
   // ------------------------------------------------------------ favorites
 
   @RequiresPhone()
+  // Saving is cheap and people do it in bursts while browsing, so this is set
+  // to stop a scraper walking the catalogue rather than to shape behaviour.
+  @RateLimit({ bucket: 'favorite', limit: 120, windowSeconds: 3600 })
   @Post(':id/favorite')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)

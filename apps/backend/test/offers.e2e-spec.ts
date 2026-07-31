@@ -122,6 +122,9 @@ describe('Offers (e2e)', () => {
   });
 
   beforeEach(async () => {
+    // See the note in listings.e2e-spec.ts: this suite writes far past what a
+    // real account would in an hour.
+    await redis.delByPattern('rate:*');
     // The hourly offer cap would otherwise fail later cases in the suite.
     await redis.delByPattern('offer:rate:*');
   });

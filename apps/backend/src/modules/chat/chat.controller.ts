@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { RateLimit } from '../../common/rate-limit/rate-limit.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequiresPhone } from '../auth/decorators/requires-phone.decorator';
 import { ChatService, MessagePage } from './chat.service';
@@ -28,6 +29,9 @@ export class ChatController {
   ) {}
 
   @RequiresPhone()
+  // Opening conversations is how a bot reaches every seller in a region at
+  // once. Messages inside a thread are capped separately, in the service.
+  @RateLimit({ bucket: 'chat:open', limit: 30, windowSeconds: 3600 })
   @Post('listings/:id/chat')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Open the conversation about a listing, or return the existing one' })
@@ -101,6 +105,8 @@ export class ChatController {
   }
 
   @RequiresPhone()
+  // An offer is a deliberate act; nobody makes forty an hour honestly.
+  @RateLimit({ bucket: 'offer', limit: 40, windowSeconds: 3600 })
   @Post('chats/:id/offers')
   @ApiOperation({ summary: 'Propose a price. One live offer per side per chat.' })
   @ApiOkResponse({ type: OfferDto })

@@ -2,6 +2,7 @@ import { HttpModule } from '@nestjs/axios';
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { RateLimitGuard } from '../../common/rate-limit/rate-limit.guard';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { SmsConfig } from '../../config/configuration';
@@ -74,6 +75,9 @@ import { TokenService } from './token.service';
     // Runs after the other two: it reads a claim the JWT guard put on the
     // request, and a route the roles guard already rejected never reaches it.
     { provide: APP_GUARD, useClass: PhoneVerifiedGuard },
+    // Last, so a request that was going to be rejected anyway does not spend
+    // somebody's budget on its way to a 401.
+    { provide: APP_GUARD, useClass: RateLimitGuard },
   ],
   exports: [AuthService, TokenService],
 })

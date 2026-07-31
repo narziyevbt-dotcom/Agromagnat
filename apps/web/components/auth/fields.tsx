@@ -66,6 +66,8 @@ export function CodeField() {
     const clean = raw.replace(/\D/g, '');
     if (!clean) {
       setDigits(digits.map((digit, i) => (i === index ? '' : digit)));
+      // Releases the guard, so a code corrected after a failed attempt is sent
+      // rather than silently sitting there.
       submitted.current = false;
       return;
     }
@@ -84,16 +86,26 @@ export function CodeField() {
 
     const landing = Math.min(index + clean.length, 5);
     refs.current[landing]?.focus();
-
-    // The sixth digit is the whole intent — asking for a second tap on
-    // "Tayyor" after it is pure friction, and it is what every OTP screen
-    // people already use does. Guarded so a correction after a failed attempt
-    // does not fire a second submit while the first is still in flight.
-    if (next.every(Boolean) && !submitted.current) {
-      submitted.current = true;
-      refs.current[landing]?.form?.requestSubmit();
-    }
   };
+
+  /**
+   * The sixth digit is the whole intent — asking for a second tap on "Tayyor"
+   * after it is pure friction, and it is what every OTP screen people already
+   * use does.
+   *
+   * Fired from an effect rather than from the change handler, and that is not a
+   * detail. A form submits the values *in the DOM*, and React writes those on
+   * the render after `setDigits` — so submitting inline sent five digits and the
+   * screen answered "the code must be 6 digits" on a code that was correct.
+   * Nobody could sign in. The effect runs after the DOM is current.
+   */
+  useEffect(() => {
+    if (!digits.every(Boolean) || submitted.current) {
+      return;
+    }
+    submitted.current = true;
+    refs.current[5]?.form?.requestSubmit();
+  }, [digits]);
 
   const onKeyDown = (index: number) => (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Backspace' && !digits[index] && index > 0) {

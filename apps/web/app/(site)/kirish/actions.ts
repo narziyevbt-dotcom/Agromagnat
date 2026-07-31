@@ -1,16 +1,18 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { ApiError, requestOtp, signInWithGoogle, verifyOtp } from '@/lib/api';
-import { setSession } from '@/lib/session';
+import { ApiError, requestOtp, signInWithGoogle, updateProfile, verifyOtp } from '@/lib/api';
+import { getAccessToken, setSession } from '@/lib/session';
 import { t } from '@/lib/strings';
 
 export interface AuthState {
-  step: 'phone' | 'code';
+  step: 'phone' | 'code' | 'name';
   phone?: string;
   error?: string;
   /** Seconds until the code expires — drives the resend timer. */
   expiresIn?: number;
+  /** Carried into the name step, which is the last thing before landing. */
+  next?: string;
 }
 
 /** Only ever redirect within this site; an open redirect here is a phishing tool. */
@@ -87,12 +89,12 @@ export async function confirmCode(_prev: AuthState, formData: FormData): Promise
   }
 
   let destination = next;
+  let isNew = false;
 
   try {
     const tokens = await verifyOtp(phone, code, name || undefined);
     await setSession(tokens.accessToken, tokens.refreshToken);
-    // A brand-new account has no name yet, so send it to the profile first.
-    destination = tokens.isNewUser && !name ? '/profil' : next;
+    isNew = tokens.isNewUser && !name;
   } catch (error) {
     if (isRedirectSignal(error)) {
       throw error;
@@ -104,8 +106,53 @@ export async function confirmCode(_prev: AuthState, formData: FormData): Promise
     };
   }
 
+  // A brand-new account has no name, and a listing whose seller reads
+  // "Foydalanuvchi" is one a buyer scrolls past. Asked here, while they are
+  // already filling a form, rather than left to a settings page nobody opens.
+  if (isNew) {
+    return { step: 'name', phone, next: destination };
+  }
+
   // Outside the try so the redirect signal is never caught by it.
   redirect(destination);
+}
+
+/**
+ * The last step of signing up: what buyers will call this person.
+ *
+ * The session already exists by the time this runs — the phone was verified a
+ * moment ago — so this is an ordinary profile edit, and skipping it leaves a
+ * working account rather than a half-made one.
+ */
+export async function saveName(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const name = String(formData.get('name') ?? '').trim();
+  const phone = String(formData.get('phone') ?? '');
+  const next = safeNext(formData.get('next'));
+
+  if (name.length < 2) {
+    return { step: 'name', phone, next, error: "Ismingizni kiriting" };
+  }
+
+  const token = await getAccessToken();
+  if (!token) {
+    redirect('/kirish');
+  }
+
+  try {
+    await updateProfile({ name }, token);
+  } catch (error) {
+    if (isRedirectSignal(error)) {
+      throw error;
+    }
+    return {
+      step: 'name',
+      phone,
+      next,
+      error: error instanceof ApiError ? error.message : 'Saqlab bo‘lmadi',
+    };
+  }
+
+  redirect(next);
 }
 
 /**

@@ -14,6 +14,7 @@ const api = vi.hoisted(() => ({
   requestOtp: vi.fn(),
   verifyOtp: vi.fn(),
   signInWithGoogle: vi.fn(),
+  updateProfile: vi.fn(),
   requestPhoneCode: vi.fn(),
   confirmPhoneCode: vi.fn(),
 }));
@@ -49,7 +50,7 @@ vi.mock('@/lib/session', async (importOriginal) => ({
   ...session,
 }));
 
-const { confirmCode, googleSignInAction, resendCode, sendCode } = await import(
+const { confirmCode, googleSignInAction, resendCode, saveName, sendCode } = await import(
   '@/app/(site)/kirish/actions'
 );
 const { confirmVerifyCode, sendVerifyCode } = await import('@/app/(site)/telefon/actions');
@@ -72,7 +73,10 @@ const redirectedTo = async (run: () => Promise<unknown>): Promise<string> => {
 };
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  // reset, not clear: `clearAllMocks` keeps implementations, so a rejection
+  // staged by one test leaks into the next one and fails it for the wrong
+  // reason.
+  vi.resetAllMocks();
   session.getAccessToken.mockResolvedValue('access-token');
 });
 
@@ -141,14 +145,29 @@ describe('confirmCode', () => {
     expect(to).toBe('/joylash');
   });
 
-  it('sends a brand-new account to fill in its name first', async () => {
+  it('asks a brand-new account for its name before letting it go', async () => {
     api.verifyOtp.mockResolvedValue({ accessToken: 'at', refreshToken: 'rt', isNewUser: true });
+
+    const state = await confirmCode(
+      { step: 'code' },
+      form({ phone: '+998901234567', code: '000000', next: '/qidiruv' }),
+    );
+
+    // The session is already stored — they are signed in either way. What is
+    // left is the name, and a listing whose seller reads "Foydalanuvchi" is one
+    // a buyer scrolls past. The destination is carried through to the end.
+    expect(session.setSession).toHaveBeenCalledWith('at', 'rt');
+    expect(state).toMatchObject({ step: 'name', next: '/qidiruv' });
+  });
+
+  it('does not stop a returning account for a name it already has', async () => {
+    api.verifyOtp.mockResolvedValue({ accessToken: 'at', refreshToken: 'rt', isNewUser: false });
 
     const to = await redirectedTo(() =>
       confirmCode({ step: 'code' }, form({ phone: '+998901234567', code: '000000', next: '/qidiruv' })),
     );
 
-    expect(to).toBe('/profil');
+    expect(to).toBe('/qidiruv');
   });
 
   it('refuses to redirect off-site', async () => {
@@ -183,6 +202,42 @@ describe('confirmCode', () => {
 
     expect(api.verifyOtp).not.toHaveBeenCalled();
     expect(state.error).toContain('6');
+  });
+});
+
+describe('saveName', () => {
+  it('stores the name and lands where the visitor was headed', async () => {
+    const to = await redirectedTo(() =>
+      saveName({ step: 'name' }, form({ name: 'Anvar aka', next: '/joylash' })),
+    );
+
+    expect(api.updateProfile).toHaveBeenCalledWith({ name: 'Anvar aka' }, 'access-token');
+    expect(to).toBe('/joylash');
+  });
+
+  it('refuses a name too short to be one', async () => {
+    const state = await saveName({ step: 'name' }, form({ name: 'A', next: '/' }));
+
+    expect(api.updateProfile).not.toHaveBeenCalled();
+    expect(state).toMatchObject({ step: 'name', error: expect.any(String) });
+  });
+
+  it('stays on the step when saving fails', async () => {
+    api.updateProfile.mockRejectedValue(new ApiError('Saqlab bo‘lmadi', 500));
+
+    const state = await saveName({ step: 'name' }, form({ name: 'Anvar aka', next: '/' }));
+
+    // Never a redirect on failure: the person would land signed in with the
+    // question silently unanswered.
+    expect(state.step).toBe('name');
+  });
+
+  it('refuses to redirect off-site', async () => {
+    expect(
+      await redirectedTo(() =>
+        saveName({ step: 'name' }, form({ name: 'Anvar aka', next: 'https://evil.example' })),
+      ),
+    ).toBe('/');
   });
 });
 

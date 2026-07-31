@@ -5,7 +5,14 @@ import { AuthSubmit, CodeField, PhoneField, ResendTimer } from '@/components/aut
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { formatPhone } from '@/lib/format';
 import { t } from '@/lib/strings';
-import { type AuthState, confirmCode, googleSignInAction, resendCode, sendCode } from './actions';
+import {
+  type AuthState,
+  confirmCode,
+  googleSignInAction,
+  resendCode,
+  saveName,
+  sendCode,
+} from './actions';
 
 const INITIAL: AuthState = { step: 'phone' };
 
@@ -19,16 +26,20 @@ const INITIAL: AuthState = { step: 'phone' };
  * same account model; only the proof differs.
  */
 export function LoginForm({
-  next,
+  next: next_,
   devMode,
   googleClientId,
+  startAtName = false,
 }: {
   next: string;
   devMode: boolean;
   googleClientId: string | null;
+  /** The session exists but the account has no name yet. */
+  startAtName?: boolean;
 }) {
   const [phoneState, submitPhone] = useActionState(sendCode, INITIAL);
   const [codeState, submitCode] = useActionState(confirmCode, INITIAL);
+  const [nameState, submitName] = useActionState(saveName, INITIAL);
 
   // Set by "Raqamni o'zgartirish" and by a resend, which both need to override
   // whichever step the last server response put us on.
@@ -37,16 +48,22 @@ export function LoginForm({
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
 
-  const onCodeStep = phoneState.step === 'code' && !editing;
+  // The name step is terminal: once the code is confirmed there is a session,
+  // so nothing may send the person back to a phone or a code field.
+  const onNameStep = startAtName || codeState.step === 'name' || nameState.step === 'name';
+  const onCodeStep = !onNameStep && phoneState.step === 'code' && !editing;
+
   const phone = resent?.phone ?? codeState.phone ?? phoneState.phone ?? '';
-  const error =
-    googleError ?? (onCodeStep ? (resent?.error ?? codeState.error) : phoneState.error);
+  const next = nameState.next ?? codeState.next ?? next_;
+  const error = onNameStep
+    ? nameState.error
+    : (googleError ?? (onCodeStep ? (resent?.error ?? codeState.error) : phoneState.error));
   const expiresIn = resent?.expiresIn ?? phoneState.expiresIn ?? 0;
 
   const onGoogle = (idToken: string) => {
     setGoogleError(null);
     startTransition(async () => {
-      const result = await googleSignInAction(idToken, next);
+      const result = await googleSignInAction(idToken, next_);
       if (result?.error) {
         setGoogleError(result.error);
       }
@@ -61,9 +78,13 @@ export function LoginForm({
 
   return (
     <div className="mx-auto w-full max-w-sm">
-      <h1 className="text-2xl">{onCodeStep ? t.auth.codeTitle : t.auth.title}</h1>
+      <h1 className="text-2xl">
+        {onNameStep ? t.auth.nameTitle : onCodeStep ? t.auth.codeTitle : t.auth.title}
+      </h1>
       <p className="mt-1.5 text-sm text-ink-muted">
-        {onCodeStep ? (
+        {onNameStep ? (
+          t.auth.nameSubtitle
+        ) : onCodeStep ? (
           <>
             <span className="numeric font-medium text-ink">{formatPhone(phone)}</span>{' '}
             {t.auth.codeSubtitle}
@@ -82,7 +103,30 @@ export function LoginForm({
         </p>
       )}
 
-      {onCodeStep ? (
+      {onNameStep ? (
+        <form action={submitName} className="mt-6 space-y-4">
+          <input type="hidden" name="phone" value={phone} />
+          <input type="hidden" name="next" value={next} />
+          <div>
+            <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-ink">
+              {t.auth.nameLabel}
+            </label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              autoComplete="name"
+              autoFocus
+              required
+              minLength={2}
+              maxLength={120}
+              placeholder="Anvar aka"
+              className="tap-target w-full rounded-lg bg-surface px-3 text-lg outline-none ring-1 ring-hairline transition-shadow focus:ring-2 focus:ring-turquoise"
+            />
+          </div>
+          <AuthSubmit label={t.auth.finish} />
+        </form>
+      ) : onCodeStep ? (
         <form action={submitCode} className="mt-6 space-y-4">
           <input type="hidden" name="phone" value={phone} />
           <input type="hidden" name="next" value={next} />

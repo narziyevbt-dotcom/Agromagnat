@@ -83,6 +83,47 @@ describe('CodeField', () => {
     expect(onSubmit).toHaveBeenCalledOnce();
   });
 
+  it('submits the whole code, not the code as it was one keystroke ago', async () => {
+    // The bug this exists for: submitting from the change handler sent the
+    // value React had not written to the DOM yet, so a correct code arrived
+    // five digits long and the screen answered "the code must be 6 digits".
+    // Nobody could sign in, and the older assertion above still passed —
+    // `onSubmit` *was* called, just with the wrong payload.
+    let submittedCode: string | null = null;
+    render(
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          submittedCode = String(new FormData(event.currentTarget).get('code'));
+        }}
+      >
+        <CodeField />
+      </form>,
+    );
+
+    await userEvent.keyboard('123456');
+
+    expect(submittedCode).toBe('123456');
+  });
+
+  it('submits the whole code when it is pasted', async () => {
+    let submittedCode: string | null = null;
+    render(
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          submittedCode = String(new FormData(event.currentTarget).get('code'));
+        }}
+      >
+        <CodeField />
+      </form>,
+    );
+
+    await userEvent.paste('654321');
+
+    expect(submittedCode).toBe('654321');
+  });
+
   it('does not submit early', async () => {
     const { onSubmit } = renderInForm();
 

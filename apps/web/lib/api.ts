@@ -327,6 +327,11 @@ export const logout = (refreshToken: string, token?: string) =>
 export const getMe = (token: string) =>
   apiFetch<CurrentUser>('/auth/me', { token, revalidate: 0 });
 
+export const updateProfile = (
+  body: { name?: string; regionId?: string; districtId?: string },
+  token: string,
+) => apiFetch<CurrentUser>('/auth/me', { method: 'PATCH', body, token });
+
 /** Exchanges a Google ID token for a session. The account may have no phone. */
 export const signInWithGoogle = (idToken: string) =>
   apiFetch<AuthTokens>('/auth/google', { method: 'POST', body: { idToken } });
