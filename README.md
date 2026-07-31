@@ -13,11 +13,15 @@ Built from the *Agromagnat — To'liq qo'llanma* playbook, prompt by prompt.
 
 ```
 apps/backend     NestJS API — Postgres, Redis, S3, Swagger
+apps/web         Next.js public marketplace — SSR, so listings are indexable
 apps/mobile      Flutter app — Riverpod, Clean Architecture, feature-first
 docs/            Per-feature notes
 docker-compose.yml   Postgres 16 + Redis 7 + MinIO (bucket auto-created)
 CLAUDE.md        Project context: stack, design system, product rules
 ```
+
+Web is being built before mobile. Both consume the same API, so a feature is built
+once on the backend and rendered twice.
 
 ## Prerequisites
 
@@ -49,7 +53,15 @@ npm run start:dev
 - MinIO console: <http://localhost:9001>
 
 ```bash
-# 4. Mobile
+# 4. Web (public marketplace)
+cd apps/web
+npm install
+cp .env.example .env.local
+npm run dev            # http://localhost:3001
+```
+
+```bash
+# 5. Mobile
 cd apps/mobile
 flutter pub get
 flutter run
@@ -64,9 +76,13 @@ curl http://localhost:3000/api/regions            # 14
 ```
 
 ```bash
-cd apps/backend && npm test          # unit tests
+cd apps/backend && npm test && npm run test:e2e   # 22 unit + 44 e2e
+cd apps/web && npx tsc --noEmit && npm run build
 cd apps/mobile && flutter analyze && flutter test
 ```
+
+The e2e suite runs against the real Postgres, Redis and MinIO from docker-compose,
+so bring the stack up first.
 
 ## Design system
 
@@ -94,19 +110,22 @@ than writing them inline — that is what keeps saffron confined to CTAs.
 
 ## Build progress
 
-| Phase | Prompt | Status |
-|---|---|---|
-| 0 | CLAUDE.md project context | ✅ |
-| 1 | Monorepo skeleton | ✅ |
-| 2 | Schema + seed | ✅ |
-| 3 | Auth — SMS OTP + JWT | ⬜ |
-| 4 | Listings, search, favorites | ⬜ |
-| 5–10 | Mobile screens (mock-first) | ⬜ |
-| 11 | Wire mobile to backend | ⬜ |
-| 12–13 | Chat, reviews, push | ⬜ |
-| 14–17 | AI: voice listing, pricing, moderation, search | ⬜ |
-| 18 | Admin panel | ⬜ |
-| 19–22 | Hardening, deploy, release, launch | ⬜ |
+| Step | Status |
+|---|---|
+| CLAUDE.md project context | ✅ |
+| Monorepo skeleton | ✅ |
+| Schema + seed | ✅ |
+| Auth — SMS OTP + JWT | ✅ |
+| Listings, search, favorites | ✅ |
+| **Public web marketplace** | ✅ |
+| Admin panel | ⬜ |
+| Chat, reviews, push | ⬜ |
+| AI: voice listing, pricing, moderation, search | ⬜ |
+| Mobile screens + wiring | ⬜ |
+| Hardening, deploy, release, launch | ⬜ |
+
+Order changed from the playbook: web ships before mobile, so the admin panel and the
+AI features land on top of a working public site rather than waiting on the app.
 
 ## Conventions
 

@@ -210,6 +210,48 @@ describe('Listings (e2e)', () => {
       expect(response.body.items.map((i: { id: string }) => i.id)).toContain(created.body.id);
     });
 
+    it('matches a bare root against a suffixed word — Uzbek has no stemmer', async () => {
+      // The listing says "pomidori", the buyer types "pomidor". This is the
+      // single most common search in the product, and exact matching misses it.
+      const created = await post({ ...validListing(), title: 'Andijon pomidori yangi' });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/listings')
+        .query({ q: 'pomidor' })
+        .expect(200);
+
+      expect(response.body.items.map((i: { id: string }) => i.id)).toContain(created.body.id);
+    });
+
+    it('is case-insensitive', async () => {
+      const created = await post({ ...validListing(), title: 'Nurota Qovuni shirin' });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/listings')
+        .query({ q: 'nurota' })
+        .expect(200);
+
+      expect(response.body.items.map((i: { id: string }) => i.id)).toContain(created.body.id);
+    });
+
+    it('survives a query of pure punctuation instead of matching everything', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/listings')
+        .query({ q: '!!! ???' })
+        .expect(200);
+
+      expect(response.body.items).toHaveLength(0);
+    });
+
+    it('does not let a typed operator reach the tsquery parser', async () => {
+      // "&" and ":*" are to_tsquery syntax; sanitising must strip them rather
+      // than let Postgres raise a syntax error the user would see as a 500.
+      await request(app.getHttpServer())
+        .get('/api/listings')
+        .query({ q: 'pomidor & | ! :* ()' })
+        .expect(200);
+    });
+
     it('sorts cheapest first', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/listings')

@@ -445,23 +445,50 @@ export class ListingsService {
   }
 
   /**
-   * Full-text first, trigram as a safety net.
+   * Prefix-matched full-text, with fuzzy word matching as a safety net.
    *
-   * `websearch_to_tsquery` accepts what a person actually types — bare words,
-   * quotes, "or" — without throwing on syntax the way `to_tsquery` does. The
-   * similarity clause then catches the misspellings full-text cannot.
+   * Both halves are shaped by one fact: Postgres has no Uzbek stemmer, so the
+   * index is built with the 'simple' configuration and stores words exactly as
+   * written. Uzbek is agglutinative — a listing says "pomidori", a buyer types
+   * "pomidor" — so an exact-match query misses the most ordinary search there
+   * is. Every term therefore becomes a prefix query, which is the standard
+   * substitute for a stemmer.
+   *
+   * Terms are reduced to word characters and recombined by hand rather than
+   * passed to websearch_to_tsquery, because that function has no prefix syntax;
+   * to_tsquery does, and sanitising first keeps its parser from ever seeing an
+   * operator a user typed.
+   *
+   * The second arm uses word_similarity rather than similarity: similarity
+   * scores whole strings, so a 7-character query against a 30-character title
+   * scores far below any useful threshold no matter how well it matches one
+   * word inside it.
    */
   private applySearch(qb: SelectQueryBuilder<Listing>, q?: string): void {
-    const term = q?.trim();
-    if (!term) {
+    const raw = q?.trim();
+    if (!raw) {
       return;
     }
 
+    const words = raw
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((word) => word.length > 0)
+      .slice(0, 8);
+
     qb.andWhere(
       new Brackets((where) => {
-        where
-          .where("listing.search_vector @@ websearch_to_tsquery('simple', :term)", { term })
-          .orWhere('similarity(listing.title, :term) > 0.3', { term });
+        if (words.length) {
+          where.where(
+            "listing.search_vector @@ to_tsquery('simple', :tsquery)",
+            { tsquery: words.map((word) => `${word}:*`).join(' & ') },
+          );
+          where.orWhere('word_similarity(:term, listing.title) > 0.5', { term: raw });
+        } else {
+          // Nothing usable survived sanitising (punctuation or emoji only) —
+          // fall back to fuzzy matching rather than matching everything.
+          where.where('word_similarity(:term, listing.title) > 0.5', { term: raw });
+        }
       }),
     );
   }

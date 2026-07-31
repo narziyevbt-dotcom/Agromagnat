@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/*
+ * The Rishtan-ceramic palette from the brand book.
+ *
+ * The screen is full of fruit and vegetable photography — already green, red
+ * and yellow. A green interface would swallow the product; cobalt and turquoise
+ * make the photos stand out instead.
+ *
+ * Two rules matter more than the hex values:
+ *   saffron is CTAs and the TOP badge, nothing else
+ *   harvest green is prices and volumes, nothing else
+ * Used anywhere else, both stop meaning anything.
+ */
+@theme {
+  --color-cobalt: #0a3a55;
+  --color-cobalt-light: #14536f;
+  --color-turquoise: #1d7f8c;
+  --color-saffron: #e0932a;
+  --color-saffron-dark: #c67d1c;
+  --color-harvest: #1f7a4d;
+  --color-danger: #c4452f;
+
+  --color-canvas: #eef1f2;
+  --color-surface: #ffffff;
+
+  --color-ink: #0a3a55;
+  --color-ink-muted: #5b6b75;
+  --color-ink-faint: #8a97a0;
+  --color-hairline: #dce2e5;
+
+  /* Three font roles. Numbers are ALWAYS mono — see the .numeric utility. */
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-card: 16px;
+}
+
+/*
+ * The audience skews older and often taps with a work-worn thumb, so nothing
+ * interactive is allowed below 44px.
+ */
+@utility tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/*
+ * Every price, volume, tonnage and percentage in the product.
+ *
+ * Monospace is not decoration. A farmer scans a column of prices top to bottom;
+ * tabular digits share one width so the numbers line up and can be compared at
+ * a glance. Prose never uses this, numbers never use anything else.
+ */
+@utility numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  /* Keyboard users get a visible ring; pointer users do not. */
+  :focus-visible {
+    outline: 2px solid var(--color-turquoise);
+    outline-offset: 2px;
+  }
+}
+
+/* Respect a reduced-motion preference rather than animating regardless. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
