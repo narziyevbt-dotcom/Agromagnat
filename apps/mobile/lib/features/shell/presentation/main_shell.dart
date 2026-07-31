@@ -61,16 +61,21 @@ class PlaceholderScreen extends StatelessWidget {
   const PlaceholderScreen({
     required this.title,
     required this.icon,
+    this.showAppBar = true,
     super.key,
   });
 
   final String title;
   final IconData icon;
 
+  /// False when the placeholder sits inside a screen that already has a bar —
+  /// two stacked app bars is the tell of a half-migrated screen.
+  final bool showAppBar;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: showAppBar ? AppBar(title: Text(title)) : null,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

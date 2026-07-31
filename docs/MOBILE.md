@@ -10,11 +10,15 @@ one codebase. Uzbek UI throughout.
 | Home — search entry, category strip, newest listings | built |
 | Search — text, filters, sort, cursor paging | built |
 | Listing detail — price, volume, seller, call bar | built |
-| Add listing | placeholder |
-| Messages | placeholder |
-| Profile | placeholder |
+| Sign in — phone + SMS OTP | built · [MOBILE-AUTH.md](MOBILE-AUTH.md) |
+| Profile — account, sign out | built |
+| Add listing | gated placeholder |
+| Messages | gated placeholder |
 
 Everything runs on mock repositories. No backend is needed to open the app.
+
+Browsing is open to everyone; only the parts that write something ask for an
+account. See [MOBILE-AUTH.md](MOBILE-AUTH.md).
 
 ## Layers
 
@@ -23,8 +27,10 @@ lib/
   core/            theme · localization · format · pagination
   features/
     listings/      domain → data → presentation      ← owns the listing model
+    auth/          domain → data → presentation      ← owns the session
     home/          presentation
     search/        presentation
+    profile/       presentation
     shell/         the five-slot bottom bar
   shared/widgets/  cards, skeletons, empty and error views
 ```
@@ -87,7 +93,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 59 tests
+flutter test          # 92 tests
 flutter analyze       # clean
 ```
 
@@ -100,7 +106,7 @@ navigation.
 mock latency. Without the fixed clock a fixture posted "2 soat oldin" drifts
 across midnight and a date assertion fails once a day, in CI, for no reason.
 
-Three real defects came out of writing these:
+Four real defects came out of writing these:
 
 - The filter sheet grew past the screen and put "Qo'llash" below the fold with
   no way to reach it. It is now capped at 85% height with the button pinned.
@@ -110,6 +116,9 @@ Three real defects came out of writing these:
   on the `Listing` entity, and the detail screen held a different instance from
   the one the list had. It moved to `favoritesProvider`, which is optimistic —
   a heart that does nothing for two seconds on EDGE reads as a dead button.
+- A signed-in user was asked to sign in again when saving. Auth that is read
+  rather than watched lands on `AuthRestoring` on first touch, and that was
+  being treated as signed-out; the read now awaits `controller.ready`.
 
 ## Platforms
 
@@ -130,13 +139,15 @@ cd apps/mobile
 flutter build ios --debug --no-codesign
 ```
 
-Nothing in this slice is Android-specific — no platform channels, no native
-plugins beyond what Flutter ships — so the iOS build is expected to be a
-formality. That expectation is unverified until someone runs it on a Mac.
+There is no platform-channel code of our own. The one native dependency is
+`flutter_secure_storage`, whose iOS side is a Keychain wrapper the package
+maintains — so the iOS build is expected to be a formality. **That expectation
+is unverified**: nobody has run it on a Mac, and a native plugin is exactly the
+kind of thing that surfaces a CocoaPods or deployment-target problem the first
+time it is compiled.
 
 ## Next
 
-1. Auth — phone + SMS OTP, matching the web flow
-2. Add Listing — category-aware form, then voice-first posting
-3. Real API behind the existing repository interfaces
-4. Messages and Profile
+1. Add Listing — category-aware form, then voice-first posting
+2. Real API behind the existing repository interfaces, including token refresh
+3. Messages

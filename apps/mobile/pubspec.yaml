@@ -24,6 +24,11 @@ dependencies:
   # Local storage: a draft listing must survive an app restart on weak internet.
   shared_preferences: ^2.3.5
 
+  # Refresh tokens live for 30 days. SharedPreferences is a plain XML file on
+  # Android and a plist on iOS — readable over adb backup or on a rooted
+  # handset — so the session goes to the Keystore/Keychain instead.
+  flutter_secure_storage: ^10.3.1
+
   intl: ^0.20.2
   cupertino_icons: ^1.0.8
 

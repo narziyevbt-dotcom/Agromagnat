@@ -75,6 +75,37 @@ abstract final class AppStrings {
   static const String listingNotFoundHint =
       "E'lon o'chirilgan yoki muddati tugagan bo'lishi mumkin";
 
+  // Sign-in
+  static const String signInTitle = 'Kirish';
+  static const String signInHeadline = 'Telefon raqamingiz';
+  static const String signInHint =
+      "Raqamingizga 6 xonali kod yuboramiz. Parol kerak emas.";
+  static const String sendCode = 'Kod yuborish';
+  static const String codeHeadline = 'Kodni kiriting';
+  static const String codeSentTo = 'Kod yuborildi:';
+  static const String signIn = 'Kirish';
+  static const String changeNumber = "Raqamni o'zgartirish";
+  static const String resendCode = 'Qayta yuborish';
+  static const String resendIn = 'Qayta yuborish';
+  static const String tryAgainIn = 'Qayta urinish';
+  static const String devCodeHint = 'Sinov rejimi — kod:';
+  static const String signInTerms =
+      "Kirish orqali foydalanish shartlari va maxfiylik siyosatiga rozilik bildirasiz";
+  static const String signOut = 'Chiqish';
+  static const String signOutConfirm = 'Hisobdan chiqasizmi?';
+  static const String cancel = 'Bekor qilish';
+
+  // Sign-in wall
+  static const String signInRequired = 'Buning uchun kirish kerak';
+  static const String signInRequiredFavorites =
+      "Saqlangan e'lonlar hisobingizga bog'lanadi";
+  static const String signInRequiredAdd =
+      "E'lon joylash uchun telefon raqamingizni tasdiqlang";
+  static const String signInRequiredProfile =
+      "Profilingizni ko'rish uchun kiring";
+  static const String signInRequiredMessages =
+      'Xabarlashish uchun kiring';
+
   /// Result counts read naturally in Uzbek without a plural form — the noun
   /// does not inflect after a number.
   static String resultCount(int count) => "$count ta e'lon";

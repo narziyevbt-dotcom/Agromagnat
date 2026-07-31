@@ -1,5 +1,7 @@
 import 'package:agromagnat/core/format/uz_format.dart';
 import 'package:agromagnat/core/localization/app_strings.dart';
+import 'package:agromagnat/features/auth/data/mock_auth_repository.dart';
+import 'package:agromagnat/features/auth/data/token_store.dart';
 import 'package:agromagnat/features/listings/data/repositories/mock_listing_repository.dart';
 import 'package:agromagnat/features/listings/domain/entities/listing.dart';
 import 'package:agromagnat/features/listings/presentation/listing_detail_screen.dart';
@@ -74,8 +76,39 @@ void main() {
     expect(find.text(AppStrings.callSeller), findsNothing);
   });
 
-  testWidgets('the save button reflects the toggled state', (tester) async {
+  testWidgets('saving asks a signed-out user to sign in first', (tester) async {
     await pumpApp(tester, const ListingDetailScreen(id: 'lst-01'));
+
+    expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.favorite_border_rounded));
+    await tester.pumpAndSettle();
+
+    // Saved listings belong to an account — they have to survive a reinstall
+    // and follow the user to the website.
+    expect(find.text(AppStrings.signInHeadline), findsOneWidget);
+  });
+
+  testWidgets('the save button reflects the toggled state once signed in',
+      (tester) async {
+    final repository = MockAuthRepository(latency: Duration.zero);
+    final store = InMemoryTokenStore();
+    await tester.runAsync(() async {
+      await repository.requestOtp('901234567');
+      await store.write(
+        await repository.verifyOtp(
+          phone: '+998901234567',
+          code: MockAuthRepository.devCode,
+        ),
+      );
+    });
+
+    await pumpApp(
+      tester,
+      const ListingDetailScreen(id: 'lst-01'),
+      auth: repository,
+      tokenStore: store,
+    );
 
     expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
 

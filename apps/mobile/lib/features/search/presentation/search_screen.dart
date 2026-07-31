@@ -9,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/state_views.dart';
 import '../../listings/domain/repositories/listing_repository.dart';
+import '../../listings/presentation/favorite_action.dart';
 import '../../listings/presentation/listing_detail_screen.dart';
 import '../../listings/presentation/providers/listing_providers.dart';
 import '../../listings/presentation/widgets/listing_card.dart';
@@ -156,7 +157,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     return ListingCard(
                       listing: listing,
                       onFavoriteToggle: () =>
-                          ref.read(favoritesProvider.notifier).toggle(listing),
+                          toggleFavoriteOrSignIn(context, ref, listing),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => ListingDetailScreen(id: listing.id),

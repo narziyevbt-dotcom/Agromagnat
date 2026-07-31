@@ -8,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/state_views.dart';
 import '../domain/entities/listing.dart';
+import 'favorite_action.dart';
 import 'providers/listing_providers.dart';
 import 'widgets/listing_card.dart';
 
@@ -380,8 +381,7 @@ class _CallBar extends ConsumerWidget {
                 width: AppSpacing.primaryButtonHeight,
                 height: AppSpacing.primaryButtonHeight,
                 child: OutlinedButton(
-                  onPressed: () =>
-                      ref.read(favoritesProvider.notifier).toggle(listing),
+                  onPressed: () => toggleFavoriteOrSignIn(context, ref, listing),
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.zero,
                     minimumSize: const Size.square(AppSpacing.primaryButtonHeight),
