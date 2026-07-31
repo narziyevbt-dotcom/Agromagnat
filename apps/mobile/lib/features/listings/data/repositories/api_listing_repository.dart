@@ -241,6 +241,48 @@ class ApiListingRepository implements ListingRepository {
     return byId(listingId);
   }
 
+  @override
+  Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) {
+    // Not cached. It is the seller's own list, it changes because of something
+    // they just did, and a stale copy here reads as "my edit did not save".
+    return _client.get(
+      '/listings/me',
+      query: {'cursor': cursor, 'limit': limit},
+      decode: (body) {
+        final map = body is Map ? body : const {};
+        return Paginated<Listing>(
+          items: [
+            for (final entry in (map['items'] as List? ?? const []))
+              ?ListingMapper.listing(entry),
+          ],
+          nextCursor: ListingMapper.text(map['nextCursor']),
+        );
+      },
+    );
+  }
+
+  @override
+  Future<Listing> markSold(String id) async {
+    final listing = await _client.post(
+      '/listings/$id/sold',
+      decode: ListingMapper.listing,
+    );
+    if (listing == null) {
+      throw ListingNotFoundException(id);
+    }
+    // Dropped rather than rewritten: the cached copy would otherwise keep
+    // showing "active" to whoever opens it offline, including the seller who
+    // just marked it sold.
+    await cache?.remove(_detailKey(id));
+    return listing;
+  }
+
+  @override
+  Future<void> remove(String id) async {
+    await _client.delete('/listings/$id');
+    await cache?.remove(_detailKey(id));
+  }
+
   static String _sortWire(ListingSort sort) => switch (sort) {
         ListingSort.newest => 'newest',
         ListingSort.priceAsc => 'cheapest',

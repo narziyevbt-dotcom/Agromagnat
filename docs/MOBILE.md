@@ -18,6 +18,7 @@ one codebase. Uzbek UI throughout.
 | Real API — feed, auth, posting, AI | built · [MOBILE-API.md](MOBILE-API.md) |
 | Offline — cached feed, catalogue, details | built · [MOBILE-OFFLINE.md](MOBILE-OFFLINE.md) |
 | Queued posting — publish with no signal | built · [MOBILE-OUTBOX.md](MOBILE-OUTBOX.md) |
+| My listings — status, mark sold, delete | built · [MOBILE-MY-LISTINGS.md](MOBILE-MY-LISTINGS.md) |
 | Messages | gated placeholder |
 
 Runs against the real API when one is configured, and on mock repositories
@@ -36,6 +37,7 @@ lib/
     auth/          domain → data → presentation      ← owns the session
     ai/            domain → data → presentation      ← drafts and dictation
     add_listing/   presentation                      ← renders the API's form spec
+    my_listings/   presentation                      ← the seller's own listings
     home/          presentation
     search/        presentation
     profile/       presentation
@@ -104,7 +106,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 244 tests
+flutter test          # 259 tests
 flutter analyze       # clean
 ```
 
@@ -117,7 +119,7 @@ navigation.
 mock latency. Without the fixed clock a fixture posted "2 soat oldin" drifts
 across midnight and a date assertion fails once a day, in CI, for no reason.
 
-Four real defects came out of writing these:
+Five real defects came out of writing these:
 
 - The filter sheet grew past the screen and put "Qo'llash" below the fold with
   no way to reach it. It is now capped at 85% height with the button pinned.
@@ -130,6 +132,9 @@ Four real defects came out of writing these:
 - A signed-in user was asked to sign in again when saving. Auth that is read
   rather than watched lands on `AuthRestoring` on first touch, and that was
   being treated as signed-out; the read now awaits `controller.ready`.
+- The profile row added for "Mening e'lonlarim" was a `ListTile` inside a
+  coloured `Container`, which silently swallows the ink splash. Flutter asserts
+  on it; the sign-in and screenshot tests caught it the same minute.
 
 ## Platforms
 
@@ -164,7 +169,8 @@ is first asked for, which is the hardest kind of iOS problem to find late.
 
 ## Next
 
-1. My listings — edit, mark sold, retry a failed photo upload
+1. Editing a listing — `PATCH /listings/:id` exists and nothing calls it, so a
+   wrong price means delete and retype
 2. Photo upload retry — the listing publishes offline now, but photos that
    fail after it goes live are gone
 3. Messages

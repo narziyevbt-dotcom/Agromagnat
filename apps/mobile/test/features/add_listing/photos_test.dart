@@ -219,4 +219,14 @@ class _UploadFailsRepository implements ListingRepository {
   @override
   Future<void> setFavorite(String id, {required bool saved}) =>
       _inner.setFavorite(id, saved: saved);
+
+  @override
+  Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) =>
+      _inner.mine(cursor: cursor, limit: limit);
+
+  @override
+  Future<Listing> markSold(String id) => _inner.markSold(id);
+
+  @override
+  Future<void> remove(String id) => _inner.remove(id);
 }

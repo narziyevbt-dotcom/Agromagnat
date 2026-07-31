@@ -120,6 +120,31 @@ abstract final class AppStrings {
       "Bu e'lonni server qabul qilmadi. Uni o'chirib, qaytadan joylang.";
   static const String discardQueuedTitle = "E'lonni o'chirasizmi?";
 
+  // My listings
+  static const String myListingsTitle = "Mening e'lonlarim";
+  static const String myListingsEmpty = "Hali e'lon joylamagansiz";
+  static const String myListingsEmptyHint =
+      "Birinchi e'loningizni joylang — bir necha daqiqa vaqt oladi.";
+  static const String statusActive = 'Faol';
+  static const String statusSold = 'Sotildi';
+  static const String statusExpired = 'Muddati tugagan';
+  static const String statusDraft = 'Qoralama';
+  static const String statusPending = 'Tekshiruvda';
+  static const String statusBlocked = 'Bloklangan';
+  static const String markSold = 'Sotildi deb belgilash';
+  static const String markSoldConfirm =
+      "E'lon qidiruvdan olib tashlanadi. Buni orqaga qaytarib bo'lmaydi.";
+  static const String markSoldDone = "E'lon sotilgan deb belgilandi";
+  static const String deleteListing = "O'chirish";
+  static const String deleteListingConfirm =
+      "E'lon butunlay o'chiriladi. Buni orqaga qaytarib bo'lmaydi.";
+  static const String deleteListingDone = "E'lon o'chirildi";
+  static const String actionFailed = "Bajarilmadi — internetni tekshiring";
+  static const String expiredHint =
+      "Muddati tugagan. Qaytadan joylasangiz yana ko'rinadi.";
+  static const String blockedHint =
+      "Bu e'lon qoidalarga mos kelmagani uchun to'xtatilgan.";
+
   // Voice / AI composer
   static const String composerTitle = 'Gapirib aytish';
   static const String composerHint =
@@ -188,6 +213,11 @@ abstract final class AppStrings {
   static String offlineSince(String ago) => 'Oxirgi ma\'lumot: $ago';
 
   static String queuedCount(int count) => "$count ta e'lon navbatda";
+
+  /// Warned about only near the end. A listing auto-expires after 14 days and
+  /// a seller who was not told simply stops getting calls.
+  static String expiresInDays(int days) =>
+      days == 0 ? 'Bugun muddati tugaydi' : "$days kundan keyin muddati tugaydi";
 
   /// Names the listing being deleted. A queue can hold more than one, and
   /// "delete the queued listing?" does not say which.

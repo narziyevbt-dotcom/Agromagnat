@@ -112,14 +112,19 @@ class Listing {
   /// otherwise immutable listing during a single posting flow.
   Listing withPhotos(List<ListingPhoto> next) => _copy(photos: next);
 
-  Listing copyWith({bool? isFavorite}) => _copy(isFavorite: isFavorite);
+  Listing copyWith({bool? isFavorite, ListingStatus? status}) =>
+      _copy(isFavorite: isFavorite, status: status);
 
-  Listing _copy({bool? isFavorite, List<ListingPhoto>? photos}) {
+  Listing _copy({
+    bool? isFavorite,
+    List<ListingPhoto>? photos,
+    ListingStatus? status,
+  }) {
     return Listing(
       id: id,
       title: title,
       description: description,
-      status: status,
+      status: status ?? this.status,
       quantity: quantity,
       quantityUnit: quantityUnit,
       price: price,
@@ -142,10 +147,19 @@ class Listing {
     );
   }
 
+  /// Identity plus the two fields that change under the user's hand.
+  ///
+  /// A listing is the same listing whatever its view count says, but a heart
+  /// tapped or a listing marked sold has to repaint — equality that ignored
+  /// them would leave the old state on screen until something else forced a
+  /// rebuild.
   @override
   bool operator ==(Object other) =>
-      other is Listing && other.id == id && other.isFavorite == isFavorite;
+      other is Listing &&
+      other.id == id &&
+      other.isFavorite == isFavorite &&
+      other.status == status;
 
   @override
-  int get hashCode => Object.hash(id, isFavorite);
+  int get hashCode => Object.hash(id, isFavorite, status);
 }

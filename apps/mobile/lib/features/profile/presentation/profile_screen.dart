@@ -8,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
 import '../../auth/presentation/widgets/sign_in_gate.dart';
+import '../../my_listings/presentation/my_listings_screen.dart';
 
 /// Account screen. The stats row, own listings and settings land with the
 /// posting flow — this is the identity half.
@@ -94,6 +95,33 @@ class _Account extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        // A Material rather than a coloured Container: ListTile paints its ink
+        // splash on the nearest Material, and a DecoratedBox in between hides
+        // the tap feedback entirely.
+        Material(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+          child: ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+            ),
+            leading: const Icon(
+              Icons.list_alt_rounded,
+              color: AppColors.harvest,
+            ),
+            title: Text(
+              AppStrings.myListingsTitle,
+              style: AppTypography.body(size: 15, weight: FontWeight.w600),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const MyListingsScreen(),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.xl),

@@ -78,3 +78,27 @@ Future<ProviderContainer> pumpApp(
 
   return container;
 }
+
+/// A token store already holding a session, for screens behind the sign-in
+/// gate.
+///
+/// Run inside [WidgetTester.runAsync]: the repository is a real async object,
+/// and awaiting it under the fake clock a widget test installs never completes.
+Future<InMemoryTokenStore> signedIn(
+  WidgetTester tester,
+  MockAuthRepository repository, {
+  String? name,
+}) async {
+  final store = InMemoryTokenStore();
+  await tester.runAsync(() async {
+    await repository.requestOtp('901234567');
+    await store.write(
+      await repository.verifyOtp(
+        phone: '+998901234567',
+        code: MockAuthRepository.devCode,
+        name: name,
+      ),
+    );
+  });
+  return store;
+}

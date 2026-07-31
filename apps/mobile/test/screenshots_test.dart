@@ -6,7 +6,6 @@ import 'dart:ui' as ui;
 
 import 'package:agromagnat/features/add_listing/presentation/add_listing_screen.dart';
 import 'package:agromagnat/features/auth/data/mock_auth_repository.dart';
-import 'package:agromagnat/features/auth/data/token_store.dart';
 import 'package:agromagnat/features/auth/presentation/login_screen.dart';
 import 'package:agromagnat/features/auth/presentation/providers/login_controller.dart';
 import 'package:agromagnat/features/home/presentation/home_screen.dart';
@@ -68,23 +67,6 @@ void main() {
     File('build/screenshots/$name.png').writeAsBytesSync(bytes!);
   }
 
-  Future<InMemoryTokenStore> signedIn(
-    WidgetTester tester,
-    MockAuthRepository repository,
-  ) async {
-    final store = InMemoryTokenStore();
-    await tester.runAsync(() async {
-      await repository.requestOtp('901234567');
-      await store.write(
-        await repository.verifyOtp(
-          phone: '+998901234567',
-          code: MockAuthRepository.devCode,
-          name: 'Anvar aka',
-        ),
-      );
-    });
-    return store;
-  }
 
   Future<void> sized(WidgetTester tester) async {
     tester.view.physicalSize = phone;
@@ -140,7 +122,7 @@ void main() {
   testWidgets('06 add listing — produce', (tester) async {
     await sized(tester);
     final repository = MockAuthRepository(latency: Duration.zero);
-    final store = await signedIn(tester, repository);
+    final store = await signedIn(tester, repository, name: 'Anvar aka');
 
     await pumpApp(
       tester,
@@ -156,7 +138,7 @@ void main() {
   testWidgets('07 add listing — machinery', (tester) async {
     await sized(tester);
     final repository = MockAuthRepository(latency: Duration.zero);
-    final store = await signedIn(tester, repository);
+    final store = await signedIn(tester, repository, name: 'Anvar aka');
 
     await pumpApp(
       tester,
@@ -176,7 +158,7 @@ void main() {
   testWidgets('08 profile', (tester) async {
     await sized(tester);
     final repository = MockAuthRepository(latency: Duration.zero);
-    final store = await signedIn(tester, repository);
+    final store = await signedIn(tester, repository, name: 'Anvar aka');
 
     await pumpApp(
       tester,

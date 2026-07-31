@@ -190,4 +190,17 @@ abstract interface class ListingRepository {
   /// listing, and losing the whole post because the third upload timed out on
   /// EDGE would be the worse outcome by far.
   Future<Listing> addPhotos(String listingId, List<DraftPhoto> photos);
+
+  /// The caller's own listings, **any status**.
+  ///
+  /// Not [search] with a seller filter: this is the one view that has to show
+  /// what the feed hides. A listing that expired or was blocked disappears from
+  /// everywhere else, and a seller who cannot see it concludes the app lost it.
+  Future<Paginated<Listing>> mine({String? cursor, int limit});
+
+  /// Marks a listing sold. Returns it in its new state.
+  Future<Listing> markSold(String id);
+
+  /// Deletes a listing the caller owns.
+  Future<void> remove(String id);
 }

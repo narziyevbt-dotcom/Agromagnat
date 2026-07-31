@@ -5,7 +5,6 @@ import 'package:agromagnat/features/add_listing/presentation/widgets/attribute_f
 import 'package:agromagnat/features/add_listing/presentation/widgets/photo_picker_field.dart';
 import 'package:agromagnat/features/auth/data/mock_auth_repository.dart';
 import 'package:agromagnat/features/ai/presentation/providers/composer_controller.dart';
-import 'package:agromagnat/features/auth/data/token_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,22 +17,6 @@ import 'photos_test.dart' show FakePhotoPicker, photo;
 /// tractor has a condition because the screen says so — it asserts it because
 /// the spec does, and the screen obeyed.
 void main() {
-  Future<InMemoryTokenStore> signedIn(
-    WidgetTester tester,
-    MockAuthRepository repository,
-  ) async {
-    final store = InMemoryTokenStore();
-    await tester.runAsync(() async {
-      await repository.requestOtp('901234567');
-      await store.write(
-        await repository.verifyOtp(
-          phone: '+998901234567',
-          code: MockAuthRepository.devCode,
-        ),
-      );
-    });
-    return store;
-  }
 
   /// Pumps the form on a surface tall enough to hold all of it.
   ///

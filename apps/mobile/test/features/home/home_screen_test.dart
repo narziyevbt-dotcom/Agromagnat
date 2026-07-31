@@ -102,6 +102,16 @@ class _FailingListingRepository implements ListingRepository {
   @override
   Future<Listing> addPhotos(String listingId, List<DraftPhoto> photos) =>
       Future.error(const _Offline());
+
+  @override
+  Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) =>
+      Future.error(const _Offline());
+
+  @override
+  Future<Listing> markSold(String id) => Future.error(const _Offline());
+
+  @override
+  Future<void> remove(String id) => Future.error(const _Offline());
 }
 
 class _Offline implements Exception {

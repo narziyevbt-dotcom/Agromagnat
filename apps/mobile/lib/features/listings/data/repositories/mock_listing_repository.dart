@@ -137,6 +137,55 @@ class MockListingRepository implements ListingRepository {
     return _withFavorite(updated);
   }
 
+  /// Who "me" is in mock mode — the same seller [create] posts as, so a
+  /// listing published in the app appears at the top of this list.
+  static const String mockSellerId = 'sel-1';
+
+  @override
+  Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) async {
+    await Future<void>.delayed(latency);
+
+    // Any status, deliberately: this is the one view that shows what the feed
+    // hides, and an expired listing the seller cannot see reads as a lost one.
+    final own = [
+      for (final listing in _listings)
+        if (listing.seller.id == mockSellerId) listing,
+    ];
+
+    final start = int.tryParse(cursor ?? '') ?? 0;
+    final end = (start + limit).clamp(0, own.length);
+
+    return Paginated<Listing>(
+      items: own.sublist(start.clamp(0, own.length), end),
+      nextCursor: end < own.length ? '$end' : null,
+    );
+  }
+
+  @override
+  Future<Listing> markSold(String id) async {
+    await Future<void>.delayed(latency);
+
+    final index = _listings.indexWhere((listing) => listing.id == id);
+    if (index == -1) {
+      throw ListingNotFoundException(id);
+    }
+
+    final sold = _listings[index].copyWith(status: ListingStatus.sold);
+    _listings[index] = sold;
+    return _withFavorite(sold);
+  }
+
+  @override
+  Future<void> remove(String id) async {
+    await Future<void>.delayed(latency);
+
+    final index = _listings.indexWhere((listing) => listing.id == id);
+    if (index == -1) {
+      throw ListingNotFoundException(id);
+    }
+    _listings.removeAt(index);
+  }
+
   Listing _withFavorite(Listing listing) =>
       listing.copyWith(isFavorite: _favorites.contains(listing.id));
 
