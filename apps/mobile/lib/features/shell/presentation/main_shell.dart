@@ -6,6 +6,7 @@ import '../../../shared/widgets/app_bottom_nav.dart';
 import '../../add_listing/presentation/add_listing_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../messages/presentation/messages_screen.dart';
+import '../../messages/presentation/providers/chat_providers.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../search/presentation/search_screen.dart';
 
@@ -34,6 +35,7 @@ class MainShell extends ConsumerWidget {
       ),
       bottomNavigationBar: AppBottomNav(
         currentIndex: index,
+        unread: ref.watch(unreadProvider),
         onTap: (slot) {
           if (slot == AppBottomNav.addSlot) {
             // Posting is a full-screen flow, not a tab — it pushes over the shell.
@@ -45,11 +47,18 @@ class MainShell extends ConsumerWidget {
             );
             return;
           }
+          if (slot == messagesSlot) {
+            // Opening the tab is the moment the count is most obviously
+            // wrong if it is stale.
+            ref.read(unreadProvider.notifier).refresh();
+          }
           ref.read(shellIndexProvider.notifier).state = slot;
         },
       ),
     );
   }
+
+  static const int messagesSlot = 3;
 
   /// Slots 0,1,3,4 map to tabs 0,1,2,3 — slot 2 is the "+" button, never a tab.
   int _tabForSlot(int slot) => slot > AppBottomNav.addSlot ? slot - 1 : slot;

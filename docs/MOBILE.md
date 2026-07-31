@@ -19,7 +19,7 @@ one codebase. Uzbek UI throughout.
 | Offline — cached feed, catalogue, details | built · [MOBILE-OFFLINE.md](MOBILE-OFFLINE.md) |
 | Queued posting — publish with no signal | built · [MOBILE-OUTBOX.md](MOBILE-OUTBOX.md) |
 | My listings — status, edit, mark sold, delete | built · [MOBILE-MY-LISTINGS.md](MOBILE-MY-LISTINGS.md) |
-| Messages | gated placeholder |
+| Messages — inbox, conversation, unread badge | built · [MOBILE-MESSAGES.md](MOBILE-MESSAGES.md) |
 
 Runs against the real API when one is configured, and on mock repositories
 when not. No backend is needed to open the app.
@@ -38,6 +38,7 @@ lib/
     ai/            domain → data → presentation      ← drafts and dictation
     add_listing/   presentation                      ← renders the API's form spec
     my_listings/   presentation                      ← the seller's own listings
+    messages/      domain → data → presentation      ← the inbox and one thread
     home/          presentation
     search/        presentation
     profile/       presentation
@@ -106,7 +107,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 273 tests
+flutter test          # 293 tests
 flutter analyze       # clean
 ```
 
@@ -169,7 +170,8 @@ is first asked for, which is the hardest kind of iOS problem to find late.
 
 ## Next
 
-1. Photo upload retry — the listing publishes offline now, but photos that
+1. Push notifications — a reply that arrives while the app is closed is
+   invisible until it is opened. FCM is in the stack and unwired on the client
+2. Photo upload retry — the listing publishes offline now, but photos that
    fail after it goes live are gone
-2. Messages
 3. Reposting an expired listing in one tap

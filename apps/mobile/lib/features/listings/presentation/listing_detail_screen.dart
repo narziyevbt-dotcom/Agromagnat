@@ -8,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/state_views.dart';
 import '../domain/entities/listing.dart';
+import '../../messages/presentation/open_chat_action.dart';
 import 'favorite_action.dart';
 import 'providers/listing_providers.dart';
 import 'widgets/listing_card.dart';
@@ -378,6 +379,26 @@ class _CallBar extends ConsumerWidget {
                   ),
                   icon: const Icon(Icons.phone_rounded, size: 20),
                   label: const Text(AppStrings.callSeller),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              // Second, not first: a call closes a deal in this market and a
+              // message starts one. It is the same width as the heart so the
+              // call button keeps the room it needs.
+              SizedBox(
+                width: AppSpacing.primaryButtonHeight,
+                height: AppSpacing.primaryButtonHeight,
+                child: OutlinedButton(
+                  onPressed: () =>
+                      openChatForListing(context, ref, listing.id),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size.square(AppSpacing.primaryButtonHeight),
+                  ),
+                  child: const Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    color: AppColors.ink,
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),

@@ -151,6 +151,20 @@ abstract final class AppStrings {
   static const String blockedHint =
       "Bu e'lon qoidalarga mos kelmagani uchun to'xtatilgan.";
 
+  // Messages
+  static const String inboxEmpty = 'Hali xabar yo\'q';
+  static const String inboxEmptyHint =
+      "E'lon sahifasidagi \"Yozish\" tugmasi orqali sotuvchiga yozing.";
+  static const String messageHint = 'Xabar yozing…';
+  static const String messageSendFailed = 'Yuborilmadi';
+  static const String messageRetry = 'Qayta yuborish';
+  static const String conversationEmpty = 'Suhbatni boshlang';
+  static const String conversationEmptyHint =
+      "Salomlashib, hajm va narx haqida so'rang.";
+  static const String cannotChatWithSelf = "O'z e'loningizga yozib bo'lmaydi";
+  static const String chatOpenFailed = "Suhbat ochilmadi — internetni tekshiring";
+  static const String youPrefix = 'Siz: ';
+
   // Voice / AI composer
   static const String composerTitle = 'Gapirib aytish';
   static const String composerHint =
