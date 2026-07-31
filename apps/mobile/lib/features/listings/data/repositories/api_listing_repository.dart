@@ -242,6 +242,14 @@ class ApiListingRepository implements ListingRepository {
   }
 
   @override
+  Future<void> removePhoto(String listingId, String photoId) async {
+    await _client.delete('/listings/$listingId/photos/$photoId');
+    // The cached detail still lists it, and it would render as a broken image
+    // for whoever opens the listing offline next.
+    await cache?.remove(_detailKey(listingId));
+  }
+
+  @override
   Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) {
     // Not cached. It is the seller's own list, it changes because of something
     // they just did, and a stale copy here reads as "my edit did not save".

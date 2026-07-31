@@ -84,6 +84,9 @@ void main() {
 }
 
 /// Stands in for a dead connection — the state this audience hits most.
+///
+/// Not built on DelegatingListingRepository: there is nothing behind it to
+/// delegate to, which is the point.
 class _FailingListingRepository implements ListingRepository {
   @override
   Future<Paginated<Listing>> search(ListingQuery query) =>
@@ -100,15 +103,19 @@ class _FailingListingRepository implements ListingRepository {
   Future<Listing> create(ListingDraft draft) => Future.error(const _Offline());
 
   @override
+  Future<Listing> update(String id, ListingDraft draft) =>
+      Future.error(const _Offline());
+
+  @override
   Future<Listing> addPhotos(String listingId, List<DraftPhoto> photos) =>
       Future.error(const _Offline());
 
   @override
-  Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) =>
+  Future<void> removePhoto(String listingId, String photoId) =>
       Future.error(const _Offline());
 
   @override
-  Future<Listing> update(String id, ListingDraft draft) =>
+  Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) =>
       Future.error(const _Offline());
 
   @override

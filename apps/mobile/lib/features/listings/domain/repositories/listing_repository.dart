@@ -191,6 +191,13 @@ abstract interface class ListingRepository {
   /// EDGE would be the worse outcome by far.
   Future<Listing> addPhotos(String listingId, List<DraftPhoto> photos);
 
+  /// Takes one photo off a listing.
+  ///
+  /// Separate from [update]: photos are their own resource on the API, and an
+  /// edit that saved and a photo that did not (or the reverse) should not be
+  /// one failure the seller cannot tell apart.
+  Future<void> removePhoto(String listingId, String photoId);
+
   /// The caller's own listings, **any status**.
   ///
   /// Not [search] with a seller filter: this is the one view that has to show

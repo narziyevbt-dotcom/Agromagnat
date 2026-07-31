@@ -28,7 +28,7 @@ class DraftState {
     this.photoFailure,
     this.queued = false,
     this.editingId,
-    this.existingPhotos = 0,
+    this.existingPhotos = const [],
   });
 
   final ListingDraft draft;
@@ -62,10 +62,12 @@ class DraftState {
   /// new listing.
   final String? editingId;
 
-  /// Photos already on the listing being edited. They count against the API's
-  /// five, so the picker has to know about them even though it cannot show
-  /// them.
-  final int existingPhotos;
+  /// Photos already on the listing being edited.
+  ///
+  /// They live on the server, so they are never re-uploaded — but they count
+  /// against the API's five, and the seller has to be able to take a bad one
+  /// off.
+  final List<ListingPhoto> existingPhotos;
 
   bool get isEditing => editingId != null;
 
@@ -79,7 +81,7 @@ class DraftState {
     Object? photoFailure = _unset,
     bool? queued,
     String? editingId,
-    int? existingPhotos,
+    List<ListingPhoto>? existingPhotos,
   }) {
     return DraftState(
       draft: draft ?? this.draft,
@@ -124,8 +126,38 @@ class DraftController extends StateNotifier<DraftState> {
     state = DraftState(
       draft: ListingDraft.fromListing(listing, category),
       editingId: listing.id,
-      existingPhotos: listing.photos.length,
+      existingPhotos: listing.photos,
     );
+  }
+
+  /// Deletes a photo that is already on the listing.
+  ///
+  /// Immediate, not on save: it is its own endpoint, and a photo queued for
+  /// deletion until the seller happens to press "Saqlash" would still be on
+  /// the listing every buyer is looking at meanwhile.
+  ///
+  /// Returns false when the server refused, having put the photo back.
+  Future<bool> removeExistingPhoto(ListingPhoto photo) async {
+    final id = state.editingId;
+    final before = state.existingPhotos;
+    if (id == null) {
+      return false;
+    }
+
+    state = state.copyWith(
+      existingPhotos: [
+        for (final candidate in before)
+          if (candidate.id != photo.id) candidate,
+      ],
+    );
+
+    try {
+      await _repository.removePhoto(id, photo.id);
+      return true;
+    } on Object {
+      state = state.copyWith(existingPhotos: before);
+      return false;
+    }
   }
 
   void _edit(ListingDraft next) {
@@ -269,7 +301,7 @@ class DraftController extends StateNotifier<DraftState> {
   // --- photos ---------------------------------------------------------
 
   int get remainingPhotoSlots =>
-      maxPhotos - state.existingPhotos - state.draft.photos.length;
+      maxPhotos - state.existingPhotos.length - state.draft.photos.length;
 
   Future<void> addFromCamera() async {
     if (remainingPhotoSlots <= 0) {

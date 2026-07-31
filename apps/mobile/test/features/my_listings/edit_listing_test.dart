@@ -1,8 +1,5 @@
 import 'package:agromagnat/core/localization/app_strings.dart';
 import 'package:agromagnat/core/network/api_client.dart';
-import 'package:agromagnat/core/pagination/paginated.dart';
-import 'package:agromagnat/features/listings/domain/entities/draft_photo.dart';
-import 'package:agromagnat/features/listings/domain/repositories/listing_repository.dart';
 import 'package:agromagnat/features/add_listing/presentation/add_listing_screen.dart';
 import 'package:agromagnat/features/add_listing/presentation/providers/draft_controller.dart';
 import 'package:agromagnat/features/auth/data/mock_auth_repository.dart';
@@ -15,6 +12,7 @@ import 'package:agromagnat/features/listings/presentation/providers/listing_prov
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/delegating_listing_repository.dart';
 import '../../support/test_harness.dart';
 import '../add_listing/photos_test.dart' show FakePhotoPicker, photo;
 
@@ -124,6 +122,70 @@ void main() {
         controller.remainingPhotoSlots,
         DraftController.maxPhotos - listing.photos.length,
       );
+    });
+  });
+
+  group('a photo already on the listing', () {
+    Future<(Listing, DraftController)> withTwoPhotos() async {
+      final listing = await anOwnListing();
+      final picker = FakePhotoPicker(galleryResults: [photo('a'), photo('b')]);
+      final controller = DraftController(repository, picker);
+      controller.beginEdit(
+        listing,
+        CatalogFixtures.categoryById(listing.category.id),
+      );
+      await controller.addFromGallery();
+      await controller.submit();
+
+      final saved = await repository.byId(listing.id);
+      final editing = DraftController(repository, FakePhotoPicker());
+      editing.beginEdit(
+        saved,
+        CatalogFixtures.categoryById(saved.category.id),
+      );
+      return (saved, editing);
+    }
+
+    test('is deleted on the server, not on save', () async {
+      final (saved, controller) = await withTwoPhotos();
+      final target = saved.photos.first;
+
+      expect(await controller.removeExistingPhoto(target), isTrue);
+
+      // Waiting for "Saqlash" would leave it on the listing every buyer is
+      // looking at until the seller happened to press it.
+      expect(
+        (await repository.byId(saved.id)).photos.map((p) => p.id),
+        isNot(contains(target.id)),
+      );
+      expect(controller.state.existingPhotos, hasLength(1));
+    });
+
+    test('comes back if the server refused', () async {
+      final (saved, _) = await withTwoPhotos();
+      final controller = DraftController(
+        _OfflineRepository(repository),
+        FakePhotoPicker(),
+      );
+      controller.beginEdit(
+        saved,
+        CatalogFixtures.categoryById(saved.category.id),
+      );
+
+      expect(
+        await controller.removeExistingPhoto(saved.photos.first),
+        isFalse,
+      );
+      expect(controller.state.existingPhotos, hasLength(2));
+    });
+
+    test('frees a slot for a new one', () async {
+      final (saved, controller) = await withTwoPhotos();
+      final before = controller.remainingPhotoSlots;
+
+      await controller.removeExistingPhoto(saved.photos.first);
+
+      expect(controller.remainingPhotoSlots, before + 1);
     });
   });
 
@@ -238,12 +300,10 @@ void main() {
 
 /// Every write times out the way a phone with no bars does — an ApiException
 /// with status 0, which is exactly what the outbox watches for.
-class _OfflineRepository implements ListingRepository {
-  _OfflineRepository(this._inner);
+class _OfflineRepository extends DelegatingListingRepository {
+  _OfflineRepository(super.inner);
 
-  final ListingRepository _inner;
-
-  static const _dead = ApiException(0, 'Internet yo\'q');
+  static const _dead = ApiException(0, "Internet yo'q");
 
   @override
   Future<Listing> update(String id, ListingDraft draft) => Future.error(_dead);
@@ -252,26 +312,6 @@ class _OfflineRepository implements ListingRepository {
   Future<Listing> create(ListingDraft draft) => Future.error(_dead);
 
   @override
-  Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) =>
-      _inner.mine(cursor: cursor, limit: limit);
-
-  @override
-  Future<Listing> markSold(String id) => _inner.markSold(id);
-
-  @override
-  Future<void> remove(String id) => _inner.remove(id);
-
-  @override
-  Future<Paginated<Listing>> search(ListingQuery query) => _inner.search(query);
-
-  @override
-  Future<Listing> byId(String id) => _inner.byId(id);
-
-  @override
-  Future<void> setFavorite(String id, {required bool saved}) =>
-      _inner.setFavorite(id, saved: saved);
-
-  @override
-  Future<Listing> addPhotos(String listingId, List<DraftPhoto> photos) =>
-      _inner.addPhotos(listingId, photos);
+  Future<void> removePhoto(String listingId, String photoId) =>
+      Future.error(_dead);
 }

@@ -76,10 +76,13 @@ The whole draft is sent, not a diff — `PATCH` takes a partial, but the server
 re-validates the merged row anyway, and a client-side diff is one more place
 for the two to disagree about what changed.
 
-Photos already on the listing are not re-uploaded and cannot yet be removed;
-new ones are appended, and the picker counts the existing ones against the
-API's five. The label says how many are already there, because an
-empty-looking strip on a listing with three reads as "the photos are gone".
+Photos already on the listing show in the strip from their URL, next to any
+new ones. They are never re-uploaded, they count against the API's five, and
+the X on one deletes it **immediately** rather than on save — it is its own
+endpoint, and a photo queued for deletion until the seller happens to press
+"Saqlash" is still on the listing every buyer is looking at meanwhile. Asked
+first, and put back if the server refuses. They cannot be reordered: the cover
+is the first photo, and the API has no endpoint that changes that.
 
 Saving pops back to the list with a snackbar. No modal with a "view it"
 button: the seller came from a list they are returning to, and a celebration
@@ -96,7 +99,7 @@ not save" — and the next thing that gets tapped is the same button again.
 
 ## Tests
 
-26 tests — `my_listings_test.dart` for the list and its two edits,
+29 tests — `my_listings_test.dart` for the list and its two edits,
 `edit_listing_test.dart` for the form reopened on a listing.
 
 The ones worth having: a sold listing leaves the feed but stays in this list,
@@ -105,8 +108,9 @@ cancelling a dialog changes nothing, and the sold row stops offering the sold
 button.
 
 On the edit side: the form opens valid on the first frame, a sold listing
-stays sold after a correction, an answer to a retired question is dropped, and
-a dead network does not queue the edit.
+stays sold after a correction, an answer to a retired question is dropped, a
+dead network does not queue the edit, and a photo the server refused to delete
+comes back.
 
 Writing them turned up two real defects. The new profile row was a `ListTile`
 inside a coloured `Container`, which silently swallows the ink splash — Flutter
@@ -117,8 +121,9 @@ that a post-frame callback would have left.
 
 ## Not done yet
 
-- **Removing a photo.** `DELETE /listings/:id/photos/:photoId` exists and
-  nothing calls it, so a bad photo can only be added around, not taken off.
+- **Reordering photos.** The cover is whichever photo is first, and only new
+  ones can be moved. Changing the order of photos already uploaded needs an
+  endpoint the API does not have.
 - **Reposting an expired listing.** The copy tells the seller to post it again;
   it should be one button.
 - **Editing offline.** Deliberate for now — see above.

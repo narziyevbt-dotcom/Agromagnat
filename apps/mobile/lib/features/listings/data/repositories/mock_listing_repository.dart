@@ -162,6 +162,22 @@ class MockListingRepository implements ListingRepository {
   }
 
   @override
+  Future<void> removePhoto(String listingId, String photoId) async {
+    await Future<void>.delayed(latency);
+
+    final index = _listings.indexWhere((listing) => listing.id == listingId);
+    if (index == -1) {
+      throw ListingNotFoundException(listingId);
+    }
+
+    final listing = _listings[index];
+    _listings[index] = listing.withPhotos([
+      for (final photo in listing.photos)
+        if (photo.id != photoId) photo,
+    ]);
+  }
+
+  @override
   Future<Listing> update(String id, ListingDraft draft) async {
     await Future<void>.delayed(latency);
 

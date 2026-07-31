@@ -178,6 +178,8 @@ abstract final class AppStrings {
   static const String fromGallery = 'Galereyadan tanlash';
   static const String coverPhoto = 'ASOSIY';
   static const String removePhoto = "Rasmni o'chirish";
+  static const String removePhotoConfirm =
+      "Bu rasm e'londan butunlay o'chiriladi.";
   static const String photosFull = "Ko'proq rasm qo'shib bo'lmaydi";
   static const String uploadingPhotos = 'Rasmlar yuklanmoqda…';
 
@@ -216,7 +218,7 @@ abstract final class AppStrings {
   /// photos are gone".
   static String photosEditHint(int existing) => existing == 0
       ? "Yangi rasm qo'shishingiz mumkin"
-      : "$existing ta rasm allaqachon bor — pastda yangilarini qo'shasiz";
+      : "$existing ta rasm e'londa turibdi — o'chirsangiz ham, qo'shsangiz ham bo'ladi";
 
   static String photoOf(int index, int total) => '$index / $total';
 

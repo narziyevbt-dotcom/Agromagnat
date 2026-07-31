@@ -8,6 +8,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../listings/domain/entities/draft_photo.dart';
+import '../../../listings/domain/entities/listing.dart';
+import '../../../listings/presentation/widgets/photo_gallery.dart';
 import '../providers/draft_controller.dart';
 import 'attribute_fields.dart';
 
@@ -34,10 +36,7 @@ class PhotoPickerField extends ConsumerWidget {
         FieldLabel(
           label: AppStrings.photos,
           hint: state.isEditing
-              // Existing photos are not shown here and cannot be removed yet;
-              // saying so is better than a strip that looks empty on a listing
-              // that has three.
-              ? AppStrings.photosEditHint(state.existingPhotos)
+              ? AppStrings.photosEditHint(state.existingPhotos.length)
               : photos.isEmpty
                   ? AppStrings.photosHint
                   : AppStrings.photosCoverHint,
@@ -48,6 +47,21 @@ class PhotoPickerField extends ConsumerWidget {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
+              // Already on the listing: shown from their URL, removable, and
+              // not draggable to cover — reordering is a separate endpoint the
+              // API does not have.
+              for (final existing in state.existingPhotos)
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
+                  child: _ExistingThumbnail(
+                    photo: existing,
+                    onRemove: () => _confirmRemoveExisting(
+                      context,
+                      controller,
+                      existing,
+                    ),
+                  ),
+                ),
               for (final photo in photos)
                 Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.sm),
@@ -70,6 +84,93 @@ class PhotoPickerField extends ConsumerWidget {
           style: AppTypography.body(size: 12, color: AppColors.inkFaint),
         ),
       ],
+    );
+  }
+
+  /// Asked first: this photo is on a live listing and there is no undo.
+  Future<void> _confirmRemoveExisting(
+    BuildContext context,
+    DraftController controller,
+    ListingPhoto photo,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        content: const Text(AppStrings.removePhotoConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(AppStrings.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text(AppStrings.removePhoto),
+          ),
+        ],
+      ),
+    );
+
+    if (!(confirmed ?? false)) {
+      return;
+    }
+
+    final removed = await controller.removeExistingPhoto(photo);
+    if (!removed && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(AppStrings.actionFailed)),
+      );
+    }
+  }
+}
+
+/// A photo that lives on the server already.
+class _ExistingThumbnail extends StatelessWidget {
+  const _ExistingThumbnail({required this.photo, required this.onRemove});
+
+  final ListingPhoto photo;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 104,
+      height: 104,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              child: ListingPhotoView(photo: photo),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Semantics(
+              button: true,
+              label: AppStrings.removePhoto,
+              child: InkResponse(
+                onTap: onRemove,
+                radius: 20,
+                child: Container(
+                  margin: const EdgeInsets.all(2),
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

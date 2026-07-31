@@ -106,7 +106,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 270 tests
+flutter test          # 273 tests
 flutter analyze       # clean
 ```
 
@@ -170,7 +170,6 @@ is first asked for, which is the hardest kind of iOS problem to find late.
 ## Next
 
 1. Photo upload retry — the listing publishes offline now, but photos that
-   fail after it goes live are gone, and a photo already on a listing cannot
-   be removed
+   fail after it goes live are gone
 2. Messages
 3. Reposting an expired listing in one tap

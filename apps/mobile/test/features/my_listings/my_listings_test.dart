@@ -1,9 +1,7 @@
 import 'package:agromagnat/core/localization/app_strings.dart';
-import 'package:agromagnat/core/pagination/paginated.dart';
 import 'package:agromagnat/features/auth/data/mock_auth_repository.dart';
 import 'package:agromagnat/features/listings/data/fixtures/listing_fixtures.dart';
 import 'package:agromagnat/features/listings/data/repositories/mock_listing_repository.dart';
-import 'package:agromagnat/features/listings/domain/entities/draft_photo.dart';
 import 'package:agromagnat/features/listings/domain/entities/listing.dart';
 import 'package:agromagnat/features/listings/domain/entities/listing_draft.dart';
 import 'package:agromagnat/features/listings/domain/entities/units.dart';
@@ -15,48 +13,23 @@ import 'package:agromagnat/features/my_listings/presentation/widgets/my_listing_
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/delegating_listing_repository.dart';
 import '../../support/test_harness.dart';
 
 /// Fails whichever of the two edits it is told to.
-class _StubbornRepository implements ListingRepository {
-  _StubbornRepository(this._inner, {this.failSold = false, this.failRemove = false});
+class _StubbornRepository extends DelegatingListingRepository {
+  _StubbornRepository(super.inner, {this.failSold = false, this.failRemove = false});
 
-  final ListingRepository _inner;
   final bool failSold;
   final bool failRemove;
 
   @override
-  Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) =>
-      _inner.mine(cursor: cursor, limit: limit);
-
-  @override
-  Future<Listing> update(String id, ListingDraft draft) =>
-      _inner.update(id, draft);
-
-  @override
   Future<Listing> markSold(String id) =>
-      failSold ? Future.error(Exception('offline')) : _inner.markSold(id);
+      failSold ? Future.error(Exception('offline')) : super.markSold(id);
 
   @override
   Future<void> remove(String id) =>
-      failRemove ? Future.error(Exception('offline')) : _inner.remove(id);
-
-  @override
-  Future<Paginated<Listing>> search(ListingQuery query) => _inner.search(query);
-
-  @override
-  Future<Listing> byId(String id) => _inner.byId(id);
-
-  @override
-  Future<void> setFavorite(String id, {required bool saved}) =>
-      _inner.setFavorite(id, saved: saved);
-
-  @override
-  Future<Listing> create(ListingDraft draft) => _inner.create(draft);
-
-  @override
-  Future<Listing> addPhotos(String listingId, List<DraftPhoto> photos) =>
-      _inner.addPhotos(listingId, photos);
+      failRemove ? Future.error(Exception('offline')) : super.remove(id);
 }
 
 MockListingRepository repository() =>

@@ -1,14 +1,12 @@
-import 'package:agromagnat/core/pagination/paginated.dart';
 import 'package:agromagnat/features/add_listing/presentation/providers/draft_controller.dart';
 import 'package:agromagnat/features/listings/data/fixtures/catalog_fixtures.dart';
 import 'package:agromagnat/features/listings/data/photo_picker.dart';
 import 'package:agromagnat/features/listings/data/repositories/mock_listing_repository.dart';
 import 'package:agromagnat/features/listings/domain/entities/draft_photo.dart';
 import 'package:agromagnat/features/listings/domain/entities/listing.dart';
-import 'package:agromagnat/features/listings/domain/entities/listing_draft.dart';
-import 'package:agromagnat/features/listings/domain/repositories/listing_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/delegating_listing_repository.dart';
 import '../../support/test_harness.dart';
 
 /// Stands in for the camera and the gallery, neither of which exists under
@@ -198,39 +196,10 @@ void main() {
 }
 
 /// Publishes fine, then loses the photos — the EDGE failure that matters.
-class _UploadFailsRepository implements ListingRepository {
-  _UploadFailsRepository(this._inner);
-
-  final ListingRepository _inner;
-
-  @override
-  Future<Listing> create(ListingDraft draft) => _inner.create(draft);
+class _UploadFailsRepository extends DelegatingListingRepository {
+  _UploadFailsRepository(super.inner);
 
   @override
   Future<Listing> addPhotos(String listingId, List<DraftPhoto> photos) =>
       Future.error(Exception('upload timed out'));
-
-  @override
-  Future<Listing> byId(String id) => _inner.byId(id);
-
-  @override
-  Future<Paginated<Listing>> search(ListingQuery query) => _inner.search(query);
-
-  @override
-  Future<void> setFavorite(String id, {required bool saved}) =>
-      _inner.setFavorite(id, saved: saved);
-
-  @override
-  Future<Paginated<Listing>> mine({String? cursor, int limit = 20}) =>
-      _inner.mine(cursor: cursor, limit: limit);
-
-  @override
-  Future<Listing> update(String id, ListingDraft draft) =>
-      _inner.update(id, draft);
-
-  @override
-  Future<Listing> markSold(String id) => _inner.markSold(id);
-
-  @override
-  Future<void> remove(String id) => _inner.remove(id);
 }
