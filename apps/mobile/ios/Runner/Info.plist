@@ -14,6 +14,15 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<!-- Without this iOS advertises the app as English-only: the App Store
+	     listing shows no Uzbek, and system UI the app hands off to (share
+	     sheets, permission prompts) comes back in English on an Uzbek phone.
+	     Must stay in step with supportedLocales in main.dart. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>uz</string>
+		<string>ru</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>agromagnat</string>
 	<key>CFBundlePackageType</key>

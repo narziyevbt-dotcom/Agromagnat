@@ -5,10 +5,10 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 
-/// The five-item bottom bar: Bosh · Qidiruv · big saffron "+" · Xabarlar · Profil.
+/// The five-item bottom bar: Bosh · Qidiruv · big lime "+" · Xabarlar · Profil.
 ///
 /// The middle item is deliberately not a normal tab — posting a listing is the
-/// single action the whole product exists for, so it is a raised saffron button
+/// single action the whole product exists for, so it is a raised lime button
 /// that outweighs everything beside it.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
@@ -92,7 +92,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.cobalt : AppColors.textTertiary;
+    final color = selected ? AppColors.forest : AppColors.inkFaint;
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -134,7 +134,7 @@ class _AddButton extends StatelessWidget {
           button: true,
           label: AppStrings.navAdd,
           child: Material(
-            color: AppColors.saffron,
+            color: AppColors.lime,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
             ),
@@ -144,7 +144,7 @@ class _AddButton extends StatelessWidget {
               child: const SizedBox(
                 width: 52,
                 height: AppSpacing.minTapTarget,
-                child: Icon(Icons.add_rounded, color: Colors.white, size: 30),
+                child: Icon(Icons.add_rounded, color: AppColors.onLime, size: 30),
               ),
             ),
           ),

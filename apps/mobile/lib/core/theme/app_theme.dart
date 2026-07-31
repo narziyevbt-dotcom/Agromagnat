@@ -7,39 +7,46 @@ import 'app_typography.dart';
 
 /// Assembles the design tokens into a single ThemeData.
 ///
-/// Anything visual should come from here rather than being written inline in a
-/// screen — that is what keeps saffron confined to CTAs and green to numbers.
+/// Anything visual comes from here rather than being written inline in a
+/// screen — that is what keeps lime confined to calls to action and harvest
+/// green to money.
 abstract final class AppTheme {
   static ThemeData light() {
     final textTheme = AppTypography.buildTextTheme();
 
     const colorScheme = ColorScheme.light(
-      primary: AppColors.cobalt,
-      onPrimary: AppColors.onCobalt,
-      secondary: AppColors.turquoise,
-      onSecondary: Colors.white,
-      tertiary: AppColors.saffron,
+      primary: AppColors.forest,
+      onPrimary: AppColors.onForest,
+      // Lime is the action colour, and it is light — the "on" pairing has to
+      // be forest, never white, or every button label fails contrast.
+      secondary: AppColors.lime,
+      onSecondary: AppColors.onLime,
+      tertiary: AppColors.harvest,
       onTertiary: Colors.white,
-      error: AppColors.error,
+      error: AppColors.danger,
       onError: Colors.white,
       surface: AppColors.surface,
-      onSurface: AppColors.textPrimary,
+      onSurface: AppColors.ink,
+      outline: AppColors.hairline,
+      outlineVariant: AppColors.hairline,
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.background,
+      fontFamily: AppTypography.family,
+      scaffoldBackgroundColor: AppColors.canvas,
       textTheme: textTheme,
-      dividerColor: AppColors.divider,
+      dividerColor: AppColors.hairline,
       splashFactory: InkSparkle.splashFactory,
 
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.cobalt,
-        foregroundColor: AppColors.onCobalt,
+        backgroundColor: AppColors.forest,
+        foregroundColor: AppColors.onForest,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: AppTypography.heading(size: 20, color: AppColors.onCobalt),
+        titleTextStyle: AppTypography.heading(size: 20, color: AppColors.onForest),
+        // A dark bar needs light status-bar glyphs above it.
         systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
 
@@ -48,40 +55,38 @@ abstract final class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
         ),
       ),
 
-      // Saffron is reserved for calls to action — this is the only place it
+      // Lime is reserved for calls to action — this is the only place it
       // becomes a fill colour.
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.saffron,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.lime,
+          foregroundColor: AppColors.onLime,
+          disabledBackgroundColor: AppColors.hairline,
+          disabledForegroundColor: AppColors.inkFaint,
           elevation: 0,
           minimumSize: const Size.fromHeight(AppSpacing.primaryButtonHeight),
-          textStyle: AppTypography.body(size: 16, weight: FontWeight.w600),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          ),
+          textStyle: AppTypography.body(size: 16, weight: FontWeight.w700),
+          shape: const StadiumBorder(),
         ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.cobalt,
+          foregroundColor: AppColors.forest,
           minimumSize: const Size.fromHeight(AppSpacing.minTapTarget),
-          side: const BorderSide(color: AppColors.divider),
+          side: const BorderSide(color: AppColors.hairline),
           textStyle: AppTypography.body(size: 15, weight: FontWeight.w600),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          ),
+          shape: const StadiumBorder(),
         ),
       ),
 
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.turquoise,
+          foregroundColor: AppColors.harvest,
           minimumSize: const Size(AppSpacing.minTapTarget, AppSpacing.minTapTarget),
           textStyle: AppTypography.body(size: 15, weight: FontWeight.w600),
         ),
@@ -94,27 +99,27 @@ abstract final class AppTheme {
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,
         ),
-        hintStyle: AppTypography.body(size: 15, color: AppColors.textTertiary),
+        hintStyle: AppTypography.body(size: 15, color: AppColors.inkFaint),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: const BorderSide(color: AppColors.divider),
+          borderSide: const BorderSide(color: AppColors.hairline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: const BorderSide(color: AppColors.divider),
+          borderSide: const BorderSide(color: AppColors.hairline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: const BorderSide(color: AppColors.turquoise, width: 2),
+          borderSide: const BorderSide(color: AppColors.harvest, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: const BorderSide(color: AppColors.danger),
         ),
       ),
 
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.cobaltSubtle,
+        backgroundColor: AppColors.surfaceSoft,
         labelStyle: AppTypography.body(size: 13, weight: FontWeight.w500),
         side: BorderSide.none,
         padding: const EdgeInsets.symmetric(
@@ -126,27 +131,23 @@ abstract final class AppTheme {
         ),
       ),
 
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.cobalt,
-        unselectedItemColor: AppColors.textTertiary,
-        selectedLabelStyle: AppTypography.body(size: 11, weight: FontWeight.w600),
-        unselectedLabelStyle: AppTypography.body(size: 11),
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-      ),
-
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppSpacing.radiusCard),
+          ),
         ),
       ),
 
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.cobalt,
+        backgroundColor: AppColors.forest,
         contentTextStyle: AppTypography.body(size: 14, color: Colors.white),
         behavior: SnackBarBehavior.floating,
+      ),
+
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.harvest,
       ),
     );
   }
