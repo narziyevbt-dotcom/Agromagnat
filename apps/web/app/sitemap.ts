@@ -1,7 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getCategories, getListings } from '@/lib/api';
-
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://agromagnat.uz';
+import { SITE_URL } from '@/lib/site';
 
 /**
  * Static pages, one entry per category, and the most recent active listings.
@@ -12,8 +11,8 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://agromagnat.uz';
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
-    { url: SITE, changeFrequency: 'hourly', priority: 1 },
-    { url: `${SITE}/qidiruv`, changeFrequency: 'hourly', priority: 0.9 },
+    { url: SITE_URL, changeFrequency: 'hourly', priority: 1 },
+    { url: `${SITE_URL}/qidiruv`, changeFrequency: 'hourly', priority: 0.9 },
   ];
 
   const [categories, feed] = await Promise.all([
@@ -24,12 +23,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticPages,
     ...categories.map((category) => ({
-      url: `${SITE}/qidiruv?categoryId=${category.id}`,
+      url: `${SITE_URL}/qidiruv?categoryId=${category.id}`,
       changeFrequency: 'daily' as const,
       priority: 0.7,
     })),
     ...feed.items.map((listing) => ({
-      url: `${SITE}/e/${listing.id}`,
+      url: `${SITE_URL}/e/${listing.id}`,
       lastModified: new Date(listing.createdAt),
       changeFrequency: 'daily' as const,
       priority: 0.8,

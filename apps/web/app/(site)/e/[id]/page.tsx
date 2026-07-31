@@ -58,10 +58,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${listing.title} — ${price}`,
     description: description.slice(0, 300),
+    // The listing page is the one thing on the site worth ranking, so it says
+    // plainly which address is the real one — the sitemap uses the same form.
+    alternates: { canonical: `/e/${id}` },
     openGraph: {
       title: listing.title,
       description: description.slice(0, 300),
       images: listing.photos?.[0] ? [listing.photos[0].url] : undefined,
+      url: `/e/${id}`,
       type: 'website',
     },
     // Sold and expired listings stay reachable by link but leave the index.

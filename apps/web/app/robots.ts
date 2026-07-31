@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next';
-
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://agromagnat.uz';
+import { SITE_URL } from '@/lib/site';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -11,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
       // them would only burn budget that belongs to listing pages.
       disallow: ['/api/', '/profil', '/sevimlilar', '/joylash', '/kirish', '/xabarlar'],
     },
-    sitemap: `${SITE}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

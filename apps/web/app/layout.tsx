@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
+import { SITE_URL } from '@/lib/site';
 import { t } from '@/lib/strings';
 import './globals.css';
 
@@ -22,18 +23,35 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
+const description =
+  "O'zbekiston bo'ylab fermer mahsulotlari bozori. Meva, sabzavot, poliz, don — vositachisiz, to'g'ridan-to'g'ri fermerdan.";
+
 export const metadata: Metadata = {
+  // Without a metadataBase every page-level `alternates.canonical` and every
+  // relative og:image resolves against the request host, which on Vercel means
+  // whichever deployment alias the crawler happened to arrive through.
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${t.brand} — ${t.tagline}`,
     template: `%s · ${t.brand}`,
   },
-  description:
-    "O'zbekiston bo'ylab fermer mahsulotlari bozori. Meva, sabzavot, poliz, don — vositachisiz, to'g'ridan-to'g'ri fermerdan.",
+  description,
   keywords: ['agro bozor', 'fermer', 'hosil', 'ulgurji', "o'zbekiston", 'meva sabzavot'],
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'uz_UZ',
     siteName: t.brand,
+    url: SITE_URL,
+    title: `${t.brand} — ${t.tagline}`,
+    description,
+  },
+  // Listings are shared into Telegram and Instagram far more than they are
+  // searched for, so the card has to carry the title, not just a bare link.
+  twitter: {
+    card: 'summary_large_image',
+    title: `${t.brand} — ${t.tagline}`,
+    description,
   },
   robots: { index: true, follow: true },
 };
