@@ -71,3 +71,27 @@ public feed mark listings the caller has already favorited without demanding a l
 - `otp.service.spec.ts` — issue, expiry, rate limit, attempt burn, single use
 - `token.service.spec.ts` — rotation, replay detection, blacklist
 - `auth.e2e-spec.ts` — 13 cases over the real stack, from request-otp to logout
+
+## Production guards
+
+The app refuses to boot when `NODE_ENV=production` and any of the following is
+true. These are enforced in `env.validation.ts` and covered by tests:
+
+| Condition | Why it is fatal |
+|---|---|
+| `JWT_ACCESS_SECRET` or `JWT_REFRESH_SECRET` is the development placeholder | This repository is public, so those strings are public. `role` travels inside the access token and `RolesGuard` trusts it, so anyone holding the secret can mint an administrator — no exploit, no unusual traffic, nothing in the logs. |
+| Either secret is shorter than 32 characters | Brute-forceable offline. |
+| Either secret is missing | Silently defaulting is what made the placeholder dangerous: the app booted happily. |
+| `SMS_PROVIDER=mock` | mock accepts `000000` for every phone number, so anyone can sign in as anyone, including an admin. |
+| `SMS_PROVIDER=eskiz` without credentials | The provider is real, the credentials are blank, and every OTP fails silently — indistinguishable from "nobody can register". |
+| `DB_SYNCHRONIZE=true` | TypeORM's schema sync drops columns it cannot reconcile, on live listings. |
+
+`SWAGGER_ENABLED` also flips to `false` by default in production: it is an
+annotated map of every endpoint and DTO, and should be opted into rather than
+out of.
+
+Failing at boot is deliberate. Warning and continuing is exactly how a
+placeholder survives to production — nobody reads a startup log until something
+is already wrong.
+
+Development is untouched: a fresh clone still runs with an empty environment.
