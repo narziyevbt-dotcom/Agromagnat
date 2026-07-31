@@ -1,0 +1,73 @@
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import type { Request } from 'express';
+import { User } from '../users/entities/user.entity';
+import { AuthService } from './auth.service';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { Public } from './decorators/public.decorator';
+import {
+  AuthTokensDto,
+  RefreshTokenDto,
+  RequestOtpDto,
+  RequestOtpResponseDto,
+  VerifyOtpDto,
+} from './dto/auth.dto';
+
+@ApiTags('auth')
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly auth: AuthService) {}
+
+  @Public()
+  @Post('request-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a 6-digit code by SMS (3 per phone per 10 minutes)' })
+  @ApiOkResponse({ type: RequestOtpResponseDto })
+  @ApiTooManyRequestsResponse({ description: 'Rate limit exceeded' })
+  requestOtp(@Body() dto: RequestOtpDto): Promise<RequestOtpResponseDto> {
+    return this.auth.requestOtp(dto.phone);
+  }
+
+  @Public()
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify the code; creates the account on first login' })
+  @ApiOkResponse({ type: AuthTokensDto })
+  @ApiUnauthorizedResponse({ description: 'Wrong or expired code' })
+  verifyOtp(@Body() dto: VerifyOtpDto): Promise<AuthTokensDto> {
+    return this.auth.verifyOtp(dto.phone, dto.code, dto.name);
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Exchange a refresh token for a new pair (single use)' })
+  @ApiOkResponse({ type: AuthTokensDto })
+  refresh(@Body() dto: RefreshTokenDto): Promise<AuthTokensDto> {
+    return this.auth.refresh(dto.refreshToken);
+  }
+
+  @Public()
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revoke the refresh token and blacklist the access token' })
+  async logout(@Body() dto: RefreshTokenDto, @Req() request: Request): Promise<void> {
+    const accessToken = request.headers.authorization?.split(' ')[1];
+    await this.auth.logout(dto.refreshToken, accessToken);
+  }
+
+  @Get('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'The authenticated user' })
+  @ApiOkResponse({ type: User })
+  me(@CurrentUser('sub') userId: string): Promise<User> {
+    return this.auth.me(userId);
+  }
+}

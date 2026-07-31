@@ -1,10 +1,14 @@
 import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Public } from '../auth/decorators/public.decorator';
 import { District } from '../geo/entities/district.entity';
 import { Region } from '../geo/entities/region.entity';
 import { CatalogService } from './catalog.service';
 import { Category } from './entities/category.entity';
 
+// Reference data is needed before login — the web search page and the mobile
+// region picker both render it to anonymous visitors.
+@Public()
 @ApiTags('catalog')
 @Controller()
 export class CatalogController {

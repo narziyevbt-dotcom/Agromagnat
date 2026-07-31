@@ -7,8 +7,10 @@ import {
   HealthIndicatorResult,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
+import { Public } from '../modules/auth/decorators/public.decorator';
 import { RedisService } from '../redis/redis.service';
 
+@Public()
 @ApiTags('health')
 @Controller('health')
 export class HealthController {
