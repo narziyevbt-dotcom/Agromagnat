@@ -332,6 +332,26 @@ export const updateProfile = (
   token: string,
 ) => apiFetch<CurrentUser>('/auth/me', { method: 'PATCH', body, token });
 
+export interface TelegramTicket {
+  ticket: string;
+  deepLink: string;
+  expiresIn: number;
+}
+
+/** Begins a free Telegram sign-in: the bot will ask for the number. */
+export const startTelegramSignIn = () =>
+  apiFetch<TelegramTicket>('/auth/telegram/start', { method: 'POST' });
+
+/**
+ * Polled while the person is in Telegram. Resolves to null until the bot has
+ * their contact — the API answers 204, which `apiFetch` returns as undefined.
+ */
+export const collectTelegramSignIn = async (ticket: string): Promise<AuthTokens | null> =>
+  (await apiFetch<AuthTokens | undefined>(
+    `/auth/telegram/session/${encodeURIComponent(ticket)}`,
+    { revalidate: 0 },
+  )) ?? null;
+
 /** Exchanges a Google ID token for a session. The account may have no phone. */
 export const signInWithGoogle = (idToken: string) =>
   apiFetch<AuthTokens>('/auth/google', { method: 'POST', body: { idToken } });

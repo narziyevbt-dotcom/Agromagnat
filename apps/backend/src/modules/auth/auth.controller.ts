@@ -1,4 +1,15 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -7,7 +18,7 @@ import {
   ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { User } from '../users/entities/user.entity';
 import { AuthService } from './auth.service';
 import { GoogleSignInDto, VerifyPhoneDto } from './dto/auth.dto';
@@ -16,6 +27,7 @@ import { Public } from './decorators/public.decorator';
 import { RequiresPhone } from './decorators/requires-phone.decorator';
 import {
   AuthTokensDto,
+  TelegramTicketDto,
   RefreshTokenDto,
   RequestOtpDto,
   RequestOtpResponseDto,
@@ -127,6 +139,42 @@ export class AuthController {
     @Body() dto: VerifyPhoneDto,
   ): Promise<AuthTokensDto> {
     return this.auth.verifyPhone(userId, dto.phone, dto.code);
+  }
+
+  // ---------------------------------------------------------- telegram
+
+  @Public()
+  @Post('telegram/start')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Begin a free Telegram sign-in; returns the deep link to open',
+  })
+  startTelegram(): Promise<TelegramTicketDto> {
+    return this.auth.startTelegramSignIn();
+  }
+
+  /**
+   * Polled by the browser while the person is in Telegram.
+   *
+   * `204` means "not yet" rather than an error: the ordinary case is a few
+   * seconds of waiting, and a 404 for that would show up as a failure in every
+   * log and monitor.
+   */
+  @Public()
+  @Get('telegram/session/:ticket')
+  @ApiOperation({ summary: 'Collect the session once the bot has the number' })
+  @ApiOkResponse({ type: AuthTokensDto })
+  @HttpCode(HttpStatus.OK)
+  async telegramSession(
+    @Param('ticket') ticket: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthTokensDto | undefined> {
+    const tokens = await this.auth.collectTelegramSignIn(ticket);
+    if (!tokens) {
+      response.status(HttpStatus.NO_CONTENT);
+      return undefined;
+    }
+    return tokens;
   }
 
   // ----------------------------------------------------------- sessions

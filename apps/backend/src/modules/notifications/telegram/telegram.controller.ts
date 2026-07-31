@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Public } from '../../auth/decorators/public.decorator';
 import { User } from '../../users/entities/user.entity';
+import { TelegramLinkService } from '../../auth/telegram-link/telegram-link.service';
 import { TelegramService } from './telegram.service';
 
 /** Telegram sends the configured secret back in this header on every call. */
@@ -12,8 +13,19 @@ const SECRET_HEADER = 'x-telegram-bot-api-secret-token';
 interface TelegramUpdate {
   message?: {
     chat?: { id?: number };
-    from?: { id?: number };
+    from?: { id?: number; first_name?: string; last_name?: string };
     text?: string;
+    /**
+     * A shared contact card. `user_id` is the Telegram account it belongs to,
+     * and comparing it to `from.id` is the whole security check: without it,
+     * anybody could forward somebody else's contact and claim their number.
+     */
+    contact?: {
+      phone_number?: string;
+      user_id?: number;
+      first_name?: string;
+      last_name?: string;
+    };
   };
 }
 
@@ -41,6 +53,7 @@ export class TelegramController {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
     private readonly telegram: TelegramService,
+    private readonly link: TelegramLinkService,
   ) {}
 
   @Post('webhook')
@@ -56,16 +69,135 @@ export class TelegramController {
       throw new ForbiddenException();
     }
 
-    const chatId = update.message?.chat?.id;
-    const text = update.message?.text?.trim() ?? '';
+    const message = update.message;
+    const chatId = message?.chat?.id;
+    const text = message?.text?.trim() ?? '';
 
-    if (chatId && text.startsWith('/start')) {
-      await this.bind(String(chatId), text.slice('/start'.length).trim());
+    if (chatId && message?.contact) {
+      await this.acceptContact(String(chatId), message);
+    } else if (chatId && text.startsWith('/start')) {
+      await this.start(String(chatId), text.slice('/start'.length).trim());
     }
 
     // Telegram retries anything that is not a 2xx, so an unrecognised update
     // is acknowledged rather than rejected — there is nothing to retry.
     return { ok: true };
+  }
+
+  /**
+   * `/start` with a payload. Two kinds arrive here.
+   *
+   * A uuid is an existing account binding its chat, so its future codes arrive
+   * over Telegram instead of over SMS. Anything else is a sign-in ticket from
+   * the website, and the answer is a button asking for the person's number.
+   */
+  private async start(chatId: string, payload: string): Promise<void> {
+    if (/^[0-9a-f-]{36}$/i.test(payload)) {
+      await this.bind(chatId, payload);
+      return;
+    }
+
+    if (payload && (await this.link.isPending(payload))) {
+      await this.askForNumber(chatId, payload);
+      return;
+    }
+
+    // No payload, an expired ticket, or somebody who simply opened the bot.
+    await this.telegram
+      .sendMessage(
+        chatId,
+        'Salom! Agromagnat botiga xush kelibsiz.\n\n' +
+          'Kirish uchun saytdagi “Telegram orqali kirish” tugmasini bosing.',
+      )
+      .catch(() => undefined);
+  }
+
+  /**
+   * The one button that replaces the entire SMS bill.
+   *
+   * Telegram will only attach a contact card to this if the person taps it
+   * themselves, and the number on it is one Telegram verified when the account
+   * was made. That is a stronger proof than a code we send to the number and
+   * hope reaches the right hands.
+   */
+  private async askForNumber(chatId: string, ticket: string): Promise<void> {
+    await this.telegram.sendMessage(
+      chatId,
+      '<b>Agromagnat</b> saytiga kirmoqchisiz.\n\n' +
+        'Tasdiqlash uchun pastdagi tugmani bosing — raqamingiz faqat kirish ' +
+        'uchun ishlatiladi.\n\n' +
+        '<i>Agar buni siz boshlamagan bo‘lsangiz, shunchaki e’tibor bermang.</i>',
+      {
+        keyboard: [[{ text: '📱 Raqamimni yuborish', request_contact: true }]],
+        resize_keyboard: true,
+        one_time_keyboard: true,
+      },
+    );
+
+    // Held against the chat so the contact, which arrives as a separate update
+    // with no payload of its own, can be matched back to this ticket.
+    await this.link.rememberTicketFor(chatId, ticket);
+  }
+
+  /**
+   * The contact came back. This is where a person becomes verified.
+   */
+  private async acceptContact(
+    chatId: string,
+    message: NonNullable<TelegramUpdate['message']>,
+  ): Promise<void> {
+    const contact = message.contact!;
+
+    // Without this, forwarding a friend's contact card would sign you in as
+    // them. Telegram sets `user_id` only for a genuine Telegram account, and it
+    // must be the account that sent the message.
+    if (!contact.user_id || contact.user_id !== message.from?.id) {
+      await this.telegram
+        .sendMessage(
+          chatId,
+          'Faqat <b>o‘z</b> raqamingizni yuborishingiz mumkin. ' +
+            'Iltimos, tugmani ishlating.',
+        )
+        .catch(() => undefined);
+      return;
+    }
+
+    const ticket = await this.link.ticketFor(chatId);
+    if (!ticket) {
+      await this.telegram
+        .sendMessage(chatId, 'Kirish so‘rovi eskirgan. Saytda qaytadan urinib ko‘ring.')
+        .catch(() => undefined);
+      return;
+    }
+
+    const digits = String(contact.phone_number ?? '').replace(/\D/g, '');
+    if (!/^998\d{9}$/.test(digits)) {
+      await this.telegram
+        .sendMessage(chatId, 'Hozircha faqat O‘zbekiston raqamlari qabul qilinadi.')
+        .catch(() => undefined);
+      return;
+    }
+
+    const name =
+      [contact.first_name, contact.last_name].filter(Boolean).join(' ').trim() || null;
+
+    const stored = await this.link.complete(ticket, {
+      phone: `+${digits}`,
+      telegramChatId: chatId,
+      name,
+    });
+
+    await this.telegram
+      .sendMessage(
+        chatId,
+        stored
+          ? '✅ Tasdiqlandi. Saytga qayting — kirish yakunlandi.'
+          : 'Kirish so‘rovi eskirgan. Saytda qaytadan urinib ko‘ring.',
+        // The contact keyboard has done its job; leaving it up invites a second
+        // tap that can only fail.
+        { remove_keyboard: true },
+      )
+      .catch(() => undefined);
   }
 
   /**

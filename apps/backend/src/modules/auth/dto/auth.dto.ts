@@ -109,3 +109,21 @@ export class VerifyPhoneDto {
   @Matches(/^\d{6}$/, { message: "Kod 6 ta raqamdan iborat bo'lishi kerak" })
   code: string;
 }
+
+/**
+ * What the browser needs to start a Telegram sign-in.
+ *
+ * The ticket is polled; the link is opened. Nothing here is secret in the
+ * cryptographic sense, but the ticket is a bearer credential for two minutes,
+ * so it is shown only in the browser that asked for it.
+ */
+export class TelegramTicketDto {
+  @ApiProperty({ description: 'Poll /auth/telegram/session/:ticket with this' })
+  ticket: string;
+
+  @ApiProperty({ example: 'https://t.me/agromagnat_bot?start=abc123' })
+  deepLink: string;
+
+  @ApiProperty({ example: 120, description: 'Seconds before the ticket expires' })
+  expiresIn: number;
+}

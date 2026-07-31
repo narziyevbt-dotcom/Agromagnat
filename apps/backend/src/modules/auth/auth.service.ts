@@ -11,10 +11,11 @@ import { DataSource, Repository } from 'typeorm';
 import { TooManyRequestsException } from '../../common/exceptions/too-many-requests.exception';
 import { District } from '../geo/entities/district.entity';
 import { User, UserRole } from '../users/entities/user.entity';
-import { AuthTokensDto, RequestOtpResponseDto } from './dto/auth.dto';
+import { AuthTokensDto, RequestOtpResponseDto, TelegramTicketDto } from './dto/auth.dto';
 import { AuthIdentity, AuthProvider } from './entities/auth-identity.entity';
 import { GoogleVerifierService } from './google/google-verifier.service';
 import { OtpService, OtpVerifyResult } from './otp.service';
+import { TelegramLinkService } from './telegram-link/telegram-link.service';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -28,6 +29,7 @@ export class AuthService {
     private readonly otp: OtpService,
     private readonly tokens: TokenService,
     private readonly google: GoogleVerifierService,
+    private readonly telegramLink: TelegramLinkService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -246,6 +248,91 @@ export class AuthService {
       // Only fills a blank name — a later login must not silently rename someone.
       user.name = name;
       await this.users.save(user);
+    }
+
+    user.lastSeenAt = new Date();
+    await this.users.save(user);
+
+    const pair = await this.tokens.issuePair(user);
+    return { ...pair, isNewUser };
+  }
+
+  /** Hands the browser a ticket and the link that will prove the number. */
+  async startTelegramSignIn(): Promise<TelegramTicketDto> {
+    if (!this.telegramLink.isConfigured) {
+      throw new ServiceUnavailableException('Telegram orqali kirish sozlanmagan');
+    }
+    return this.telegramLink.issue();
+  }
+
+  /**
+   * Polled by the browser. Null while the person is still in Telegram.
+   *
+   * The ticket is spent by `collect`, so the session can be claimed once and
+   * a ticket that leaks after the fact is worth nothing.
+   */
+  async collectTelegramSignIn(ticket: string): Promise<AuthTokensDto | null> {
+    const result = await this.telegramLink.collect(ticket);
+    return result ? this.telegramSignIn(result) : null;
+  }
+
+  /**
+   * Signing in on a number Telegram has already verified.
+   *
+   * The same account handling as the OTP path, minus the code — there is
+   * nothing to check, because the proof arrived with the contact card. The chat
+   * id is kept as well, so this person's future codes can go over Telegram for
+   * nothing even when they sign in from somewhere else.
+   */
+  async telegramSignIn(result: {
+    phone: string;
+    telegramChatId: string;
+    name: string | null;
+  }): Promise<AuthTokensDto> {
+    const { phone, telegramChatId, name } = result;
+
+    let user = await this.users.findOne({ where: { phone } });
+    const isNewUser = user === null;
+
+    if (!user) {
+      user = await this.dataSource.transaction(async (manager) => {
+        const created = await manager.save(
+          manager.create(User, {
+            phone,
+            phoneVerifiedAt: new Date(),
+            name,
+            telegramChatId,
+            role: UserRole.USER,
+          }),
+        );
+        await manager.save(
+          manager.create(AuthIdentity, {
+            userId: created.id,
+            provider: AuthProvider.TELEGRAM,
+            providerUserId: telegramChatId,
+            lastLoginAt: new Date(),
+          }),
+        );
+        return created;
+      });
+      this.logger.log(`New user registered over Telegram: ${phone}`);
+    } else if (user.isBlocked) {
+      throw new UnauthorizedException("Hisobingiz bloklangan. Yordam bo'limiga murojaat qiling");
+    } else {
+      // The chat may have moved to a new device or account; the newest binding
+      // wins, and the column is unique so the old one is cleared first.
+      if (user.telegramChatId !== telegramChatId) {
+        await this.users.update({ telegramChatId }, { telegramChatId: null });
+        user.telegramChatId = telegramChatId;
+      }
+      // Only fills a blank name — signing in must not silently rename somebody
+      // who has already chosen what buyers call them.
+      if (name && !user.name) {
+        user.name = name;
+      }
+      // An account that existed without a verified phone — a Google sign-in —
+      // has one now, and this is the moment it earns the gate.
+      user.phoneVerifiedAt ??= new Date();
     }
 
     user.lastSeenAt = new Date();

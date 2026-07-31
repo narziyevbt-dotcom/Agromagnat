@@ -1,8 +1,8 @@
 # Testing
 
 ```bash
-cd apps/backend && npm test        # 163 unit
-cd apps/backend && npm run test:e2e # 178 against real Postgres + Redis
+cd apps/backend && npm test        # 184 unit
+cd apps/backend && npm run test:e2e # 189 against real Postgres + Redis
 cd apps/web     && npm test         # 74 unit + component
 ```
 

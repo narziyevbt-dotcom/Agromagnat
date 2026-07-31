@@ -42,7 +42,11 @@ export default async function VerifyPhonePage({
 
   return (
     <div className="mx-auto flex max-w-7xl items-start justify-center px-4 py-10 sm:py-16">
-      <PhoneVerifyForm next={safeNext} devMode={process.env.NODE_ENV !== 'production'} />
+      <PhoneVerifyForm
+        next={safeNext}
+        devMode={process.env.NODE_ENV !== 'production'}
+        telegramEnabled={Boolean(process.env.NEXT_PUBLIC_TELEGRAM_BOT)}
+      />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import { EskizSmsService } from './sms/eskiz-sms.service';
 import { MockSmsService } from './sms/mock-sms.service';
 import { NullSmsService } from './sms/null-sms.service';
 import { SMS_SERVICE } from './sms/sms.service';
+import { TelegramLinkService } from './telegram-link/telegram-link.service';
 import { TokenService } from './token.service';
 
 @Global()
@@ -39,6 +40,7 @@ import { TokenService } from './token.service';
   providers: [
     AuthService,
     OtpService,
+    TelegramLinkService,
     TokenService,
     GoogleVerifierService,
     TelegramOtpChannel,
@@ -93,6 +95,6 @@ import { TokenService } from './token.service';
     // somebody's budget on its way to a 401.
     { provide: APP_GUARD, useClass: RateLimitGuard },
   ],
-  exports: [AuthService, TokenService],
+  exports: [AuthService, TokenService, TelegramLinkService],
 })
 export class AuthModule {}

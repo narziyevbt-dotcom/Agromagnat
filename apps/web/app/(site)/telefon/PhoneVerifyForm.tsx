@@ -3,6 +3,7 @@
 import { ShieldCheck } from 'lucide-react';
 import { useActionState, useState, useTransition } from 'react';
 import { AuthSubmit, CodeField, PhoneField, ResendTimer } from '@/components/auth/fields';
+import { TelegramSignIn } from '@/components/auth/TelegramSignIn';
 import { formatPhone } from '@/lib/format';
 import { t } from '@/lib/strings';
 import {
@@ -14,7 +15,15 @@ import {
 
 const INITIAL: VerifyState = { step: 'phone' };
 
-export function PhoneVerifyForm({ next, devMode }: { next: string; devMode: boolean }) {
+export function PhoneVerifyForm({
+  next,
+  devMode,
+  telegramEnabled = false,
+}: {
+  next: string;
+  devMode: boolean;
+  telegramEnabled?: boolean;
+}) {
   const [phoneState, submitPhone] = useActionState(sendVerifyCode, INITIAL);
   const [codeState, submitCode] = useActionState(confirmVerifyCode, INITIAL);
   const [resent, setResent] = useState<VerifyState | null>(null);
@@ -77,14 +86,31 @@ export function PhoneVerifyForm({ next, devMode }: { next: string; devMode: bool
           </button>
         </form>
       ) : (
-        <form
-          action={submitPhone}
-          onSubmit={() => setEditing(false)}
-          className="mt-6 space-y-4"
-        >
-          <PhoneField defaultValue={phone} />
-          <AuthSubmit label={t.phoneGate.submit} />
-        </form>
+        <>
+          {/* Offered first here for the same reason as on the sign-in screen,
+              and with more force: this person is already signed in and is being
+              stopped by the gate, so the fastest way through it is the one that
+              needs no code at all. */}
+          {telegramEnabled && (
+            <div className="mt-6">
+              <TelegramSignIn next={next} />
+              <div className="mt-4 flex items-center gap-3 text-xs text-ink-faint">
+                <span className="h-px flex-1 bg-hairline" />
+                {t.auth.or}
+                <span className="h-px flex-1 bg-hairline" />
+              </div>
+            </div>
+          )}
+
+          <form
+            action={submitPhone}
+            onSubmit={() => setEditing(false)}
+            className="mt-4 space-y-4"
+          >
+            <PhoneField defaultValue={phone} />
+            <AuthSubmit label={t.phoneGate.submit} />
+          </form>
+        </>
       )}
 
       {/* Asking for a phone number is the moment trust is either earned or

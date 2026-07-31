@@ -37,7 +37,17 @@ export class TelegramService {
     return this.settings.webhookSecret;
   }
 
-  async sendMessage(chatId: string, html: string): Promise<void> {
+  /**
+   * @param replyMarkup A Telegram keyboard. The one that matters here is
+   *   `request_contact`, which is what makes free phone verification possible:
+   *   the number Telegram attaches to a shared contact is one Telegram has
+   *   already verified, so no code has to be sent or checked at all.
+   */
+  async sendMessage(
+    chatId: string,
+    html: string,
+    replyMarkup?: Record<string, unknown>,
+  ): Promise<void> {
     const { botToken } = this.settings;
     if (!botToken) {
       throw new Error('Telegram bot is not configured');
@@ -55,6 +65,7 @@ export class TelegramService {
           text: html,
           parse_mode: 'HTML',
           disable_web_page_preview: true,
+          ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
         }),
         signal: controller.signal,
       });

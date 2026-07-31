@@ -71,6 +71,8 @@ export interface GoogleConfig {
 
 export interface TelegramConfig {
   botToken: string;
+  /** Without the @; needed to build the t.me deep link the browser opens. */
+  botUsername: string;
   /** Echoed by Telegram on every webhook call, so we can reject forgeries. */
   webhookSecret: string;
 }
@@ -168,6 +170,7 @@ export default () => ({
   } satisfies GoogleConfig,
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+    botUsername: (process.env.TELEGRAM_BOT_USERNAME ?? '').replace(/^@/, ''),
     webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? '',
   } satisfies TelegramConfig,
   telegramGateway: {

@@ -41,6 +41,9 @@ export default async function LoginPage({
         // Absent in a fresh checkout, and then the Google button simply is not
         // there — a dead button that fails on tap is worse than one door.
         googleClientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || null}
+        // Absent without a bot, and then the button is not there at all —
+        // a door that leads nowhere is worse than one fewer door.
+        telegramEnabled={Boolean(process.env.NEXT_PUBLIC_TELEGRAM_BOT)}
       />
     </div>
   );

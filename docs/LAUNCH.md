@@ -12,22 +12,25 @@ Hozir `SMS_PROVIDER=mock`. **Kod har doim `000000`.** Ya'ni saytni topgan har
 kim istalgan telefon raqamni kiritib, o'sha odam sifatida kiradi — shu jumladan
 admin sifatida.
 
-**Ikki yo'l bor, va tezrog'i Eskiz emas:**
+**Uch yo'l bor, va eng tezi bepul:**
 
-**a) Telegram Gateway — bugun ishga tushadi.** Shartnoma, hujjat, moderatsiya
-kerak emas; token <https://gateway.telegram.org> dan olinadi, kod ~$0.01.
-Telegram'i bor raqamlarga yetadi — bu bozorda ko'pchilik.
+**a) Telegram boti — 0 so'm, 10 daqiqa.** [@BotFather](https://t.me/BotFather)
+dan token olasiz, bot foydalanuvchidan raqamini so'raydi, Telegram uni o'zi
+tasdiqlaydi. Kod umuman yuborilmaydi. **Pul kerak emas.**
 
 ```
 SMS_PROVIDER=none
-TELEGRAM_GATEWAY_TOKEN=<token>
+TELEGRAM_BOT_TOKEN=<BotFather token>
+TELEGRAM_BOT_USERNAME=agromagnat_bot
+TELEGRAM_WEBHOOK_SECRET=<openssl rand -hex 24>
+NEXT_PUBLIC_TELEGRAM_BOT=1
 ```
 
-**b) Eskiz SMS — hammaga yetadi, lekin vaqt oladi.** Shartnoma va matn
-moderatsiyasi tufayli bir kunda bo'lmasligi mumkin.
+**b) Telegram Gateway — ~$0.01/kod.** Balans kerak. Botni to'ldiruvchi variant.
 
-Eng yaxshisi — ikkalasi: Gateway oldinda, Eskiz orqada. Kod ularni ketma-ket
-sinaydi.
+**c) Eskiz SMS — hammaga yetadi, lekin shartnoma va moderatsiya vaqt oladi.**
+
+Batafsil: [docs/ESKIZ.md](ESKIZ.md). Boshlash uchun **(a) yetarli**.
 
 Kerak: Eskiz.uz akkaunti. **To'liq qadamlar: [docs/ESKIZ.md](ESKIZ.md)** —
 u yerda eng ko'p o'tkazib yuboriladigan qadam ham bor (SMS matnini shablon

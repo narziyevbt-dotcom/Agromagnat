@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import { AuthSubmit, CodeField, PhoneField, ResendTimer } from '@/components/auth/fields';
 import { GoogleButton } from '@/components/auth/GoogleButton';
+import { TelegramSignIn } from '@/components/auth/TelegramSignIn';
 import { formatPhone } from '@/lib/format';
 import { t } from '@/lib/strings';
 import {
@@ -29,11 +30,14 @@ export function LoginForm({
   next: next_,
   devMode,
   googleClientId,
+  telegramEnabled = false,
   startAtName = false,
 }: {
   next: string;
   devMode: boolean;
   googleClientId: string | null;
+  /** The bot is configured, so the free door can be offered. */
+  telegramEnabled?: boolean;
   /** The session exists but the account has no name yet. */
   startAtName?: boolean;
 }) {
@@ -144,16 +148,28 @@ export function LoginForm({
         </form>
       ) : (
         <>
-          {/* Google first: it is one tap for anyone signed in on an Android
-              phone, which is most of this market, and it costs us no SMS. */}
+          {/* Ordered by what it costs the visitor and what it costs us.
+              Telegram is instant, proves the number outright, and is free on
+              both sides; Google is one tap but leaves the phone still to
+              collect; the SMS field is last because it is the slowest for a
+              farmer on a weak signal and the only one we pay for. */}
+          {telegramEnabled && (
+            <div className="mt-6">
+              <TelegramSignIn next={next_} />
+            </div>
+          )}
+
+          {(googleClientId || telegramEnabled) && (
+            <div className="mt-4 flex items-center gap-3 text-xs text-ink-faint">
+              <span className="h-px flex-1 bg-hairline" />
+              {t.auth.or}
+              <span className="h-px flex-1 bg-hairline" />
+            </div>
+          )}
+
           {googleClientId && (
-            <div className="mt-6 space-y-4">
+            <div className="mt-4">
               <GoogleButton clientId={googleClientId} onCredential={onGoogle} disabled={busy} />
-              <div className="flex items-center gap-3 text-xs text-ink-faint">
-                <span className="h-px flex-1 bg-hairline" />
-                {t.auth.or}
-                <span className="h-px flex-1 bg-hairline" />
-              </div>
             </div>
           )}
 

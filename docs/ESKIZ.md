@@ -1,9 +1,69 @@
-# Kodni yetkazish — Telegram Gateway va Eskiz
+# Kodni yetkazish — uch yo'l
 
-> **Eskizni kutmasdan ham ishga tushish mumkin.** Pastdagi "Telegram Gateway"
-> bo'limini avval o'qing: u shartnoma, hujjat va moderatsiya talab qilmaydi,
-> bugun sozlanadi va bitta kod ~$0.01 turadi. Eskiz esa Telegram'i yo'q
-> raqamlar uchun keyin qo'shiladi.
+> **Pul yo'q bo'lsa ham ishga tushish mumkin.** Pastdagi "Telegram boti orqali
+> kirish" — **butunlay bepul**, cheksiz, va bugun sozlanadi. Undan boshlang.
+
+| Yo'l | Narxi | Bugun tayyormi | Kimga yetadi |
+|---|---|---|---|
+| **Telegram boti** | **0** | ✅ 10 daqiqa | Telegram'i borlarga |
+| Telegram Gateway | ~$0.01/kod | ✅ (balans kerak) | Telegram'i borlarga |
+| Eskiz SMS | qimmat | ❌ shartnoma | hammaga |
+
+---
+
+## Telegram boti orqali kirish — BEPUL
+
+Eng yaxshi yechim, va u hech narsa turmaydi.
+
+Bot foydalanuvchidan raqamini so'raydi, u bitta tugmani bosadi, **Telegram
+raqamni o'zi tasdiqlab yuboradi**. Kod umuman yuborilmaydi — demak yo'qoladigan,
+kechikadigan yoki ushlab qolinadigan narsa yo'q. Bu SMS'dan **kuchliroq isbot**.
+
+### Sozlash — 10 daqiqa, 0 so'm
+
+1. Telegramda [@BotFather](https://t.me/BotFather) ga yozing → `/newbot`
+2. Bot nomi va username'ini tanlang (masalan `agromagnat_bot`)
+3. BotFather token beradi
+4. `.env`:
+
+```bash
+TELEGRAM_BOT_TOKEN=<BotFather bergan token>
+TELEGRAM_BOT_USERNAME=agromagnat_bot        # @ belgisisiz
+TELEGRAM_WEBHOOK_SECRET=<openssl rand -hex 24>
+NEXT_PUBLIC_TELEGRAM_BOT=1                  # tugmani ko'rsatadi
+```
+
+5. Webhook'ni ulang (sayt HTTPS'da turgandan keyin):
+
+```bash
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://agromagnat.uz/api/telegram/webhook",
+       "secret_token":"<TELEGRAM_WEBHOOK_SECRET>"}'
+```
+
+Tayyor. `/kirish` sahifasida "Telegram orqali kirish" tugmasi paydo bo'ladi.
+
+### Foydalanuvchi nima ko'radi
+
+1. Saytda **"Telegram orqali kirish"** ni bosadi
+2. Telegram ochiladi, bot: *"Agromagnat saytiga kirmoqchisiz"* + bitta tugma
+3. **"📱 Raqamimni yuborish"** ni bosadi
+4. Saytga qaytadi — allaqachon kirgan
+
+SMS yo'q. Kod yo'q. Kutish yo'q. Xarajat yo'q.
+
+### Xavfsizlik
+
+- Kirish chiptasi **2 daqiqa** yashaydi va **bir marta** ishlatiladi
+- Bot faqat **o'z** kontaktini qabul qiladi (`user_id` jo'natuvchiga teng
+  bo'lishi shart) — do'stining kontaktini yuborib uning hisobiga kirib
+  bo'lmaydi
+- Webhook maxfiy kalit bilan himoyalangan
+- Bot xabarida **nima tasdiqlanayotgani yozilgan**, shuning uchun buni
+  boshlamagan odam to'xtay oladi
+
+11 ta e2e test: `apps/backend/test/telegram-signin.e2e-spec.ts`
 
 ---
 
