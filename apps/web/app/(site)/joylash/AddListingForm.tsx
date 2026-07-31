@@ -340,7 +340,7 @@ function PublishButton() {
     <button
       type="submit"
       disabled={pending}
-      className="tap-target w-full rounded-lg bg-saffron px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-saffron-dark disabled:opacity-60"
+      className="tap-target w-full rounded-lg bg-lime px-4 py-3 text-base font-semibold text-cobalt transition-colors hover:bg-lime-dark disabled:opacity-60"
     >
       {pending ? t.common.loading : t.addListing.publish}
     </button>

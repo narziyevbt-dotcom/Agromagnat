@@ -7,6 +7,7 @@ import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ListingsModule } from './modules/listings/listings.module';
+import { StatsModule } from './modules/stats/stats.module';
 import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { StorageModule } from './modules/storage/storage.module';
     HealthModule,
     CatalogModule,
     ListingsModule,
+    StatsModule,
   ],
 })
 export class AppModule {}

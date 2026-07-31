@@ -37,7 +37,7 @@ export function MobileNav() {
                 <Link
                   href={tab.href}
                   aria-label={tab.label}
-                  className="tap-target flex w-[52px] items-center justify-center rounded-xl bg-saffron text-white"
+                  className="tap-target flex w-[52px] items-center justify-center rounded-xl bg-lime text-cobalt"
                 >
                   <Icon name="add" className="h-7 w-7" />
                 </Link>

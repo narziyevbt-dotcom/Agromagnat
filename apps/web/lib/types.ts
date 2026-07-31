@@ -121,6 +121,27 @@ export interface CurrentUser {
   district: District | null;
 }
 
+export interface SellerStats {
+  activeListings: number;
+  totalViews: number;
+  totalCalls: number;
+  avgPrice: string | null;
+  avgPriceUnit: string | null;
+  viewsTrendPct: number | null;
+}
+
+export interface TrendPoint {
+  /** "2026-07" */
+  month: string;
+  /** Median price per category slug; null where that month had no listings. */
+  values: Record<string, number | null>;
+}
+
+export interface PriceTrend {
+  categories: Array<{ slug: string; nameUz: string }>;
+  points: TrendPoint[];
+}
+
 export type ListingSort = 'newest' | 'cheapest' | 'expensive';
 
 export interface ListingFilters {

@@ -15,14 +15,29 @@
 @theme {
   --color-cobalt: #0a3a55;
   --color-cobalt-light: #14536f;
+  --color-cobalt-deep: #072c42;
   --color-turquoise: #1d7f8c;
   --color-saffron: #e0932a;
   --color-saffron-dark: #c67d1c;
   --color-harvest: #1f7a4d;
   --color-danger: #c4452f;
 
+  /*
+   * Lime is the CTA colour on the landing page and dashboard, per the brief.
+   * It is dark-on-light rather than light-on-dark, which is what lets it hold
+   * its own against a cobalt hero the way saffron cannot.
+   *
+   * Note this is a second accent alongside saffron, which the marketplace pages
+   * still use — see docs/WEB.md.
+   */
+  --color-lime: #d4e96a;
+  --color-lime-dark: #c2da51;
+
   --color-canvas: #eef1f2;
   --color-surface: #ffffff;
+  /* Slate-50, the lighter background the dashboard and landing page sit on. */
+  --color-slate-canvas: #f8fafc;
+  --color-slate-line: #e2e8f0;
 
   --color-ink: #0a3a55;
   --color-ink-muted: #5b6b75;
@@ -83,6 +98,16 @@
   :focus-visible {
     outline: 2px solid var(--color-turquoise);
     outline-offset: 2px;
+  }
+}
+
+/* Partner ticker. Translates half its width, since the list is rendered twice. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }
 

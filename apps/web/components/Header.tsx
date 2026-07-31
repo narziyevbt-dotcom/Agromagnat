@@ -29,7 +29,7 @@ export function Header({ signedIn }: { signedIn: boolean }) {
         <nav className="flex shrink-0 items-center gap-2">
           <Link
             href="/joylash"
-            className="tap-target hidden items-center rounded-lg bg-saffron px-4 text-sm font-semibold text-white transition-colors hover:bg-saffron-dark sm:inline-flex"
+            className="tap-target hidden items-center rounded-lg bg-lime px-4 text-sm font-semibold text-cobalt transition-colors hover:bg-lime-dark sm:inline-flex"
           >
             + {t.nav.add}
           </Link>

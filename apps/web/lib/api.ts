@@ -6,7 +6,9 @@ import type {
   Listing,
   ListingFilters,
   Paginated,
+  PriceTrend,
   Region,
+  SellerStats,
 } from './types';
 
 /**
@@ -165,6 +167,23 @@ export const removeFavorite = (id: string, token: string) =>
 
 export const getFavorites = (token: string) =>
   apiFetch<Listing[]>('/me/favorites', { token, revalidate: 0 });
+
+/* -------------------------------------------------------------------- stats */
+
+export const getSellerStats = (token: string) =>
+  apiFetch<SellerStats>('/me/stats', { token, revalidate: 0 });
+
+/** Public: medians are aggregate figures, and the landing page renders them. */
+export const getPriceTrend = (categories?: string[], regionId?: string) => {
+  const params = new URLSearchParams();
+  if (categories?.length) params.set('categories', categories.join(','));
+  if (regionId) params.set('regionId', regionId);
+  const query = params.toString();
+
+  return apiFetch<PriceTrend>(`/stats/price-trend${query ? `?${query}` : ''}`, {
+    revalidate: 900,
+  });
+};
 
 /* --------------------------------------------------------------------- auth */
 

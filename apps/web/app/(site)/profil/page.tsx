@@ -71,7 +71,7 @@ export default async function ProfilePage() {
         </Link>
         <Link
           href="/joylash"
-          className="tap-target inline-flex items-center rounded-lg bg-saffron px-4 text-sm font-semibold text-white hover:bg-saffron-dark"
+          className="tap-target inline-flex items-center rounded-lg bg-lime px-4 text-sm font-semibold text-cobalt hover:bg-lime-dark"
         >
           + {t.nav.add}
         </Link>

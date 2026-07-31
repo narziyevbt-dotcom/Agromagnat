@@ -1,10 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
-import { Suspense } from 'react';
-import { Footer } from '@/components/Footer';
-import { Header } from '@/components/Header';
-import { MobileNav } from '@/components/MobileNav';
-import { isSignedIn } from '@/lib/session';
 import { t } from '@/lib/strings';
 import './globals.css';
 
@@ -53,25 +48,19 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default async function RootLayout({
+/**
+ * Root layout carries only the document, fonts and metadata. Chrome belongs to
+ * the route groups: (site) has the header and footer, /dashboard has a sidebar.
+ */
+export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const signedIn = await isSignedIn();
-
   return (
     <html
       lang="uz"
       className={`${bricolage.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
-        {/* Header reads search params, so it needs a Suspense boundary. */}
-        <Suspense fallback={<div className="h-[68px] bg-cobalt" />}>
-          <Header signedIn={signedIn} />
-        </Suspense>
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <MobileNav />
-      </body>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }
