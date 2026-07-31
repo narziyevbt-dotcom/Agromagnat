@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
 
 /**
  * Uzbek mobile numbers in international form: +998 followed by 9 digits.
@@ -46,6 +46,24 @@ export class VerifyOtpDto {
   @IsString()
   @Length(2, 120, { message: "Ism 2 tadan 120 tagacha belgidan iborat bo'lishi kerak" })
   name?: string;
+}
+
+export class UpdateProfileDto {
+  @ApiProperty({ required: false, example: 'Anvar aka' })
+  @IsOptional()
+  @IsString()
+  @Length(2, 120, { message: "Ism 2 tadan 120 tagacha belgidan iborat bo'lishi kerak" })
+  name?: string;
+
+  @ApiProperty({ required: false, format: 'uuid' })
+  @IsOptional()
+  @IsUUID('4', { message: "Viloyat noto'g'ri" })
+  regionId?: string;
+
+  @ApiProperty({ required: false, format: 'uuid' })
+  @IsOptional()
+  @IsUUID('4', { message: "Tuman noto'g'ri" })
+  districtId?: string;
 }
 
 export class RefreshTokenDto {

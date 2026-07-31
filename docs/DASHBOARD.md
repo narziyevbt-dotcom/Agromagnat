@@ -103,7 +103,27 @@ Sign in as `+998990000001` with code `000000` to see a populated dashboard.
   through the browser with a real file.
 - The UZ/RU toggle changes local state only. Switching content needs the backend
   translation fields, which is separate work.
-- `/dashboard/elonlar`, `/narxlar`, `/xabarlar`, `/analitika`, `/sozlamalar` are in the
-  sidebar but not built — they 404.
 - `shartlar` and `maxfiylik` are written to match what the system actually stores, but
   need a lawyer's review before launch.
+
+## Sub-pages
+
+Every sidebar item now resolves:
+
+- **E'lonlarim** — the seller's catalogue with status filter chips; sold/delete
+  actions reuse the profile row component. `/listings/me` returns all statuses
+  in one page (a seller's catalogue is small), so the filter is applied in the
+  page rather than with another round trip.
+- **Bozor narxlari** — the six-month chart plus this month's medians with
+  month-over-month movement, narrowable to one region via a GET form (the
+  chosen region lives in the URL, shareable like any filter).
+- **Analitika** — per-listing views and calls ranked by calls, with the
+  north-star figure (calls per active listing) up top and a plain-language
+  reading of whether it is healthy.
+- **Sozlamalar** — name and default location edit against the new
+  `PATCH /api/auth/me`; the phone is shown read-only because it is the
+  account's identity, not a setting. A district must belong to the chosen
+  region — enforced server-side.
+- **Xabarlar** — an honest placeholder until chat ships; it points at the
+  channel that works today (the call button) instead of pretending with a
+  dead inbox.

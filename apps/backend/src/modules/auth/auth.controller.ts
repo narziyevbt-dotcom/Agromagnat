@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Req } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -17,6 +17,7 @@ import {
   RefreshTokenDto,
   RequestOtpDto,
   RequestOtpResponseDto,
+  UpdateProfileDto,
   VerifyOtpDto,
 } from './dto/auth.dto';
 
@@ -69,5 +70,16 @@ export class AuthController {
   @ApiOkResponse({ type: User })
   me(@CurrentUser('sub') userId: string): Promise<User> {
     return this.auth.me(userId);
+  }
+
+  @Patch('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update name and default location' })
+  @ApiOkResponse({ type: User })
+  updateMe(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<User> {
+    return this.auth.updateProfile(userId, dto);
   }
 }

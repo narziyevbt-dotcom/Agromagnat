@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -8,6 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TooManyRequestsException } from '../../common/exceptions/too-many-requests.exception';
+import { District } from '../geo/entities/district.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { AuthTokensDto, RequestOtpResponseDto } from './dto/auth.dto';
 import { OtpService, OtpVerifyResult } from './otp.service';
@@ -86,6 +88,43 @@ export class AuthService {
 
   async logout(refreshToken: string, accessToken?: string): Promise<void> {
     await this.tokens.revoke(refreshToken, accessToken);
+  }
+
+  /**
+   * Profile edit. When a district is given it must belong to the resolved
+   * region — a listing filtered by "Samarqand · Chilonzor" would be nonsense
+   * data no later validation could repair.
+   */
+  async updateProfile(
+    userId: string,
+    changes: { name?: string; regionId?: string; districtId?: string },
+  ): Promise<User> {
+    const user = await this.me(userId);
+
+    const regionId = changes.regionId ?? user.regionId ?? null;
+    let districtId = changes.districtId ?? null;
+
+    if (changes.districtId) {
+      const district = await this.users.manager.findOne(District, {
+        where: { id: changes.districtId },
+      });
+      if (!district || (regionId && district.regionId !== regionId)) {
+        throw new BadRequestException('Tuman tanlangan viloyatga tegishli emas');
+      }
+    } else if (changes.regionId && changes.regionId !== user.regionId) {
+      // Region changed without a district — the old district no longer applies.
+      districtId = null;
+    } else {
+      districtId = user.districtId;
+    }
+
+    await this.users.update(userId, {
+      ...(changes.name !== undefined ? { name: changes.name.trim() } : {}),
+      regionId,
+      districtId,
+    });
+
+    return this.me(userId);
   }
 
   async me(userId: string): Promise<User> {

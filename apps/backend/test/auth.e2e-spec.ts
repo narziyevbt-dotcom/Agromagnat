@@ -164,6 +164,42 @@ describe('Auth (e2e)', () => {
         .expect(401);
     });
 
+    it('PATCH /api/auth/me updates the name and location', async () => {
+      const regions = await request(app.getHttpServer()).get('/api/regions');
+      const region = regions.body.find((r: { slug: string }) => r.slug === 'samarqand');
+      const districts = await request(app.getHttpServer()).get(
+        `/api/regions/${region.id}/districts`,
+      );
+      const district = districts.body.find((d: { slug: string }) => d.slug === 'urgut');
+
+      const response = await request(app.getHttpServer())
+        .patch('/api/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ name: 'Yangi Ism', regionId: region.id, districtId: district.id })
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        name: 'Yangi Ism',
+        regionId: region.id,
+        districtId: district.id,
+      });
+    });
+
+    it('PATCH /api/auth/me rejects a district outside the region', async () => {
+      const regions = await request(app.getHttpServer()).get('/api/regions');
+      const samarqand = regions.body.find((r: { slug: string }) => r.slug === 'samarqand');
+      const andijon = regions.body.find((r: { slug: string }) => r.slug === 'andijon');
+      const andijonDistricts = await request(app.getHttpServer()).get(
+        `/api/regions/${andijon.id}/districts`,
+      );
+
+      await request(app.getHttpServer())
+        .patch('/api/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ regionId: samarqand.id, districtId: andijonDistricts.body[0].id })
+        .expect(400);
+    });
+
     it('logout blacklists the access token', async () => {
       await request(app.getHttpServer())
         .post('/api/auth/logout')
