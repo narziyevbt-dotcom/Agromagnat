@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { randomInt } from 'node:crypto';
 import type { SmsConfig } from '../../config/configuration';
 import { RedisService } from '../../redis/redis.service';
-import { SMS_SERVICE, SmsService } from './sms/sms.service';
+import { OtpDispatcher } from './otp-channels/otp-dispatcher.service';
+import { OtpRecipient } from './otp-channels/otp-channel';
 
 /** OTP lifetime. Long enough for a slow SMS on a weak network. */
 export const OTP_TTL_SECONDS = 300;
@@ -19,6 +20,12 @@ export interface OtpRequestResult {
   sent: boolean;
   /** Seconds until the code expires — the mobile resend timer uses this. */
   expiresIn: number;
+  /**
+   * Where the code actually went. The screen says "Telegramni tekshiring" or
+   * "SMS'ni tekshiring" accordingly — telling somebody to check the wrong place
+   * is the fastest way to make a working code look broken.
+   */
+  channel: 'telegram' | 'sms' | null;
 }
 
 export enum OtpVerifyResult {
@@ -46,7 +53,7 @@ export class OtpService {
   constructor(
     private readonly redis: RedisService,
     private readonly config: ConfigService,
-    @Inject(SMS_SERVICE) private readonly sms: SmsService,
+    private readonly dispatcher: OtpDispatcher,
   ) {}
 
   private codeKey(phone: string): string {
@@ -63,22 +70,28 @@ export class OtpService {
     return used !== null && parseInt(used, 10) >= OTP_MAX_REQUESTS;
   }
 
-  async request(phone: string): Promise<OtpRequestResult> {
+  /**
+   * Issues a code and hands it to the cheapest channel that can reach this
+   * person — Telegram when we know their chat, SMS otherwise.
+   *
+   * The code is stored before it is sent. A delivery failure must not leave a
+   * person holding a code the server has forgotten, and the reverse — stored
+   * but undelivered — is recoverable by asking for another.
+   */
+  async request(phone: string, recipient?: OtpRecipient): Promise<OtpRequestResult> {
     await this.redis.incrWithTtl(this.rateKey(phone), OTP_RATE_WINDOW_SECONDS);
 
     const code = this.generateCode();
     const payload: StoredOtp = { code, attempts: 0 };
     await this.redis.set(this.codeKey(phone), payload, OTP_TTL_SECONDS);
 
-    const sent = await this.sms.send(
-      phone,
-      `Agromagnat tasdiqlash kodi: ${code}. Hech kimga aytmang.`,
-    );
-    if (!sent) {
-      this.logger.warn(`SMS provider rejected ${phone}`);
+    try {
+      const channel = await this.dispatcher.deliver(recipient ?? { phone }, code);
+      return { sent: true, expiresIn: OTP_TTL_SECONDS, channel };
+    } catch (error) {
+      this.logger.warn(`OTP delivery failed for ${phone}: ${String(error)}`);
+      return { sent: false, expiresIn: OTP_TTL_SECONDS, channel: null };
     }
-
-    return { sent, expiresIn: OTP_TTL_SECONDS };
   }
 
   async verify(phone: string, code: string): Promise<OtpVerifyResult> {

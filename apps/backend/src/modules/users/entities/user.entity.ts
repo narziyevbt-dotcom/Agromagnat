@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { SoftDeletableEntity } from '../../../common/entities/base.entity';
 import { District } from '../../geo/entities/district.entity';
@@ -18,9 +18,32 @@ export enum UserLanguage {
 @Entity('users')
 export class User extends SoftDeletableEntity {
   @ApiProperty({ example: '+998901234567' })
-  @Index('idx_users_phone', { unique: true })
-  @Column({ length: 20 })
-  phone: string;
+  /**
+   * Null until the person verifies one. It is no longer a login credential —
+   * that moved to `auth_identities` — but it is still what makes a seller
+   * reachable, so `PhoneVerifiedGuard` requires it before any action that
+   * touches another user.
+   */
+  @Index('idx_users_phone', { unique: true, where: 'phone IS NOT NULL' })
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone: string | null;
+
+  @ApiPropertyOptional({ description: 'Set when an OTP for this number succeeded' })
+  @Column({ name: 'phone_verified_at', type: 'timestamptz', nullable: true })
+  phoneVerifiedAt: Date | null;
+
+  @ApiPropertyOptional({ description: 'From the identity provider; not a credential' })
+  @Column({ type: 'varchar', length: 320, nullable: true })
+  email: string | null;
+
+  /**
+   * Set when the person starts the Telegram bot. Its presence is what makes
+   * Telegram the preferred OTP channel for them — it is free, instant, and
+   * arrives even where SMS does not.
+   */
+  @Index('idx_users_telegram_chat', { unique: true, where: 'telegram_chat_id IS NOT NULL' })
+  @Column({ name: 'telegram_chat_id', type: 'varchar', length: 64, nullable: true })
+  telegramChatId: string | null;
 
   @ApiProperty({ example: 'Anvar aka' })
   @Column({ type: 'varchar', length: 120, nullable: true })

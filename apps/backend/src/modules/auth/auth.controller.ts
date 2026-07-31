@@ -10,8 +10,10 @@ import {
 import type { Request } from 'express';
 import { User } from '../users/entities/user.entity';
 import { AuthService } from './auth.service';
+import { GoogleSignInDto, VerifyPhoneDto } from './dto/auth.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
+import { RequiresPhone } from './decorators/requires-phone.decorator';
 import {
   AuthTokensDto,
   RefreshTokenDto,
@@ -72,6 +74,7 @@ export class AuthController {
     return this.auth.me(userId);
   }
 
+  @RequiresPhone()
   @Patch('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update name and default location' })
@@ -81,5 +84,58 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
   ): Promise<User> {
     return this.auth.updateProfile(userId, dto);
+  }
+
+  // ------------------------------------------------------------ google
+
+  @Public()
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Sign in with a Google ID token. No phone required to browse.',
+  })
+  @ApiOkResponse({ type: AuthTokensDto })
+  google(@Body() dto: GoogleSignInDto): Promise<AuthTokensDto> {
+    return this.auth.googleSignIn(dto.idToken);
+  }
+
+  // -------------------------------------------------- phone verification
+
+  @Post('phone/request')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Send a code to attach a phone to the signed-in account',
+  })
+  @ApiOkResponse({ type: RequestOtpResponseDto })
+  requestPhone(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: RequestOtpDto,
+  ): Promise<RequestOtpResponseDto> {
+    return this.auth.requestPhoneVerification(userId, dto.phone);
+  }
+
+  @Post('phone/verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Confirm the code — returns a fresh token pair with the phone verified',
+  })
+  @ApiOkResponse({ type: AuthTokensDto })
+  verifyPhone(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: VerifyPhoneDto,
+  ): Promise<AuthTokensDto> {
+    return this.auth.verifyPhone(userId, dto.phone, dto.code);
+  }
+
+  // ----------------------------------------------------------- sessions
+
+  @Post('logout-all')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Sign out on every device' })
+  logoutAll(@CurrentUser('sub') userId: string): Promise<void> {
+    return this.auth.logoutAll(userId);
   }
 }

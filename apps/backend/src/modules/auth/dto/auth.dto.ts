@@ -90,3 +90,22 @@ export class AuthTokensDto {
   @ApiProperty({ description: 'True when this login created the account' })
   isNewUser: boolean;
 }
+
+export class GoogleSignInDto {
+  @ApiProperty({ description: 'The ID token from Google Identity Services' })
+  @IsString()
+  @Length(20, 4096)
+  idToken: string;
+}
+
+export class VerifyPhoneDto {
+  @ApiProperty({ example: '+998901234567' })
+  @IsString()
+  @Matches(UZ_PHONE, { message: "Telefon raqami +998XXXXXXXXX ko'rinishida bo'lishi kerak" })
+  phone: string;
+
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @Matches(/^\d{6}$/, { message: "Kod 6 ta raqamdan iborat bo'lishi kerak" })
+  code: string;
+}

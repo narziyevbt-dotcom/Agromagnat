@@ -23,6 +23,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RequiresPhone } from '../auth/decorators/requires-phone.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CreateListingDto, UpdateListingDto } from './dto/create-listing.dto';
 import { PaginatedListingsDto, QueryListingsDto } from './dto/query-listings.dto';
@@ -67,6 +68,7 @@ export class ListingsController {
     return this.listings.findOneForViewer(id, viewerId);
   }
 
+  @RequiresPhone()
   @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: "Publish a listing (active, expires in 14 days)" })
@@ -78,6 +80,7 @@ export class ListingsController {
     return this.listings.create(userId, dto);
   }
 
+  @RequiresPhone()
   @Patch(':id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Edit own listing' })
@@ -155,6 +158,7 @@ export class ListingsController {
 
   // ------------------------------------------------------------ favorites
 
+  @RequiresPhone()
   @Post(':id/favorite')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -166,6 +170,7 @@ export class ListingsController {
     return this.listings.addFavorite(id, userId);
   }
 
+  @RequiresPhone()
   @Delete(':id/favorite')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)

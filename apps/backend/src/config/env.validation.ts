@@ -130,6 +130,26 @@ export const envValidationSchema = Joi.object({
   FCM_CLIENT_EMAIL: Joi.string().allow('').default(''),
   FCM_PRIVATE_KEY: Joi.string().allow('').default(''),
 
+  // Google sign-in. Empty disables the route rather than breaking boot: a
+  // deployment without it still works over phone OTP.
+  GOOGLE_CLIENT_ID: Joi.string().allow('').default(''),
+
+  // Telegram OTP delivery and the bot webhook. Empty means SMS only.
+  TELEGRAM_BOT_TOKEN: Joi.string().allow('').default(''),
+  // Required once a bot exists: without it anyone who guesses the webhook URL
+  // can post fake updates and bind their own chat id to somebody's account.
+  TELEGRAM_WEBHOOK_SECRET: Joi.string()
+    .allow('')
+    .default('')
+    .when('TELEGRAM_BOT_TOKEN', {
+      is: Joi.string().min(1),
+      then: Joi.string().min(16).required().messages({
+        'any.required':
+          'TELEGRAM_WEBHOOK_SECRET is required with a bot token, or anyone who ' +
+          'guesses the webhook URL can bind their chat to another account.',
+      }),
+    }),
+
   // AI. `local` is keyword-only: no key, no network, no cost — and it is what
   // `anthropic` falls back to when the API cannot be reached.
   AI_PROVIDER: Joi.string().valid('local', 'anthropic').default('local'),

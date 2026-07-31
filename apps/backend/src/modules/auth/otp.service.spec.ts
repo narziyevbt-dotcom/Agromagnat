@@ -9,7 +9,7 @@ import {
   OtpService,
   OtpVerifyResult,
 } from './otp.service';
-import { SMS_SERVICE } from './sms/sms.service';
+import { OtpDispatcher } from './otp-channels/otp-dispatcher.service';
 
 const PHONE = '+998901234567';
 
@@ -23,7 +23,7 @@ describe('OtpService', () => {
     incrWithTtl: jest.Mock;
     raw: { get: jest.Mock; ttl: jest.Mock };
   };
-  let sms: { send: jest.Mock };
+  let dispatcher: { deliver: jest.Mock };
   let counters: Map<string, number>;
 
   beforeEach(async () => {
@@ -53,13 +53,15 @@ describe('OtpService', () => {
       },
     };
 
-    sms = { send: jest.fn(async () => true) };
+    // Delivery is the dispatcher's job now; this suite is about the code's
+    // lifecycle, so the channel is stubbed at the seam rather than below it.
+    dispatcher = { deliver: jest.fn(async () => 'sms' as const) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         OtpService,
         { provide: RedisService, useValue: redis },
-        { provide: SMS_SERVICE, useValue: sms },
+        { provide: OtpDispatcher, useValue: dispatcher },
         {
           provide: ConfigService,
           useValue: { getOrThrow: () => ({ provider: 'mock' }) },
@@ -74,17 +76,25 @@ describe('OtpService', () => {
     it('sends a code and reports the expiry the resend timer needs', async () => {
       const result = await service.request(PHONE);
 
-      expect(result).toEqual({ sent: true, expiresIn: OTP_TTL_SECONDS });
-      expect(sms.send).toHaveBeenCalledWith(PHONE, expect.stringContaining('000000'));
+      expect(result).toEqual({ sent: true, expiresIn: OTP_TTL_SECONDS, channel: 'sms' });
+      expect(dispatcher.deliver).toHaveBeenCalledWith(
+        { phone: PHONE },
+        expect.stringMatching(/^\d{6}$/),
+      );
       expect(redis.incrWithTtl).toHaveBeenCalledWith(
         `otp:rate:${PHONE}`,
         OTP_RATE_WINDOW_SECONDS,
       );
     });
 
-    it('reports sent=false when the provider rejects the number', async () => {
-      sms.send.mockResolvedValue(false);
-      await expect(service.request(PHONE)).resolves.toMatchObject({ sent: false });
+    it('reports sent=false when every channel fails', async () => {
+      dispatcher.deliver.mockRejectedValue(new Error('all channels down'));
+      // The code is still stored: a person who asks again must not be told the
+      // first one was valid, and a stored-but-undelivered code is recoverable.
+      await expect(service.request(PHONE)).resolves.toMatchObject({
+        sent: false,
+        channel: null,
+      });
     });
   });
 

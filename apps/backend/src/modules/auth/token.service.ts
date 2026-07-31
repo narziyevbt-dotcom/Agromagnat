@@ -6,10 +6,21 @@ import type { JwtConfig } from '../../config/configuration';
 import { RedisService } from '../../redis/redis.service';
 import { UserRole } from '../users/entities/user.entity';
 
+/** The fields a token is minted from, shared by issuePair and rotate. */
+export interface TokenSubject {
+  id: string;
+  phone: string | null;
+  role: UserRole;
+  phoneVerifiedAt?: Date | null;
+}
+
 export interface AccessTokenPayload {
   sub: string;
-  phone: string;
+  /** Null until the person verifies one — it is no longer a login credential. */
+  phone: string | null;
   role: UserRole;
+  /** Lets PhoneVerifiedGuard decide without a database round trip. */
+  phoneVerified: boolean;
 }
 
 export interface RefreshTokenPayload {
@@ -49,12 +60,20 @@ export class TokenService {
     return this.config.getOrThrow<JwtConfig>('jwt');
   }
 
-  async issuePair(user: { id: string; phone: string; role: UserRole }): Promise<TokenPair> {
+  async issuePair(user: TokenSubject): Promise<TokenPair> {
     const { accessSecret, accessTtl, refreshSecret, refreshTtl } = this.settings;
     const jti = randomUUID();
 
     const accessToken = await this.jwt.signAsync(
-      { sub: user.id, phone: user.phone, role: user.role } satisfies AccessTokenPayload,
+      {
+        sub: user.id,
+        phone: user.phone,
+        role: user.role,
+        // Carried in the token so PhoneVerifiedGuard costs nothing. The access
+        // token is short-lived, so a freshly verified phone is reflected within
+        // one refresh rather than requiring a query on every guarded request.
+        phoneVerified: Boolean(user.phoneVerifiedAt),
+      } satisfies AccessTokenPayload,
       { secret: accessSecret, expiresIn: accessTtl as ExpiresIn },
     );
 
@@ -76,7 +95,7 @@ export class TokenService {
   /** Verifies a refresh token, revokes it, and returns a fresh pair. */
   async rotate(
     refreshToken: string,
-    lookupUser: (id: string) => Promise<{ id: string; phone: string; role: UserRole } | null>,
+    lookupUser: (id: string) => Promise<TokenSubject | null>,
   ): Promise<TokenPair> {
     const payload = await this.verifyRefresh(refreshToken);
 

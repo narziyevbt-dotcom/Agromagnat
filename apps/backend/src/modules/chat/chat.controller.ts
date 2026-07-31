@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RequiresPhone } from '../auth/decorators/requires-phone.decorator';
 import { ChatService, MessagePage } from './chat.service';
 import { ChatSummaryDto, QueryMessagesDto, SendMessageDto } from './dto/chat.dto';
 import { CreateOfferDto, OfferDto } from './dto/offer.dto';
@@ -26,6 +27,7 @@ export class ChatController {
     private readonly offers: OffersService,
   ) {}
 
+  @RequiresPhone()
   @Post('listings/:id/chat')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Open the conversation about a listing, or return the existing one' })
@@ -67,6 +69,7 @@ export class ChatController {
     return this.chat.findMessages(chatId, userId, query.cursor, query.limit);
   }
 
+  @RequiresPhone()
   @Post('chats/:id/messages')
   @ApiOperation({ summary: 'Send a message (idempotent when a clientId is supplied)' })
   @ApiOkResponse({ type: Message })
@@ -97,6 +100,7 @@ export class ChatController {
     return this.offers.findForChat(chatId, userId);
   }
 
+  @RequiresPhone()
   @Post('chats/:id/offers')
   @ApiOperation({ summary: 'Propose a price. One live offer per side per chat.' })
   @ApiOkResponse({ type: OfferDto })
@@ -108,6 +112,7 @@ export class ChatController {
     return this.offers.create(chatId, userId, dto);
   }
 
+  @RequiresPhone()
   @Post('offers/:id/accept')
   @ApiOperation({
     summary: "Accept — closes the sale at the agreed price and expires rival offers",

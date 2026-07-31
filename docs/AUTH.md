@@ -72,6 +72,98 @@ public feed mark listings the caller has already favorited without demanding a l
 - `token.service.spec.ts` — rotation, replay detection, blacklist
 - `auth.e2e-spec.ts` — 13 cases over the real stack, from request-otp to logout
 
+## Identity vs proof
+
+`users` is who somebody is. `auth_identities` is how they proved it — one row
+per provider, unique on `(provider, provider_user_id)`. Adding Apple or
+Telegram login later is a row, not a migration, and one person holding several
+proofs resolves to one account rather than to several.
+
+The phone stopped being a login credential and became **accountability**: the
+thing that makes a seller reachable and a scammer traceable. It is nullable,
+and `phone_verified_at` records when an OTP for it succeeded.
+
+## Two doors, one gate
+
+| Route | What it gives |
+|---|---|
+| `POST /auth/google` | An account from a Google ID token. No phone, no SMS, no cost. |
+| `POST /auth/request-otp` + `verify-otp` | An account from a phone, verified on arrival. |
+| `POST /auth/phone/request` + `phone/verify` | Attaches a phone to an account that already exists — the Google path. |
+
+Browsing needs neither. A buyer evaluating the market costs us nothing and an
+SMS costs money, so the old sign-up wall was charging us to turn visitors away.
+
+`@RequiresPhone()` marks the actions that reach another person — post a
+listing, open a chat, make or accept an offer, save a favourite, edit a
+profile. `PhoneVerifiedGuard` reads the claim off the access token rather than
+the database: the token is short-lived, so a freshly verified phone is live
+within one refresh, and the alternative would put a query in front of every
+message send for a check that is almost always true.
+
+It answers 403 with `error: "PHONE_VERIFICATION_REQUIRED"`. A machine-readable
+code, not just a message, because the client must tell "verify your phone"
+apart from "this is not yours" and open the verification sheet for one only.
+
+### Two joins we deliberately refuse
+
+**Google email to an existing account.** Automatic linking on an email is a
+known takeover route — whoever inherits an address inherits the account. The
+safe join is proving both, which is the phone verification this account will be
+asked for anyway.
+
+**A phone already held by another account.** Merging would move listings
+between accounts. It is refused, and the person is told to sign in the other
+way.
+
+## Google verification
+
+Verified against Google's JWKS with `node:crypto` rather than
+`google-auth-library`, which brings the whole Google API client stack for one
+signature check. Keys are cached for an hour, refetched on an unknown `kid`
+(that is what a rotation looks like), and refreshed under a single-flight lock
+so a burst of sign-ins after a rotation does not hammer Google.
+
+The **claim checks are the security boundary, not the signature.** A valid
+Google signature only proves Google issued the token; it says nothing about who
+it was issued *to*. Without the `aud` check, a token minted for any other
+Google application would authenticate here. That is the classic way this
+integration is got wrong, so `audience` and `issuer` are passed to the verifier
+rather than checked by hand afterwards — a mistake becomes a rejected token
+instead of a skipped check.
+
+An unverified Google email is withheld: the subject is still trustworthy, the
+email is not.
+
+## OTP delivery
+
+Telegram first, SMS second, chosen per person rather than per deployment.
+
+That order is a cost decision as much as a delivery one. Telegram is free and
+instant, an SMS is neither, and at any real volume the difference between them
+is most of the OTP bill. `OtpDispatcher` asks each channel whether it can reach
+this recipient and falls through when one throws — a channel that failed is a
+code that did not arrive, and the next channel exists for exactly that.
+
+The response says which channel delivered, because telling somebody to check
+the wrong place is the fastest way to make a working code look broken.
+
+Telegram becomes available for a person once they start the bot: `/start <userId>`
+binds the chat id. The webhook is authenticated by the secret Telegram echoes
+back — without it, anyone who guessed the URL could bind their own chat to
+somebody else's account and receive their login codes.
+
+The bot is two HTTPS calls, not a library. Webhooks also scale where polling
+does not: a polling bot pins one process, so the API could never run more than
+one replica.
+
+## Sessions
+
+Refresh tokens rotate on every use and the old one is revoked, so a stolen
+refresh token is single-use and its replay is detectable. `POST /auth/logout-all`
+revokes every one the account holds — the "sign out everywhere" a settings
+screen owes anybody who has lost a phone.
+
 ## Production guards
 
 The app refuses to boot when `NODE_ENV=production` and any of the following is

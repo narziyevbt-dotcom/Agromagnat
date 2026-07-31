@@ -58,6 +58,17 @@ export interface PushConfig {
   privateKey: string;
 }
 
+export interface GoogleConfig {
+  /** The OAuth client id every ID token must be audienced to. */
+  clientId: string;
+}
+
+export interface TelegramConfig {
+  botToken: string;
+  /** Echoed by Telegram on every webhook call, so we can reject forgeries. */
+  webhookSecret: string;
+}
+
 export interface AiConfig {
   /**
    * `local` needs no credentials and no network — it is the default, and it is
@@ -137,6 +148,14 @@ export default () => ({
     clientEmail: process.env.FCM_CLIENT_EMAIL ?? '',
     privateKey: process.env.FCM_PRIVATE_KEY ?? '',
   } satisfies PushConfig,
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+  } satisfies GoogleConfig,
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+    webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? '',
+  } satisfies TelegramConfig,
+
   ai: {
     provider: (process.env.AI_PROVIDER ?? 'local') as 'local' | 'anthropic',
     anthropicModel: process.env.ANTHROPIC_MODEL ?? 'claude-opus-5',
