@@ -1,5 +1,5 @@
 import { TrendingDown, TrendingUp } from 'lucide-react';
-import { PriceTrendChart } from '@/components/dashboard/PriceTrendChart';
+import { PriceTrendChartLazy } from '@/components/dashboard/PriceTrendChartLazy';
 import { getPriceTrend, getRegions } from '@/lib/api';
 import { formatMoney } from '@/lib/format';
 
@@ -92,7 +92,7 @@ export default async function MarketPricesPage({ searchParams }: { searchParams:
         </div>
       )}
 
-      <PriceTrendChart trend={trend} />
+      <PriceTrendChartLazy trend={trend} />
 
       <p className="text-xs text-ink-faint">
         Narxlar so&apos;m/kg da, faqat kilogramm bilan narxlangan e&apos;lonlardan

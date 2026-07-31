@@ -1,7 +1,7 @@
 import { CalendarDays, Eye, Package, PhoneCall, Wallet } from 'lucide-react';
 import { ListingsTable } from '@/components/dashboard/ListingsTable';
 import { MetricCard } from '@/components/dashboard/MetricCard';
-import { PriceTrendChart } from '@/components/dashboard/PriceTrendChart';
+import { PriceTrendChartLazy } from '@/components/dashboard/PriceTrendChartLazy';
 import { getMe, getMyListings, getPriceTrend, getSellerStats } from '@/lib/api';
 import { formatMoney } from '@/lib/format';
 import { getAccessToken } from '@/lib/session';
@@ -86,7 +86,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <PriceTrendChart trend={trend} />
+      <PriceTrendChartLazy trend={trend} />
 
       <ListingsTable listings={listings.items} />
     </div>

@@ -91,6 +91,8 @@ Web (`npm test` in `apps/web`, Vitest + Testing Library):
   correction after a failed attempt, the resend countdown
 - `favorite-button.test.tsx` — optimistic fill, rollback on failure, and the
   gate's hardest path: a background fetch that cannot redirect itself
+- `when-visible.test.tsx` — the visibility gate that keeps the chart chunk off
+  a page nobody scrolls
 
 See `docs/TESTING.md`.
 

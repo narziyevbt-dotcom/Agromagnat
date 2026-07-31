@@ -47,4 +47,13 @@ const nextConfig: NextConfig = {
   },
 };
 
+/**
+ * To see what is in the bundle: `npx next experimental-analyze`.
+ *
+ * Not `@next/bundle-analyzer` — it only understands webpack, and this project
+ * builds with Turbopack, so it prints a warning and produces nothing. It was
+ * installed, tried, and removed rather than left in place looking useful.
+ *
+ * Recorded numbers and how to reproduce them are in docs/PERFORMANCE.md.
+ */
 export default nextConfig;

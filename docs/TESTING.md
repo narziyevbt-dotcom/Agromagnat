@@ -3,7 +3,7 @@
 ```bash
 cd apps/backend && npm test        # 155 unit
 cd apps/backend && npm run test:e2e # 173 against real Postgres + Redis
-cd apps/web     && npm test         # 55 unit + component
+cd apps/web     && npm test         # 61 unit + component
 ```
 
 CI runs all three on every push and pull request to `main`, and the deploy job
