@@ -141,6 +141,24 @@ export class AuthController {
     return this.auth.verifyPhone(userId, dto.phone, dto.code);
   }
 
+  /**
+   * Which doors this deployment offers.
+   *
+   * Asked of the API rather than read from the web app's own environment. Two
+   * containers would otherwise have to agree on the same variables — and a
+   * `NEXT_PUBLIC_` value is inlined at build time, so setting one on the running
+   * container changes nothing and the button silently never appears. That is a
+   * bug that only shows up in the deployment, which is the worst place for it.
+   * The backend is the only process that actually knows, so it is the one that
+   * says.
+   */
+  @Public()
+  @Get('methods')
+  @ApiOperation({ summary: 'Which sign-in methods this deployment offers' })
+  methods(): { telegram: boolean; google: boolean } {
+    return this.auth.availableMethods();
+  }
+
   // ---------------------------------------------------------- telegram
 
   @Public()

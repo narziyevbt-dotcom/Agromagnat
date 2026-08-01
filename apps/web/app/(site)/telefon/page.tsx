@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getMe } from '@/lib/api';
+import { getAuthMethods, getMe } from '@/lib/api';
 import { getAccessToken } from '@/lib/session';
 import { t } from '@/lib/strings';
 import { PhoneVerifyForm } from './PhoneVerifyForm';
@@ -35,7 +35,10 @@ export default async function VerifyPhonePage({
   // on their phone and then opened this link on a laptop still holds an access
   // token that says otherwise, and sending them round the SMS loop again would
   // cost us money to tell them something we already know.
-  const me = await getMe(token).catch(() => null);
+  const [me, methods] = await Promise.all([
+    getMe(token).catch(() => null),
+    getAuthMethods().catch(() => ({ telegram: false, google: false })),
+  ]);
   if (me?.phoneVerifiedAt) {
     redirect(safeNext);
   }
@@ -45,7 +48,7 @@ export default async function VerifyPhonePage({
       <PhoneVerifyForm
         next={safeNext}
         devMode={process.env.NODE_ENV !== 'production'}
-        telegramEnabled={Boolean(process.env.NEXT_PUBLIC_TELEGRAM_BOT)}
+        telegramEnabled={methods.telegram}
       />
     </div>
   );

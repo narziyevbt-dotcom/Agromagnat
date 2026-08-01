@@ -23,7 +23,6 @@ SMS_PROVIDER=none
 TELEGRAM_BOT_TOKEN=<BotFather token>
 TELEGRAM_BOT_USERNAME=agromagnat_bot
 TELEGRAM_WEBHOOK_SECRET=<openssl rand -hex 24>
-NEXT_PUBLIC_TELEGRAM_BOT=1
 ```
 
 **b) Telegram Gateway — ~$0.01/kod.** Balans kerak. Botni to'ldiruvchi variant.

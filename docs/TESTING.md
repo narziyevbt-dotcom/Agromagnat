@@ -2,7 +2,7 @@
 
 ```bash
 cd apps/backend && npm test        # 184 unit
-cd apps/backend && npm run test:e2e # 189 against real Postgres + Redis
+cd apps/backend && npm run test:e2e # 190 against real Postgres + Redis
 cd apps/web     && npm test         # 74 unit + component
 ```
 

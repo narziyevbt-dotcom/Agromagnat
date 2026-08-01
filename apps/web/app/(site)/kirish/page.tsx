@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getMe } from '@/lib/api';
+import { getAuthMethods, getMe } from '@/lib/api';
 import { getAccessToken } from '@/lib/session';
 import { t } from '@/lib/strings';
 import { LoginForm } from './LoginForm';
@@ -25,7 +25,12 @@ export default async function LoginPage({
   // "Foydalanuvchi". A signed-in visitor without a name is mid-sign-up and
   // belongs here; one with a name has nothing left to do.
   const token = await getAccessToken();
-  const me = token ? await getMe(token).catch(() => null) : null;
+  const [me, methods] = await Promise.all([
+    token ? getMe(token).catch(() => null) : null,
+    // Falls back to the phone field alone when the API cannot be reached: one
+    // working door beats a screen of buttons that lead nowhere.
+    getAuthMethods().catch(() => ({ telegram: false, google: false })),
+  ]);
   if (me?.name) {
     redirect('/profil');
   }
@@ -40,10 +45,12 @@ export default async function LoginPage({
         devMode={process.env.NODE_ENV !== 'production'}
         // Absent in a fresh checkout, and then the Google button simply is not
         // there — a dead button that fails on tap is worse than one door.
-        googleClientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || null}
+        googleClientId={
+          methods.google ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || null : null
+        }
         // Absent without a bot, and then the button is not there at all —
         // a door that leads nowhere is worse than one fewer door.
-        telegramEnabled={Boolean(process.env.NEXT_PUBLIC_TELEGRAM_BOT)}
+        telegramEnabled={methods.telegram}
       />
     </div>
   );

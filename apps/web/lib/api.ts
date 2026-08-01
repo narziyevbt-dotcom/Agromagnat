@@ -332,6 +332,18 @@ export const updateProfile = (
   token: string,
 ) => apiFetch<CurrentUser>('/auth/me', { method: 'PATCH', body, token });
 
+/**
+ * Which sign-in methods the deployment offers.
+ *
+ * Asked of the backend rather than read from this app's environment: the two
+ * containers would otherwise have to agree, and a `NEXT_PUBLIC_` value is
+ * inlined at build time — setting one on the running container changes nothing
+ * and the button silently never appears. Cached briefly; it changes when the
+ * server is reconfigured, not between requests.
+ */
+export const getAuthMethods = () =>
+  apiFetch<{ telegram: boolean; google: boolean }>('/auth/methods', { revalidate: 60 });
+
 export interface TelegramTicket {
   ticket: string;
   deepLink: string;

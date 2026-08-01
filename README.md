@@ -78,7 +78,7 @@ curl http://localhost:3000/api/regions            # 14
 ```
 
 ```bash
-cd apps/backend && npm test && npm run test:e2e   # 184 unit, 189 e2e
+cd apps/backend && npm test && npm run test:e2e   # 184 unit, 190 e2e
 cd apps/web && npm test && npx tsc --noEmit && npm run build   # 74
 cd apps/mobile && flutter analyze && flutter test
 ```

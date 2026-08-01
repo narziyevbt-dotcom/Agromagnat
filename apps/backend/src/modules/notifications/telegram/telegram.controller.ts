@@ -121,22 +121,32 @@ export class TelegramController {
    * hope reaches the right hands.
    */
   private async askForNumber(chatId: string, ticket: string): Promise<void> {
-    await this.telegram.sendMessage(
-      chatId,
-      '<b>Agromagnat</b> saytiga kirmoqchisiz.\n\n' +
-        'Tasdiqlash uchun pastdagi tugmani bosing — raqamingiz faqat kirish ' +
-        'uchun ishlatiladi.\n\n' +
-        '<i>Agar buni siz boshlamagan bo‘lsangiz, shunchaki e’tibor bermang.</i>',
-      {
-        keyboard: [[{ text: '📱 Raqamimni yuborish', request_contact: true }]],
-        resize_keyboard: true,
-        one_time_keyboard: true,
-      },
-    );
-
-    // Held against the chat so the contact, which arrives as a separate update
-    // with no payload of its own, can be matched back to this ticket.
+    // Written before the message is sent, not after. This is the state that
+    // matters — the contact arrives as a separate update with no payload of its
+    // own, and only this binding can match it back to the ticket. Recording it
+    // after a send that fails loses the sign-in even when the person goes on to
+    // tap the button from an earlier message.
     await this.link.rememberTicketFor(chatId, ticket);
+
+    await this.telegram
+      .sendMessage(
+        chatId,
+        '<b>Agromagnat</b> saytiga kirmoqchisiz.\n\n' +
+          'Tasdiqlash uchun pastdagi tugmani bosing — raqamingiz faqat kirish ' +
+          'uchun ishlatiladi.\n\n' +
+          '<i>Agar buni siz boshlamagan bo‘lsangiz, shunchaki e’tibor bermang.</i>',
+        {
+          keyboard: [[{ text: '📱 Raqamimni yuborish', request_contact: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true,
+        },
+      )
+      .catch((error) => {
+        // Never let a failed send fail the webhook. Telegram retries anything
+        // that is not a 2xx, so throwing here turns one bad send into an
+        // endless redelivery loop of the same update.
+        this.logger.error(`Could not ask for a number: ${String(error)}`);
+      });
   }
 
   /**

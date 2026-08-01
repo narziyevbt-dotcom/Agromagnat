@@ -257,6 +257,14 @@ export class AuthService {
     return { ...pair, isNewUser };
   }
 
+  /** What the sign-in screen should offer. Cheap enough to call on every render. */
+  availableMethods(): { telegram: boolean; google: boolean } {
+    return {
+      telegram: this.telegramLink.isConfigured,
+      google: this.google.isConfigured,
+    };
+  }
+
   /** Hands the browser a ticket and the link that will prove the number. */
   async startTelegramSignIn(): Promise<TelegramTicketDto> {
     if (!this.telegramLink.isConfigured) {

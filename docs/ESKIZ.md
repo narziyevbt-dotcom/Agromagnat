@@ -30,7 +30,6 @@ kechikadigan yoki ushlab qolinadigan narsa yo'q. Bu SMS'dan **kuchliroq isbot**.
 TELEGRAM_BOT_TOKEN=<BotFather bergan token>
 TELEGRAM_BOT_USERNAME=agromagnat_bot        # @ belgisisiz
 TELEGRAM_WEBHOOK_SECRET=<openssl rand -hex 24>
-NEXT_PUBLIC_TELEGRAM_BOT=1                  # tugmani ko'rsatadi
 ```
 
 5. Webhook'ni ulang (sayt HTTPS'da turgandan keyin):
@@ -43,6 +42,18 @@ curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
 ```
 
 Tayyor. `/kirish` sahifasida "Telegram orqali kirish" tugmasi paydo bo'ladi.
+
+Web ilovasiga alohida o'zgaruvchi kerak emas: u `GET /auth/methods` orqali
+backend'dan so'raydi. Sabab — `NEXT_PUBLIC_*` qiymatlari **build paytida**
+kodga qotib qoladi, ya'ni konteynerda qo'yilgan qiymat hech narsani
+o'zgartirmaydi va tugma jimgina paydo bo'lmaydi.
+
+### ⚠️ Alohida bot oching
+
+Mavjud botni ishlatmang. Telegram bitta botga **faqat bitta webhook** ruxsat
+beradi — boshqa xizmatga ulangan botni olsangiz, o'sha xizmat ishlamay qoladi.
+Va fermer "Agromagnat"ga kirayotganda boshqa nomdagi bot bilan gaplashsa,
+ishonch yo'qoladi.
 
 ### Foydalanuvchi nima ko'radi
 

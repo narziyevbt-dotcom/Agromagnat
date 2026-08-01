@@ -34,6 +34,8 @@ describe('Telegram sign-in (e2e)', () => {
   let identities: Repository<AuthIdentity>;
   let redis: RedisService;
   let sent: Array<{ chatId: string; text: string }>;
+  /** Lets one test play a Telegram outage. */
+  let failSends = false;
 
   const SECRET = 'test-webhook-secret';
   const CHAT_ID = 991_000_001;
@@ -82,6 +84,9 @@ describe('Telegram sign-in (e2e)', () => {
         isConfigured: true,
         webhookSecret: SECRET,
         sendMessage: async (chatId: string, text: string) => {
+          if (failSends) {
+            throw new Error('Telegram 404');
+          }
           sent.push({ chatId, text });
         },
       })
@@ -101,6 +106,7 @@ describe('Telegram sign-in (e2e)', () => {
 
   beforeEach(() => {
     sent = [];
+    failSends = false;
   });
 
   afterAll(async () => {
@@ -231,6 +237,25 @@ describe('Telegram sign-in (e2e)', () => {
     it('ignores a contact for a ticket that was never started', async () => {
       await shareContact({}, 991_000_999).expect(201);
       expect(sent.at(-1)?.text).toContain('eskirgan');
+    });
+
+    it('still signs the person in when the bot message cannot be sent', async () => {
+      // Telegram retries any update that is not answered with a 2xx, so a
+      // failed send must never fail the webhook — one bad send would otherwise
+      // become an endless redelivery loop. And the ticket binding has to
+      // survive it, or the button tapped from an earlier message matches
+      // nothing.
+      const ticket = await newTicket();
+      const chat = 991_000_777;
+      failSends = true;
+      await start(ticket, chat).expect(201);
+      failSends = false;
+
+      await shareContact({}, chat).expect(201);
+
+      await request(app.getHttpServer())
+        .get(`/api/auth/telegram/session/${ticket}`)
+        .expect(200);
     });
 
     it('refuses a webhook without the shared secret', async () => {
