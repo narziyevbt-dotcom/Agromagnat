@@ -92,6 +92,7 @@ class ApiListingRepository implements ListingRepository {
         'priceMin': query.minPrice,
         'priceMax': query.maxPrice,
         'quantityMin': query.minQuantity,
+        'sellerId': query.sellerId,
         'sort': _sortWire(query.sort),
         'cursor': query.cursor,
         'limit': query.limit,

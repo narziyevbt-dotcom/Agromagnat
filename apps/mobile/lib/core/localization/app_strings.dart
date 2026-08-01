@@ -167,6 +167,23 @@ abstract final class AppStrings {
   static const String chatOpenFailed = "Suhbat ochilmadi — internetni tekshiring";
   static const String youPrefix = 'Siz: ';
 
+  // Reviews
+  static const String reviewsTitle = 'Baholar';
+  static const String sellerTitleScreen = 'Sotuvchi';
+  static const String noReviews = 'Hali baho yo\'q';
+  static const String noReviewsHint =
+      "Sotuvdan keyin xaridorlar baho qoldiradi.";
+  static const String rateSeller = 'Sotuvchiga baho bering';
+  static const String rateSellerHint =
+      "Boshqa xaridorlar uchun — qanday o'tgani haqida yozing.";
+  static const String reviewComment = 'Izoh (ixtiyoriy)';
+  static const String sendReview = 'Yuborish';
+  static const String reviewSent = 'Bahoingiz uchun rahmat';
+  static const String reviewFailed = "Baho yuborilmadi — internetni tekshiring";
+  static const String yourReview = 'Sizning bahongiz';
+  static const String pickRating = 'Yulduzni tanlang';
+  static const String sellerListings = "Sotuvchining e'lonlari";
+
   // Voice / AI composer
   static const String composerTitle = 'Gapirib aytish';
   static const String composerHint =
@@ -246,6 +263,8 @@ abstract final class AppStrings {
   static String queuedCount(int count) => "$count ta e'lon navbatda";
 
   static String queuedPhotoCount(int count) => "$count ta rasm navbatda";
+
+  static String reviewCount(int count) => '$count ta baho';
 
   /// Both at once. Two banners stacked on the home screen would push the
   /// listings themselves below the fold.

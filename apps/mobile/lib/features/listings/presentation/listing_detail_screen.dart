@@ -9,6 +9,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/state_views.dart';
 import '../domain/entities/listing.dart';
 import '../../messages/presentation/open_chat_action.dart';
+import '../../reviews/presentation/seller_screen.dart';
+import '../../reviews/presentation/widgets/rate_seller_review_panel.dart';
 import 'favorite_action.dart';
 import 'providers/listing_providers.dart';
 import 'widgets/listing_card.dart';
@@ -153,6 +155,10 @@ class _Content extends StatelessWidget {
               ],
 
               const SizedBox(height: AppSpacing.xl),
+              // Only on a sold listing, and never for the seller themselves —
+              // the panel decides, because it is the one place that knows.
+              RateSellerPanel(listing: listing),
+
               Text(AppStrings.sellerTitle, style: AppTypography.heading(size: 17)),
               const SizedBox(height: AppSpacing.sm),
               _SellerPanel(listing: listing),
@@ -236,12 +242,20 @@ class _SellerPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final seller = listing.seller;
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
+    // Tappable: a marketplace puts strangers in a car together with cash, and
+    // the buyer's next question after the price is who they are dealing with.
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+      child: InkWell(
         borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-      ),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => SellerScreen(seller: seller),
+          ),
+        ),
+        child: Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         children: [
           CircleAvatar(
@@ -298,7 +312,10 @@ class _SellerPanel extends StatelessWidget {
               ],
             ),
           ),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.inkFaint),
         ],
+      ),
+        ),
       ),
     );
   }

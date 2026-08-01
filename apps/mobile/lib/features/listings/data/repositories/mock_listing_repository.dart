@@ -293,6 +293,9 @@ class MockListingRepository implements ListingRepository {
       }
     }
 
+    if (query.sellerId != null && listing.seller.id != query.sellerId) {
+      return false;
+    }
     if (query.categoryId != null && listing.category.id != query.categoryId) {
       return false;
     }

@@ -22,12 +22,18 @@ class ListingCard extends ConsumerWidget {
     required this.listing,
     this.onTap,
     this.onFavoriteToggle,
+    this.now,
     super.key,
   });
 
   final Listing listing;
   final VoidCallback? onTap;
   final VoidCallback? onFavoriteToggle;
+
+  /// Injected so "2 soat oldin" does not depend on the hour the test runs.
+  /// Without it a fixture pinned to a fixed instant drifts past midnight
+  /// against the real clock and the assertion fails once a day, for no reason.
+  final DateTime? now;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,7 +60,7 @@ class ListingCard extends ConsumerWidget {
                 children: [
                   _Thumbnail(listing: listing),
                   const SizedBox(width: AppSpacing.md),
-                  Expanded(child: _Details(listing: listing)),
+                  Expanded(child: _Details(listing: listing, now: now)),
                   if (onFavoriteToggle != null)
                     _FavoriteButton(
                       isFavorite: ref.watch(isSavedProvider(listing)),
@@ -130,9 +136,10 @@ class _Thumbnail extends StatelessWidget {
 }
 
 class _Details extends StatelessWidget {
-  const _Details({required this.listing});
+  const _Details({required this.listing, this.now});
 
   final Listing listing;
+  final DateTime? now;
 
   @override
   Widget build(BuildContext context) {
@@ -182,7 +189,7 @@ class _Details extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              UzFormat.timeAgo(listing.createdAt),
+              UzFormat.timeAgo(listing.createdAt, now: now),
               style: AppTypography.body(size: 11, color: AppColors.inkFaint),
             ),
           ],

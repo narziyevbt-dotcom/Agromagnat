@@ -35,7 +35,13 @@ void main() {
   });
 
   testWidgets('renders location and posting time', (tester) async {
-    await pumpApp(tester, Scaffold(body: ListingCard(listing: promoted)));
+    // The clock is pinned: the fixture is anchored to testNow, and reading the
+    // real one made this assertion fail whenever the container's date rolled
+    // over — "2 soat oldin" quietly becomes "kecha".
+    await pumpApp(
+      tester,
+      Scaffold(body: ListingCard(listing: promoted, now: testNow)),
+    );
 
     expect(find.text(promoted.locationLabel), findsOneWidget);
     expect(find.textContaining('oldin'), findsOneWidget);

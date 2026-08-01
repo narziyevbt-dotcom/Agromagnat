@@ -20,6 +20,7 @@ one codebase. Uzbek UI throughout.
 | Queued posting — publish with no signal | built · [MOBILE-OUTBOX.md](MOBILE-OUTBOX.md) |
 | My listings — status, edit, sold, repost, delete | built · [MOBILE-MY-LISTINGS.md](MOBILE-MY-LISTINGS.md) |
 | Messages — inbox, conversation, unread badge | built · [MOBILE-MESSAGES.md](MOBILE-MESSAGES.md) |
+| Seller page and reviews | built · [MOBILE-REVIEWS.md](MOBILE-REVIEWS.md) |
 
 Runs against the real API when one is configured, and on mock repositories
 when not. No backend is needed to open the app.
@@ -39,6 +40,7 @@ lib/
     add_listing/   presentation                      ← renders the API's form spec
     my_listings/   presentation                      ← the seller's own listings
     messages/      domain → data → presentation      ← the inbox and one thread
+    reviews/       domain → data → presentation      ← the seller page
     home/          presentation
     search/        presentation
     profile/       presentation
@@ -107,7 +109,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 316 tests
+flutter test          # 333 tests
 flutter analyze       # clean
 ```
 
@@ -120,7 +122,7 @@ navigation.
 mock latency. Without the fixed clock a fixture posted "2 soat oldin" drifts
 across midnight and a date assertion fails once a day, in CI, for no reason.
 
-Five real defects came out of writing these:
+Six real defects came out of writing these:
 
 - The filter sheet grew past the screen and put "Qo'llash" below the fold with
   no way to reach it. It is now capped at 85% height with the button pinned.
@@ -136,6 +138,9 @@ Five real defects came out of writing these:
 - The profile row added for "Mening e'lonlarim" was a `ListTile` inside a
   coloured `Container`, which silently swallows the ink splash. Flutter asserts
   on it; the sign-in and screenshot tests caught it the same minute.
+- `ListingCard` formatted "2 soat oldin" against the real clock while its
+  fixture was pinned to a fixed instant, so the card test failed whenever the
+  container's date rolled over. It takes an injectable `now` now.
 
 ## Platforms
 

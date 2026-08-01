@@ -35,6 +35,7 @@ class ListingQuery {
     this.maxPrice,
     this.minQuantity,
     this.quantityUnit,
+    this.sellerId,
     this.sort = ListingSort.newest,
     this.cursor,
     this.limit = 20,
@@ -48,6 +49,10 @@ class ListingQuery {
   final num? maxPrice;
   final num? minQuantity;
   final QuantityUnit? quantityUnit;
+
+  /// Everything one seller has on the market — the seller page.
+  final String? sellerId;
+
   final ListingSort sort;
   final String? cursor;
   final int limit;
@@ -60,7 +65,10 @@ class ListingQuery {
       districtId == null &&
       minPrice == null &&
       maxPrice == null &&
-      minQuantity == null;
+      minQuantity == null &&
+      // Without this a seller's page would be served — and would overwrite —
+      // the cached home feed.
+      sellerId == null;
 
   /// How many filters are active, for the badge on the filter button.
   int get activeFilterCount => [
@@ -81,6 +89,7 @@ class ListingQuery {
     Object? maxPrice = _unset,
     Object? minQuantity = _unset,
     Object? quantityUnit = _unset,
+    Object? sellerId = _unset,
     ListingSort? sort,
     Object? cursor = _unset,
     int? limit,
@@ -98,6 +107,7 @@ class ListingQuery {
       minQuantity: minQuantity == _unset ? this.minQuantity : minQuantity as num?,
       quantityUnit:
           quantityUnit == _unset ? this.quantityUnit : quantityUnit as QuantityUnit?,
+      sellerId: sellerId == _unset ? this.sellerId : sellerId as String?,
       sort: sort ?? this.sort,
       cursor: cursor == _unset ? this.cursor : cursor as String?,
       limit: limit ?? this.limit,
@@ -117,6 +127,7 @@ class ListingQuery {
       other.maxPrice == maxPrice &&
       other.minQuantity == minQuantity &&
       other.quantityUnit == quantityUnit &&
+      other.sellerId == sellerId &&
       other.sort == sort &&
       other.cursor == cursor &&
       other.limit == limit;
@@ -131,6 +142,7 @@ class ListingQuery {
         maxPrice,
         minQuantity,
         quantityUnit,
+        sellerId,
         sort,
         cursor,
         limit,
