@@ -22,15 +22,40 @@ kechikadigan yoki ushlab qolinadigan narsa yo'q. Bu SMS'dan **kuchliroq isbot**.
 ### Sozlash — 10 daqiqa, 0 so'm
 
 1. Telegramda [@BotFather](https://t.me/BotFather) ga yozing → `/newbot`
-2. Bot nomi va username'ini tanlang (masalan `agromagnat_bot`)
+2. Bot nomi va username'ini tanlang
 3. BotFather token beradi
 4. `.env`:
 
 ```bash
 TELEGRAM_BOT_TOKEN=<BotFather bergan token>
-TELEGRAM_BOT_USERNAME=agromagnat_bot        # @ belgisisiz
+TELEGRAM_BOT_USERNAME=Agromagnat_bot        # @ belgisisiz
 TELEGRAM_WEBHOOK_SECRET=<openssl rand -hex 24>
 ```
+
+### ⚠️ Yangi bot oching, mavjudini olmang
+
+Telegram bitta botga **faqat bitta webhook** ruxsat beradi. Boshqa xizmatga
+ulangan botni olsangiz, o'sha xizmat **darhol ishlamay qoladi**. Va fermer
+"Agromagnat"ga kirayotganda boshqa nomdagi bot bilan gaplashsa, ishonch
+yo'qoladi.
+
+Tekshirish: `curl "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"` —
+`url` bo'sh bo'lishi kerak.
+
+### Serverga chiqarishdan oldin telefonda sinash
+
+Webhook uchun public HTTPS manzil kerak, noutbukda esa u yo'q. Ko'prik shu
+bo'shliqni to'ldiradi — Telegram'dan `getUpdates` orqali oladi va mahalliy
+webhook'ga uzatadi:
+
+```bash
+cd apps/backend && npm run telegram:bridge
+```
+
+Shundan keyin `/kirish` sahifasidagi tugmani bosib, **haqiqiy telefoningiz
+bilan** to'liq kirishni sinab ko'rasiz. Bu faqat ishlab chiqish uchun:
+`getUpdates` va webhook birga ishlamaydi, shuning uchun webhook o'rnatilgan
+bo'lsa ko'prik ishga tushmaydi (va uni o'chirmaydi).
 
 5. Webhook'ni ulang (sayt HTTPS'da turgandan keyin):
 
