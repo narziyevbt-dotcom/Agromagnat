@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isSameOrigin } from '@/lib/same-origin';
 import { registerCall } from '@/lib/api';
 
 /**
@@ -9,6 +10,9 @@ import { registerCall } from '@/lib/api';
  * error, and the call itself must never be held up by analytics.
  */
 export async function POST(request: Request) {
+  if (!(await isSameOrigin())) {
+    return NextResponse.json({ message: 'Cross-site so‘rov rad etildi' }, { status: 403 });
+  }
   try {
     const { listingId } = (await request.json()) as { listingId?: string };
     if (listingId) {

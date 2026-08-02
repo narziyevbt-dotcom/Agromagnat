@@ -53,16 +53,35 @@ function expiresAt(token: string): number | null {
 }
 
 export default async function proxy(request: NextRequest) {
+  // Generated per request and threaded through the response, so every page
+  // gets its own. `crypto` is the Web Crypto global, which exists in this
+  // runtime; Node's `randomBytes` does not.
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const csp = contentSecurityPolicy(nonce);
+
+  const secure = (response: NextResponse): NextResponse => {
+    response.headers.set('Content-Security-Policy', csp);
+    return response;
+  };
+
+  const passThrough = (): NextResponse => {
+    // The nonce has to reach the render, not just the browser: Next reads it
+    // from the request header to stamp its own inline script.
+    request.headers.set('x-nonce', nonce);
+    request.headers.set('Content-Security-Policy', csp);
+    return secure(NextResponse.next({ request: { headers: request.headers } }));
+  };
+
   const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
   if (!refreshToken) {
-    return NextResponse.next();
+    return passThrough();
   }
 
   const accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
   const exp = accessToken ? expiresAt(accessToken) : null;
   const stillGood = exp !== null && exp - Math.floor(Date.now() / 1000) > RENEW_BEFORE_SECONDS;
   if (stillGood) {
-    return NextResponse.next();
+    return passThrough();
   }
 
   let tokens: TokenPair | null = null;
@@ -79,7 +98,7 @@ export default async function proxy(request: NextRequest) {
       // The refresh token is genuinely dead — expired, revoked, or replayed.
       // Clearing both cookies turns the next page into the signed-out one
       // rather than an authenticated page that fails to load.
-      const cleared = NextResponse.next();
+      const cleared = passThrough();
       cleared.cookies.delete(ACCESS_COOKIE);
       cleared.cookies.delete(REFRESH_COOKIE);
       return cleared;
@@ -88,11 +107,11 @@ export default async function proxy(request: NextRequest) {
     // The API is unreachable. Leave the cookies alone and let the page render
     // what it can; signing somebody out because a network blipped is worse
     // than a page that briefly shows less than it should.
-    return NextResponse.next();
+    return passThrough();
   }
 
   if (!tokens) {
-    return NextResponse.next();
+    return passThrough();
   }
 
   // Both the downstream render and the browser need the new token: the request
@@ -100,7 +119,9 @@ export default async function proxy(request: NextRequest) {
   // is mutated first so the forwarded headers already carry the new value.
   request.cookies.set(ACCESS_COOKIE, tokens.accessToken);
   request.cookies.set(REFRESH_COOKIE, tokens.refreshToken);
-  const response = NextResponse.next({ request: { headers: request.headers } });
+  request.headers.set('x-nonce', nonce);
+  request.headers.set('Content-Security-Policy', csp);
+  const response = secure(NextResponse.next({ request: { headers: request.headers } }));
 
   const options = {
     httpOnly: true,
@@ -118,6 +139,58 @@ export default async function proxy(request: NextRequest) {
   });
 
   return response;
+}
+
+/**
+ * Content Security Policy, with a fresh nonce per request.
+ *
+ * The site had none. That is the difference between an XSS bug being a bad day
+ * and being every seller's session — with a policy in place, injected script
+ * has nowhere to run and nowhere to send what it steals.
+ *
+ * A nonce rather than `unsafe-inline`, because `unsafe-inline` is the setting
+ * that makes a policy decorative. Next reads the nonce off the request header
+ * and stamps it onto its own inline bootstrap; nothing else on the page is
+ * allowed to run.
+ *
+ * `strict-dynamic` is what lets Next's own bootstrap load the chunks it needs
+ * without every chunk URL being listed. Browsers that do not understand it fall
+ * back to the host list.
+ */
+function contentSecurityPolicy(nonce: string): string {
+  const api = process.env.NEXT_PUBLIC_API_URL ?? "";
+  const images = process.env.NEXT_PUBLIC_S3_URL ?? "";
+  const origin = (url: string): string => {
+    try {
+      return url ? new URL(url).origin : "";
+    } catch {
+      return "";
+    }
+  };
+
+  return [
+    "default-src 'self'",
+    // Google Identity Services is the one third party, and it is only there
+    // when the sign-in button is.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://accounts.google.com https://apis.google.com`,
+    // Tailwind ships a stylesheet, but Next injects style attributes for
+    // things like the image placeholder, which no nonce can cover.
+    "style-src 'self' 'unsafe-inline'",
+    `img-src 'self' data: blob: ${origin(images)}`.trim(),
+    "font-src 'self' data:",
+    `connect-src 'self' ${origin(api)} https://accounts.google.com`.trim(),
+    // The Google button renders in an iframe.
+    "frame-src https://accounts.google.com",
+    // Nothing here should ever be framed, and nothing should be able to
+    // navigate the page into a plugin or a base-tag trick.
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    // Form posts go to this site and to nowhere else — the defence against an
+    // injected form that harvests a phone number to somebody else's server.
+    "form-action 'self'",
+    "upgrade-insecure-requests",
+  ].join("; ");
 }
 
 export const config = {

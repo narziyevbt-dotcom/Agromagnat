@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isSameOrigin } from '@/lib/same-origin';
 import { PHONE_REQUIRED, addFavorite, needsPhone, removeFavorite } from '@/lib/api';
 import { getAccessToken, phoneGatePath } from '@/lib/session';
 
@@ -22,6 +23,9 @@ const phoneRequired = (listingId: string) =>
   );
 
 export async function POST(_request: Request, { params }: Context) {
+  if (!(await isSameOrigin())) {
+    return NextResponse.json({ message: 'Cross-site so‘rov rad etildi' }, { status: 403 });
+  }
   const token = await getAccessToken();
   if (!token) {
     return NextResponse.json({ message: 'Avtorizatsiya talab qilinadi' }, { status: 401 });
@@ -40,6 +44,9 @@ export async function POST(_request: Request, { params }: Context) {
 }
 
 export async function DELETE(_request: Request, { params }: Context) {
+  if (!(await isSameOrigin())) {
+    return NextResponse.json({ message: 'Cross-site so‘rov rad etildi' }, { status: 403 });
+  }
   const token = await getAccessToken();
   if (!token) {
     return NextResponse.json({ message: 'Avtorizatsiya talab qilinadi' }, { status: 401 });

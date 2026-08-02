@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isSameOrigin } from '@/lib/same-origin';
 import { ApiError, startTelegramSignIn } from '@/lib/api';
 
 /**
@@ -9,6 +10,9 @@ import { ApiError, startTelegramSignIn } from '@/lib/api';
  * that redirects or revalidates is the wrong shape for that.
  */
 export async function POST() {
+  if (!(await isSameOrigin())) {
+    return NextResponse.json({ message: 'Cross-site so‘rov rad etildi' }, { status: 403 });
+  }
   try {
     return NextResponse.json(await startTelegramSignIn());
   } catch (error) {

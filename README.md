@@ -79,10 +79,11 @@ curl http://localhost:3000/api/regions            # 14
 
 ```bash
 cd apps/backend && npm test && npm run test:e2e   # 184 unit, 190 e2e
-cd apps/web && npm test && npx tsc --noEmit && npm run build   # 74
+cd apps/web && npm test && npx tsc --noEmit && npm run build   # 86
 cd apps/mobile && flutter analyze && flutter test
 ```
 
+What protects the site is in [docs/SECURITY.md](docs/SECURITY.md).
 Conventions and known gaps are in [docs/TESTING.md](docs/TESTING.md); measured
 Core Web Vitals per page are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
