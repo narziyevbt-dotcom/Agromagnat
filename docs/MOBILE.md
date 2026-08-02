@@ -109,7 +109,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 333 tests
+flutter test          # 337 tests
 flutter analyze       # clean
 ```
 
@@ -195,6 +195,6 @@ aapt2 dump permissions build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 
 1. Push notifications — a reply that arrives while the app is closed is
    invisible until it is opened. FCM is in the stack and unwired on the client
-2. Photos in a chat — the API has a message type for them, the composer only
-   sends text
-3. Russian — every string is in one file for exactly this
+2. Russian — every string is in one file for exactly this
+3. A buyer's own deal history, so rating a seller does not mean finding the
+   listing again

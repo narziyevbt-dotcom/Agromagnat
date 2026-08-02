@@ -1,6 +1,9 @@
+import 'package:dio/dio.dart';
+
 import '../../../../core/network/api_client.dart';
 import '../../../../core/pagination/paginated.dart';
 import '../../../listings/data/api/listing_mapper.dart';
+import '../../../listings/domain/entities/draft_photo.dart';
 import '../../domain/entities/chat.dart';
 import '../../domain/repositories/chat_repository.dart';
 import '../api/chat_mapper.dart';
@@ -84,6 +87,23 @@ class ApiChatRepository implements ChatRepository {
     );
     if (message == null) {
       throw const ApiException(0, 'Xabar yuborildi, lekin javob o\'qilmadi');
+    }
+    return message;
+  }
+
+  @override
+  Future<ChatMessage> sendPhoto(String chatId, DraftPhoto photo) async {
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(photo.path),
+    });
+
+    final message = await _client.upload(
+      '/chats/$chatId/photo',
+      form,
+      decode: ChatMapper.message,
+    );
+    if (message == null) {
+      throw const ApiException(0, "Rasm yuborildi, lekin javob o'qilmadi");
     }
     return message;
   }

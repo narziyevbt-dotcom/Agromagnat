@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { TooManyRequestsException } from '../../common/exceptions/too-many-requests.exception';
 import { RedisService } from '../../redis/redis.service';
+import { StorageService } from '../storage/storage.service';
 import { ListingPhoto } from '../listings/entities/listing-photo.entity';
 import { Listing, ListingStatus } from '../listings/entities/listing.entity';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -26,6 +27,15 @@ export const MESSAGE_RATE_WINDOW_SECONDS = 60;
 
 /** Chat list preview, matching chats.last_message_text. */
 const PREVIEW_LENGTH = 300;
+
+/**
+ * What an image message reads as in the inbox and in a push.
+ *
+ * The message's `body` holds the photo's URL — there is no separate column
+ * for it — and a URL is not what anybody wants to see as the preview of a
+ * conversation.
+ */
+export const PHOTO_PREVIEW = '📷 Rasm';
 
 interface MessageCursor {
   /** createdAt of the oldest message on the previous page. */
@@ -52,6 +62,7 @@ export class ChatService {
     @InjectRepository(User) private readonly users: Repository<User>,
     private readonly notifications: NotificationsService,
     private readonly redis: RedisService,
+    private readonly storage: StorageService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -307,6 +318,75 @@ export class ChatService {
     // Fire-and-forget: the message is already stored, and a push provider being
     // slow or down must never fail the send.
     void this.pushNewMessage(chat, senderId, recipientId, body);
+
+    return message;
+  }
+
+  /**
+   * Sends a photo — "this is the crop", "this is the truck at the gate".
+   *
+   * Its own endpoint rather than a flag on {@link sendMessage}: the payload is
+   * multipart, the failure modes are different (a 12 MB file on EDGE, a file
+   * sharp cannot decode), and folding both into one handler would mean a text
+   * send carrying an upload path it never uses.
+   *
+   * No clientId: an upload that times out has not been stored, and a retry
+   * that uploaded the same bytes twice would cost the sender the bandwidth
+   * again — which on this connection is the expensive part, not the row.
+   */
+  async sendPhoto(
+    chatId: string,
+    senderId: string,
+    file: { buffer: Buffer; mimetype: string; size: number } | undefined,
+  ): Promise<Message> {
+    if (!file) {
+      throw new BadRequestException('Rasm tanlanmagan');
+    }
+
+    const chat = await this.chats.findOne({
+      where: { id: chatId },
+      relations: { listing: true },
+    });
+    if (!chat) {
+      throw new NotFoundException('Suhbat topilmadi');
+    }
+    this.assertParticipant(chat, senderId);
+    await this.assertNotBlocked(senderId);
+    await this.assertUnderRateLimit(senderId);
+
+    // Stored before the row exists: a message pointing at an object that was
+    // never written is worse than an orphaned object, which a lifecycle rule
+    // can sweep.
+    const stored = await this.storage.storeChatPhoto(chatId, file);
+
+    const senderIsBuyer = chat.buyerId === senderId;
+    const recipientId = senderIsBuyer ? chat.sellerId : chat.buyerId;
+
+    const message = await this.dataSource.transaction(async (manager) => {
+      const saved = await manager.save(
+        manager.create(Message, {
+          chatId,
+          senderId,
+          type: MessageType.IMAGE,
+          body: stored.url,
+        }),
+      );
+
+      await manager.update(Chat, chatId, {
+        lastMessageAt: saved.createdAt,
+        lastMessageText: PHOTO_PREVIEW,
+      });
+      await manager.increment(
+        Chat,
+        { id: chatId },
+        senderIsBuyer ? 'sellerUnreadCount' : 'buyerUnreadCount',
+        1,
+      );
+
+      return saved;
+    });
+
+    void this.pushNewMessage(chat, senderId, recipientId, PHOTO_PREVIEW);
 
     return message;
   }

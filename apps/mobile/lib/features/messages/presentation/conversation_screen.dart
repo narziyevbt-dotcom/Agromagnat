@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/widgets/state_views.dart';
+import '../../add_listing/presentation/providers/draft_controller.dart'
+    show photoPickerProvider;
 import '../../listings/presentation/listing_detail_screen.dart';
 import '../domain/entities/chat.dart';
 import 'providers/chat_providers.dart';
@@ -99,6 +102,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             controller: _input,
             sending: state.sending,
             onSend: viewerId == null ? null : () => _send(viewerId),
+            onAttach: viewerId == null ? null : () => _attach(viewerId),
           ),
         ],
       ),
@@ -117,6 +121,23 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     await ref
         .read(conversationProvider(widget.chatId).notifier)
         .send(text, viewerId);
+    _scrollToEnd();
+  }
+
+  /// Picks a photo and sends it.
+  ///
+  /// Gallery only, no camera sheet: in a conversation the photo being sent is
+  /// almost always one already taken of the crop, and an extra choice in front
+  /// of it costs a tap every time.
+  Future<void> _attach(String viewerId) async {
+    final photos = await ref.read(photoPickerProvider).pickFromGallery(limit: 1);
+    if (photos.isEmpty) {
+      return;
+    }
+
+    await ref
+        .read(conversationProvider(widget.chatId).notifier)
+        .sendPhoto(photos.first, viewerId);
     _scrollToEnd();
   }
 
@@ -294,17 +315,19 @@ class _Bubble extends StatelessWidget {
                   ? null
                   : Border.all(color: AppColors.hairline),
             ),
-            child: Text(
-              message.body,
-              style: AppTypography.body(
-                size: 15,
-                // Greyed while in flight, so a message that has not left the
-                // phone never looks like one that has.
-                color: message.delivery == MessageDelivery.sending
-                    ? AppColors.inkFaint
-                    : AppColors.ink,
-              ),
-            ),
+            child: message.type == MessageType.image
+                ? _PhotoBubble(message: message)
+                : Text(
+                    message.body,
+                    style: AppTypography.body(
+                      size: 15,
+                      // Greyed while in flight, so a message that has not left
+                      // the phone never looks like one that has.
+                      color: message.delivery == MessageDelivery.sending
+                          ? AppColors.inkFaint
+                          : AppColors.ink,
+                    ),
+                  ),
           ),
           const SizedBox(height: 2),
           if (failed)
@@ -344,16 +367,62 @@ class _Bubble extends StatelessWidget {
   }
 }
 
+/// A photo in a conversation.
+///
+/// The body is an on-device path until the server answers with a URL, so both
+/// are rendered — the same thing `ListingPhotoView` does for a listing that
+/// was posted moments ago.
+class _PhotoBubble extends StatelessWidget {
+  const _PhotoBubble({required this.message});
+
+  final ChatMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    final local = !message.body.startsWith('http');
+
+    return Opacity(
+      // Faded while it uploads, for the same reason text is greyed: a photo
+      // that has not left the phone must not look like one that has.
+      opacity: message.delivery == MessageDelivery.sending ? 0.5 : 1,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 260),
+          child: local
+              ? Image.file(File(message.body), fit: BoxFit.cover)
+              : Image.network(
+                  message.body,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 160,
+                    height: 120,
+                    color: AppColors.surfaceSoft,
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.broken_image_outlined,
+                      color: AppColors.inkFaint,
+                    ),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Composer extends StatelessWidget {
   const _Composer({
     required this.controller,
     required this.sending,
     required this.onSend,
+    required this.onAttach,
   });
 
   final TextEditingController controller;
   final bool sending;
   final VoidCallback? onSend;
+  final VoidCallback? onAttach;
 
   @override
   Widget build(BuildContext context) {
@@ -369,6 +438,12 @@ class _Composer extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              IconButton(
+                onPressed: sending ? null : onAttach,
+                tooltip: AppStrings.attachPhoto,
+                icon: const Icon(Icons.image_outlined, size: 22),
+                color: AppColors.inkMuted,
+              ),
               Expanded(
                 child: TextField(
                   controller: controller,

@@ -12,13 +12,15 @@ import 'package:agromagnat/features/messages/presentation/providers/conversation
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:agromagnat/features/listings/domain/entities/draft_photo.dart';
+
+import '../../support/delegating_chat_repository.dart';
 import '../../support/test_harness.dart';
 
 /// Sending always dies, the way a phone with no bars does.
-class _DeadRepository implements ChatRepository {
-  _DeadRepository(this._inner);
+class _DeadRepository extends DelegatingChatRepository {
+  _DeadRepository(super.inner);
 
-  final ChatRepository _inner;
   int attempts = 0;
 
   /// Flipped mid-test to make a poll fail after the history loaded.
@@ -31,26 +33,10 @@ class _DeadRepository implements ChatRepository {
   }
 
   @override
-  Future<List<ChatSummary>> inbox() => _inner.inbox();
-
-  @override
-  Future<ChatSummary> openForListing(String listingId) =>
-      _inner.openForListing(listingId);
-
-  @override
-  Future<ChatSummary> byId(String chatId) => _inner.byId(chatId);
-
-  @override
   Future<Paginated<ChatMessage>> messages(String chatId, {String? cursor}) =>
       readsFail
           ? Future.error(Exception('no signal'))
-          : _inner.messages(chatId, cursor: cursor);
-
-  @override
-  Future<void> markRead(String chatId) => _inner.markRead(chatId);
-
-  @override
-  Future<int> unreadTotal() => _inner.unreadTotal();
+          : super.messages(chatId, cursor: cursor);
 }
 
 /// Refuses the first attempt, then works — one lost response on EDGE.
@@ -63,7 +49,7 @@ class _FlakyRepository extends _DeadRepository {
     if (attempts == 1) {
       return Future.error(Exception('timed out'));
     }
-    return _inner.send(chatId, body, clientId: clientId);
+    return inner.send(chatId, body, clientId: clientId);
   }
 }
 
@@ -234,6 +220,54 @@ void main() {
     });
   });
 
+  group('photos', () {
+    test('show before the upload finishes', () async {
+      final controller = await open('chat-1');
+
+      final pending = controller.sendPhoto(_photo('crop'), 'sel-1');
+
+      // On EDGE an upload takes long enough that a chat with nothing in it
+      // reads as a tap that did not land.
+      final shown = controller.state.messages.last;
+      expect(shown.type, MessageType.image);
+      expect(shown.delivery, MessageDelivery.sending);
+
+      await pending;
+      expect(controller.state.messages.last.delivery, MessageDelivery.sent);
+    });
+
+    test('are kept on screen when the upload fails', () async {
+      final controller = await open('chat-1', repo: _PhotoFails(repository));
+
+      expect(await controller.sendPhoto(_photo('crop'), 'sel-1'), isFalse);
+
+      final last = controller.state.messages.last;
+      expect(last.type, MessageType.image);
+      expect(last.delivery, MessageDelivery.failed);
+    });
+
+    test('move the conversation to the top of the inbox', () async {
+      final before = (await repository.inbox()).first.id;
+      expect(before, isNot('chat-2'));
+
+      await repository.sendPhoto('chat-2', _photo('truck'));
+
+      expect((await repository.inbox()).first.id, 'chat-2');
+    });
+
+    test('a poll does not swallow one still uploading', () async {
+      final controller = await open('chat-1', repo: _PhotoFails(repository));
+      await controller.sendPhoto(_photo('crop'), 'sel-1');
+
+      await controller.load();
+
+      expect(
+        controller.state.messages.any((m) => m.type == MessageType.image),
+        isTrue,
+      );
+    });
+  });
+
   group('older history', () {
     test('the newest page comes first, with a cursor behind it', () async {
       repository.seedLongThread('chat-1', 70);
@@ -390,7 +424,22 @@ void main() {
   });
 }
 
+/// The upload always dies; everything else works.
+class _PhotoFails extends DelegatingChatRepository {
+  _PhotoFails(super.inner);
+
+  @override
+  Future<ChatMessage> sendPhoto(String chatId, DraftPhoto photo) =>
+      Future.error(Exception('upload timed out'));
+}
+
+DraftPhoto _photo(String name) =>
+    DraftPhoto(path: '/tmp/$name.jpg', sizeBytes: 120 * 1024);
+
 /// Nothing works at all — a conversation opened with no signal ever.
+///
+/// Hand-written rather than delegating: there is nothing behind it, which is
+/// the point.
 class _AllDead implements ChatRepository {
   @override
   Future<List<ChatSummary>> inbox() => Future.error(Exception('dead'));
@@ -408,6 +457,10 @@ class _AllDead implements ChatRepository {
 
   @override
   Future<ChatMessage> send(String chatId, String body, {String? clientId}) =>
+      Future.error(Exception('dead'));
+
+  @override
+  Future<ChatMessage> sendPhoto(String chatId, DraftPhoto photo) =>
       Future.error(Exception('dead'));
 
   @override

@@ -8,13 +8,14 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { TooManyRequestsException } from '../../common/exceptions/too-many-requests.exception';
 import { RedisService } from '../../redis/redis.service';
+import { StorageService } from '../storage/storage.service';
 import { ListingPhoto } from '../listings/entities/listing-photo.entity';
 import { Listing, ListingStatus } from '../listings/entities/listing.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { User } from '../users/entities/user.entity';
-import { ChatService, MESSAGE_RATE_LIMIT } from './chat.service';
+import { ChatService, MESSAGE_RATE_LIMIT, PHOTO_PREVIEW } from './chat.service';
 import { Chat } from './entities/chat.entity';
-import { Message } from './entities/message.entity';
+import { Message, MessageType } from './entities/message.entity';
 
 type MockRepo<T extends object> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
@@ -60,6 +61,7 @@ describe('ChatService', () => {
   let users: MockRepo<User>;
   let notifications: { notifyNewMessage: jest.Mock };
   let redis: { incrWithTtl: jest.Mock };
+  let storage: { storeChatPhoto: jest.Mock };
   let manager: {
     create: jest.Mock;
     save: jest.Mock;
@@ -76,6 +78,17 @@ describe('ChatService', () => {
     users = createRepo<User>();
     notifications = { notifyNewMessage: jest.fn().mockResolvedValue(undefined) };
     redis = { incrWithTtl: jest.fn().mockResolvedValue(1) };
+    storage = {
+      storeChatPhoto: jest.fn().mockResolvedValue({
+        objectKey: 'chats/c/1.webp',
+        url: 'https://cdn/chats/c/1.webp',
+        thumbKey: 'chats/c/1_thumb.webp',
+        thumbUrl: 'https://cdn/chats/c/1_thumb.webp',
+        width: 1280,
+        height: 960,
+        sizeBytes: 120_000,
+      }),
+    };
 
     manager = {
       create: jest.fn((_entity, value) => value),
@@ -104,6 +117,7 @@ describe('ChatService', () => {
         { provide: getRepositoryToken(User), useValue: users },
         { provide: NotificationsService, useValue: notifications },
         { provide: RedisService, useValue: redis },
+        { provide: StorageService, useValue: storage },
         { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
@@ -157,6 +171,76 @@ describe('ChatService', () => {
       chats.save!.mockRejectedValue(uniqueViolation());
 
       await expect(service.openChat(LISTING, BUYER)).resolves.toBe(winner);
+    });
+  });
+
+  describe('sendPhoto', () => {
+    const aFile = () => ({
+      buffer: Buffer.from('x'),
+      mimetype: 'image/jpeg',
+      size: 1000,
+    });
+
+    beforeEach(() => {
+      chats.findOne!.mockResolvedValue(aChat());
+    });
+
+    it('stores the photo and points the message at it', async () => {
+      const message = await service.sendPhoto(CHAT, BUYER, aFile());
+
+      expect(storage.storeChatPhoto).toHaveBeenCalled();
+      expect(message.type).toBe(MessageType.IMAGE);
+      expect(message.body).toBe('https://cdn/chats/c/1.webp');
+    });
+
+    it('previews as a photo, not as a URL', async () => {
+      await service.sendPhoto(CHAT, BUYER, aFile());
+
+      // The inbox shows last_message_text, and a URL there tells the reader
+      // nothing about the conversation.
+      expect(manager.update).toHaveBeenCalledWith(
+        Chat,
+        CHAT,
+        expect.objectContaining({ lastMessageText: PHOTO_PREVIEW }),
+      );
+    });
+
+    it('raises the other side unread counter', async () => {
+      await service.sendPhoto(CHAT, SELLER, aFile());
+
+      expect(manager.increment).toHaveBeenCalledWith(
+        Chat,
+        { id: CHAT },
+        'buyerUnreadCount',
+        1,
+      );
+    });
+
+    it('refuses somebody who is not in the conversation', async () => {
+      // 404, not 403 — the same rule the rest of the service follows: a
+      // stranger should not learn that the id exists.
+      await expect(
+        service.sendPhoto(CHAT, STRANGER, aFile()),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      // And nothing is uploaded on the way to finding out.
+      expect(storage.storeChatPhoto).not.toHaveBeenCalled();
+    });
+
+    it('refuses an empty upload rather than storing nothing', async () => {
+      await expect(
+        service.sendPhoto(CHAT, BUYER, undefined),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('counts against the same rate limit as text', async () => {
+      redis.incrWithTtl.mockResolvedValue(MESSAGE_RATE_LIMIT + 1);
+
+      // Otherwise the limit is a formality: the photo endpoint would be the
+      // way around it, and photos are the expensive messages.
+      await expect(service.sendPhoto(CHAT, BUYER, aFile())).rejects.toBeInstanceOf(
+        TooManyRequestsException,
+      );
     });
   });
 

@@ -61,8 +61,29 @@ export class StorageService {
    * header — an attacker can label anything `image/jpeg`, but sharp only
    * decodes what is genuinely an image.
    */
-  async storeListingPhoto(
+  storeListingPhoto(
     listingId: string,
+    file: { buffer: Buffer; mimetype: string; size: number },
+  ): Promise<StoredImage> {
+    return this.storeImage(`listings/${listingId}`, file);
+  }
+
+  /**
+   * A photo sent in a conversation — "this is the crop, this is the truck".
+   *
+   * Same pipeline as a listing photo: the seller is on the same connection
+   * either way, and a chat photo that arrives at full camera resolution costs
+   * the recipient the same megabytes.
+   */
+  storeChatPhoto(
+    chatId: string,
+    file: { buffer: Buffer; mimetype: string; size: number },
+  ): Promise<StoredImage> {
+    return this.storeImage(`chats/${chatId}`, file);
+  }
+
+  private async storeImage(
+    prefix: string,
     file: { buffer: Buffer; mimetype: string; size: number },
   ): Promise<StoredImage> {
     if (file.size > MAX_UPLOAD_BYTES) {
@@ -86,8 +107,8 @@ export class StorageService {
     }
 
     const id = randomUUID();
-    const objectKey = `listings/${listingId}/${id}.webp`;
-    const thumbKey = `listings/${listingId}/${id}_thumb.webp`;
+    const objectKey = `${prefix}/${id}.webp`;
+    const thumbKey = `${prefix}/${id}_thumb.webp`;
 
     const full = await sharp(file.buffer)
       .rotate() // honour EXIF orientation, otherwise phone photos arrive sideways

@@ -89,7 +89,7 @@ lost.
 
 ## Tests
 
-24 tests in `test/features/messages/messages_test.dart`.
+28 tests in `test/features/messages/messages_test.dart`.
 
 The ones worth having: a failed send keeps its words and offers a retry, the
 retry goes out under the same client id and lands once, a poll during a send
@@ -97,11 +97,22 @@ does not swallow the pending bubble, a failed poll does not blank the thread,
 opening a chat twice returns one conversation, and a poll fired after
 scrolling up does not throw the older pages away.
 
+## Photos
+
+The composer's left button picks one from the gallery and sends it. Gallery
+only, with no camera-or-gallery sheet in front of it: in a conversation the
+photo is almost always one already taken of the crop, and the extra choice
+costs a tap every time.
+
+The bubble draws the **local file** until the server answers with a URL, faded
+while it uploads — the same rule the text bubble follows, for the same reason.
+A failed upload keeps the photo on screen and marked, but carries no retry
+button: the file may be gone by the time it is pressed, so the seller picks it
+again.
+
 ## Not done yet
 
 - **Push notifications.** A reply while the app is closed is invisible until
   it is opened. FCM is in the stack and not yet wired on the client.
-- **Photos in a chat.** The API has a message type for them; the composer only
-  sends text.
 - **Offline queueing.** A failed message is kept and retried by hand. It is not
   written to disk, so closing the app loses it — unlike a queued listing.

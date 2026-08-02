@@ -1,4 +1,5 @@
 import '../../../../core/pagination/paginated.dart';
+import '../../../listings/domain/entities/draft_photo.dart';
 import '../entities/chat.dart';
 
 /// Raised when the seller taps "Yozish" on their own listing.
@@ -32,6 +33,13 @@ abstract interface class ChatRepository {
   /// request often succeeds and the *response* is what gets lost — arrives
   /// twice.
   Future<ChatMessage> send(String chatId, String body, {String? clientId});
+
+  /// Sends a photo.
+  ///
+  /// No client id, unlike [send]: an upload that timed out has not been
+  /// stored, and a retry that re-sent the same bytes would cost the sender the
+  /// bandwidth again — which on this connection is the expensive part.
+  Future<ChatMessage> sendPhoto(String chatId, DraftPhoto photo);
 
   /// Clears the other side's unread count for this conversation.
   Future<void> markRead(String chatId);

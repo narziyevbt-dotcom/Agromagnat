@@ -8,8 +8,18 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ChatService, MessagePage } from './chat.service';
 import { ChatSummaryDto, QueryMessagesDto, SendMessageDto } from './dto/chat.dto';
@@ -71,6 +81,25 @@ export class ChatController {
     @Body() dto: SendMessageDto,
   ): Promise<Message> {
     return this.chat.sendMessage(chatId, userId, dto);
+  }
+
+  @Post('chats/:id/photo')
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Send a photo in a conversation' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  sendPhoto(
+    @Param('id', ParseUUIDPipe) chatId: string,
+    @CurrentUser('sub') userId: string,
+    @UploadedFile() file: { buffer: Buffer; mimetype: string; size: number },
+  ): Promise<Message> {
+    return this.chat.sendPhoto(chatId, userId, file);
   }
 
   @Post('chats/:id/read')

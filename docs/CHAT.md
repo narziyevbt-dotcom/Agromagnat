@@ -14,6 +14,7 @@ seller sees which produce each question refers to before reading a word of it.
 | `GET` | `/api/chats/:id` | One conversation as the caller sees it |
 | `GET` | `/api/chats/:id/messages` | History, newest first, cursor-paginated |
 | `POST` | `/api/chats/:id/messages` | Send |
+| `POST` | `/api/chats/:id/photo` | Send a photo (multipart, one file) |
 | `POST` | `/api/chats/:id/read` | Clear the caller's badge, receipt the other side |
 
 All of it requires a token. Everything is scoped to the two participants.
@@ -30,6 +31,26 @@ always specified; Favorites held the slot while chat did not exist and has
 moved one tap deeper, onto the profile screen.
 
 ## Decisions worth knowing
+
+**Photos are their own endpoint, not a flag on send.** The payload is
+multipart, the failure modes are different — a 12 MB file on EDGE, a file
+sharp cannot decode — and folding both into one handler would leave a text
+send carrying an upload path it never uses.
+
+The message's `body` holds the stored photo's URL; there is no second column
+for it, and adding one would be a migration for a value the row already has
+room for. `chats.last_message_text` is set to *"📷 Rasm"* instead of that URL,
+because the inbox preview is read by a person. The photo goes through the same
+pipeline as a listing photo — resized to 1280px, WebP, EXIF-rotated — since the
+recipient is on the same connection either way.
+
+It counts against the same per-user rate limit as text. Otherwise the limit is
+a formality: the photo endpoint would be the way around it, and photos are the
+expensive messages.
+
+**No `clientId` on a photo.** An upload that timed out was not stored, and a
+retry would re-send the bytes — on this connection the bytes are the expensive
+part, not the row.
 
 **Non-participants get 404, not 403.** A 403 confirms the id exists. There is
 nothing to gain from telling a stranger that a particular conversation is real.

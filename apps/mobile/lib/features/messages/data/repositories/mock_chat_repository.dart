@@ -1,5 +1,6 @@
 import '../../../../core/pagination/paginated.dart';
 import '../../../listings/data/fixtures/listing_fixtures.dart';
+import '../../../listings/domain/entities/draft_photo.dart';
 import '../../../listings/domain/entities/units.dart';
 import '../../domain/entities/chat.dart';
 import '../../domain/repositories/chat_repository.dart';
@@ -242,6 +243,27 @@ class MockChatRepository implements ChatRepository {
       createdAt: _now,
       clientId: clientId,
     );
+    _messages[chatId] = [...existing, message];
+    _touch(chatId, message);
+    return message;
+  }
+
+  @override
+  Future<ChatMessage> sendPhoto(String chatId, DraftPhoto photo) async {
+    await Future<void>.delayed(latency);
+
+    final existing = _messages[chatId] ?? [];
+    final message = ChatMessage(
+      id: '$chatId-p${existing.length}',
+      chatId: chatId,
+      senderId: viewerId,
+      // The API stores the uploaded URL here; the mock keeps the on-device
+      // path, which the same widget renders.
+      body: photo.path,
+      type: MessageType.image,
+      createdAt: _now,
+    );
+
     _messages[chatId] = [...existing, message];
     _touch(chatId, message);
     return message;

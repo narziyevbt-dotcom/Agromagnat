@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../listings/domain/entities/draft_photo.dart';
 import '../../domain/entities/chat.dart';
 import '../../domain/repositories/chat_repository.dart';
 import 'chat_providers.dart';
@@ -177,6 +178,44 @@ class ConversationController extends StateNotifier<ConversationState> {
       // Kept, not dropped. The words are the user's, and a message that
       // vanishes on send is the failure people stop trusting an app for.
       _replace(clientId, pending.copyWith(delivery: MessageDelivery.failed));
+      state = state.copyWith(sending: false);
+      return false;
+    }
+  }
+
+  /// Sends a photo, showing it before the upload finishes.
+  ///
+  /// The local file is drawn straight away — on EDGE an upload takes long
+  /// enough that a chat with nothing in it reads as a tap that did not land.
+  Future<bool> sendPhoto(DraftPhoto photo, String senderId) async {
+    if (state.sending) {
+      return false;
+    }
+
+    final localId = 'p${_clock.microsecondsSinceEpoch}-${_clientIdSeed++}';
+    final pending = ChatMessage(
+      id: localId,
+      chatId: chatId,
+      senderId: senderId,
+      // The on-device path until the server answers with a URL; the bubble
+      // renders either.
+      body: photo.path,
+      type: MessageType.image,
+      createdAt: _clock,
+      delivery: MessageDelivery.sending,
+    );
+
+    state = state.copyWith(messages: [...state.messages, pending], sending: true);
+
+    try {
+      _replace(localId, await _repository.sendPhoto(chatId, photo));
+      state = state.copyWith(sending: false);
+      return true;
+    } on Object {
+      // Kept on screen and marked, like a failed text. Unlike one it cannot be
+      // retried in place — the file may be gone by then — so it carries no
+      // retry button; the seller picks the photo again.
+      _replace(localId, pending.copyWith(delivery: MessageDelivery.failed));
       state = state.copyWith(sending: false);
       return false;
     }

@@ -158,6 +158,8 @@ abstract final class AppStrings {
   static const String inboxEmptyHint =
       "E'lon sahifasidagi \"Yozish\" tugmasi orqali sotuvchiga yozing.";
   static const String messageHint = 'Xabar yozing…';
+  static const String attachPhoto = "Rasm yuborish";
+  static const String photoSendFailed = 'Rasm yuborilmadi';
   static const String messageSendFailed = 'Yuborilmadi';
   static const String messageRetry = 'Qayta yuborish';
   static const String conversationEmpty = 'Suhbatni boshlang';
