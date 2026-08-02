@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Send } from 'lucide-react';
+import { ImagePlus, Send } from 'lucide-react';
 import { t } from '@/lib/strings';
 import type { ChatMessage, MessagePage } from '@/lib/types';
-import { sendMessageAction } from '../actions';
+import { sendChatPhotoAction, sendMessageAction } from '../actions';
 
 /**
  * How often the open thread asks for new messages.
@@ -38,6 +38,10 @@ export function ChatThread({
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+
+  /// A photo carries no clientId, so a failed upload has no pending bubble to
+  /// mark — it gets a line above the composer instead.
+  const [error, setError] = useState<string | null>(null);
   const [loadingEarlier, setLoadingEarlier] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -180,6 +184,22 @@ export function ChatThread({
     await send(text, clientId);
   };
 
+  const sendPhoto = async (file: File) => {
+    setSending(true);
+    setError(null);
+    const form = new FormData();
+    form.append('file', file);
+
+    const result = await sendChatPhotoAction(chatId, form);
+    setSending(false);
+
+    if (result.message) {
+      setMessages((current) => [...current, result.message!]);
+      return;
+    }
+    setError(result.error ?? null);
+  };
+
   const retry = async (message: Outgoing) => {
     if (!message.clientId) {
       return;
@@ -223,6 +243,10 @@ export function ChatThread({
         <div ref={bottomRef} />
       </div>
 
+      {error && (
+        <p className="bg-surface px-3 pt-2 text-xs text-danger">{error}</p>
+      )}
+
       <form
         onSubmit={submit}
         className="flex items-end gap-2 rounded-b-[var(--radius-card)] bg-surface p-3 ring-1 ring-hairline"
@@ -244,6 +268,27 @@ export function ChatThread({
           aria-label={t.chat.placeholder}
           className="max-h-32 min-h-11 flex-1 resize-y rounded-xl bg-canvas px-3 py-2.5 text-[15px] text-ink outline-none ring-1 ring-hairline focus:ring-turquoise"
         />
+        <label
+          className="tap-target flex w-12 cursor-pointer items-center justify-center rounded-xl text-ink-muted ring-1 ring-hairline hover:text-forest"
+          aria-label={t.chat.attachPhoto}
+        >
+          <ImagePlus className="h-5 w-5" aria-hidden="true" />
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={sending}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              // Cleared straight away so picking the same file twice fires
+              // change again — otherwise the second attempt does nothing.
+              event.target.value = '';
+              if (file) {
+                void sendPhoto(file);
+              }
+            }}
+          />
+        </label>
         <button
           type="submit"
           disabled={sending || !draft.trim()}
@@ -280,7 +325,18 @@ function Bubble({
             : 'rounded-bl-md bg-surface text-ink ring-1 ring-hairline'
         } ${message.pending ? 'opacity-70' : ''}`}
       >
-        <p className="whitespace-pre-line break-words">{message.body}</p>
+        {message.type === 'image' ? (
+          // eslint-disable-next-line @next/next/no-img-element -- the URL is
+          // an arbitrary bucket host, and next/image would need every one of
+          // them whitelisted in the config.
+          <img
+            src={message.body}
+            alt=""
+            className="max-h-64 rounded-lg object-cover"
+          />
+        ) : (
+          <p className="whitespace-pre-line break-words">{message.body}</p>
+        )}
 
         <p
           className={`numeric mt-0.5 flex items-center justify-end gap-1 text-[10px] ${

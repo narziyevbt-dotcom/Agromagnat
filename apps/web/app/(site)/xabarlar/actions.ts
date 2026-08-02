@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { ApiError, openChat, sendMessage } from '@/lib/api';
+import { ApiError, openChat, sendMessage, sendChatPhoto } from '@/lib/api';
 import { getAccessToken } from '@/lib/session';
 import type { ChatMessage } from '@/lib/types';
 
@@ -27,6 +27,24 @@ export async function openChatAction(listingId: string): Promise<{ error?: strin
   }
 
   redirect(`/xabarlar/${chatId}`);
+}
+
+export async function sendChatPhotoAction(
+  chatId: string,
+  file: FormData,
+): Promise<{ message?: ChatMessage; error?: string }> {
+  const token = await getAccessToken();
+  if (!token) {
+    return { error: 'Avtorizatsiya talab qilinadi' };
+  }
+
+  try {
+    return { message: await sendChatPhoto(chatId, file, token) };
+  } catch {
+    // No clientId on a photo, so there is nothing safe to retry
+    // automatically — the sender picks the file again.
+    return { error: 'Rasm yuborilmadi' };
+  }
 }
 
 export async function sendMessageAction(

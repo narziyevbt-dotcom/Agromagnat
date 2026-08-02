@@ -30,6 +30,10 @@ Messages is now slot four of the bottom nav, which is what the brand book
 always specified; Favorites held the slot while chat did not exist and has
 moved one tap deeper, onto the profile screen.
 
+Both clients send them: the mobile composer picks from the gallery, the web
+composer takes a file input. The bubble renders the photo in place, faded
+while it is in flight.
+
 ## Decisions worth knowing
 
 **Photos are their own endpoint, not a flag on send.** The payload is

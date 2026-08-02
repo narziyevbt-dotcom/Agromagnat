@@ -318,6 +318,14 @@ export const sendMessage = (chatId: string, body: string, clientId: string, toke
     token,
   });
 
+/** One photo, multipart. No clientId — see docs/CHAT.md. */
+export const sendChatPhoto = (chatId: string, file: FormData, token: string) =>
+  apiFetch<ChatMessage>(`/chats/${chatId}/photo`, {
+    method: 'POST',
+    body: file,
+    token,
+  });
+
 export const markChatRead = (chatId: string, token: string) =>
   apiFetch<{ unread: number }>(`/chats/${chatId}/read`, { method: 'POST', token });
 

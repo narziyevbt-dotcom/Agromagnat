@@ -146,6 +146,7 @@ export const t = {
   },
 
   chat: {
+    attachPhoto: 'Rasm yuborish',
     title: 'Xabarlar',
     empty: "Yozishmalar yo'q",
     emptyHint:
