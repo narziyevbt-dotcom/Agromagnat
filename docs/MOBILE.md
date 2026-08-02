@@ -109,7 +109,7 @@ a broken-image icon.
 ## Tests
 
 ```bash
-flutter test          # 337 tests
+flutter test          # 340 tests
 flutter analyze       # clean
 ```
 
@@ -122,7 +122,7 @@ navigation.
 mock latency. Without the fixed clock a fixture posted "2 soat oldin" drifts
 across midnight and a date assertion fails once a day, in CI, for no reason.
 
-Six real defects came out of writing these:
+Seven real defects came out of writing these:
 
 - The filter sheet grew past the screen and put "Qo'llash" below the fold with
   no way to reach it. It is now capped at 85% height with the button pinned.
@@ -141,6 +141,12 @@ Six real defects came out of writing these:
 - `ListingCard` formatted "2 soat oldin" against the real clock while its
   fixture was pinned to a fixed instant, so the card test failed whenever the
   container's date rolled over. It takes an injectable `now` now.
+- **Nobody could sign in.** `GET /auth/me` runs inside sign-in, before the
+  session exists, and the client takes its bearer from the session — so it went
+  out unauthenticated and the 401 surfaced under the code field as though the
+  code were wrong. Found from a photo of the screen, not from the suite: the
+  mock honoured the token argument the API implementation ignored. See
+  [MOBILE-AUTH.md](MOBILE-AUTH.md).
 
 ## Platforms
 

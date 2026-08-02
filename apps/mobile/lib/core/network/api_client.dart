@@ -48,9 +48,14 @@ class ApiClient {
     this.dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          final token = tokens?.accessToken;
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
+          // A caller-supplied bearer wins. It is how sign-in works: the
+          // session exists but the app has not adopted it yet, so the token
+          // source still reports nothing.
+          if (options.headers['Authorization'] == null) {
+            final token = tokens?.accessToken;
+            if (token != null) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
           }
           handler.next(options);
         },
@@ -87,21 +92,38 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? query,
     required T Function(dynamic body) decode,
+    String? bearer,
   }) {
     return _send(
-      () => dio.get<dynamic>(path, queryParameters: _clean(query)),
+      () => dio.get<dynamic>(
+        path,
+        queryParameters: _clean(query),
+        options: _withBearer(bearer),
+      ),
       decode,
     );
   }
+
+  /// Sends this one request as [bearer], whatever the session holds.
+  ///
+  /// Needed exactly once per flow, and both are the same shape: the token is
+  /// in hand but not yet installed as the session. `GET /auth/me` straight
+  /// after a code is accepted is the obvious one — without this it goes out
+  /// with no Authorization header at all and the server answers 401, which
+  /// reads on the login screen as "the code was wrong".
+  static Options? _withBearer(String? bearer) => bearer == null
+      ? null
+      : Options(headers: {'Authorization': 'Bearer $bearer'});
 
   Future<T> post<T>(
     String path, {
     Object? body,
     required T Function(dynamic body) decode,
     bool authenticated = true,
+    String? bearer,
   }) {
     return _send(
-      () => dio.post<dynamic>(path, data: body),
+      () => dio.post<dynamic>(path, data: body, options: _withBearer(bearer)),
       decode,
       authenticated: authenticated,
     );
@@ -111,8 +133,12 @@ class ApiClient {
     String path, {
     Object? body,
     required T Function(dynamic body) decode,
+    String? bearer,
   }) {
-    return _send(() => dio.patch<dynamic>(path, data: body), decode);
+    return _send(
+      () => dio.patch<dynamic>(path, data: body, options: _withBearer(bearer)),
+      decode,
+    );
   }
 
   Future<void> delete(String path) {

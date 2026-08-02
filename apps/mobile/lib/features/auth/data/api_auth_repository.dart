@@ -72,7 +72,10 @@ class ApiAuthRepository implements AuthRepository {
   @override
   Future<AuthUser> me(String accessToken) async {
     try {
-      return await _client.get('/auth/me', decode: _user);
+      // Sent explicitly. During sign-in the session exists but has not been
+      // adopted yet, so the client's token source still reports nothing and
+      // the request would go out unauthenticated.
+      return await _client.get('/auth/me', decode: _user, bearer: accessToken);
     } on ApiException catch (error) {
       throw _toAuthException(error);
     }
@@ -94,6 +97,7 @@ class ApiAuthRepository implements AuthRepository {
           if (districtId != null) 'districtId': districtId,
         },
         decode: _user,
+        bearer: accessToken,
       );
     } on ApiException catch (error) {
       throw _toAuthException(error);
@@ -109,6 +113,9 @@ class ApiAuthRepository implements AuthRepository {
       '/auth/logout',
       body: {'refreshToken': refreshToken},
       decode: (_) {},
+      // Signing out clears the session before this lands, so the token has to
+      // travel with the request rather than be looked up from it.
+      bearer: accessToken,
     );
   }
 

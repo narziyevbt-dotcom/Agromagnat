@@ -123,3 +123,31 @@ Two things worth knowing when adding more:
 - **Name on first login.** `verify-otp` accepts one and `isNewUser` comes back;
   the screen that asks for it belongs with the posting flow, where the name
   first shows up on a listing.
+
+## The token has to travel with the request
+
+`GET /auth/me` runs **inside** sign-in: a code is accepted, tokens come back,
+and the user is fetched before the app has a session. The HTTP client takes
+its bearer from the session, which at that moment is still signed out — so the
+request went out with no `Authorization` header at all and the server answered
+401 *"Avtorizatsiya talab qilinadi"*, which the login screen showed under the
+code field. It read as "wrong code". Nobody could sign in.
+
+`ApiClient.get/post/patch` now take an optional `bearer` that overrides the
+session token for one request, and `ApiAuthRepository` passes the token it was
+handed rather than ignoring it. Three calls need it, all the same shape — the
+token is in hand but is not the session:
+
+| | |
+|---|---|
+| `me()` during sign-in | the session does not exist yet |
+| `me()` during restore | the stored session has not been adopted yet |
+| `logout()` | the session has already been cleared |
+
+**Why no test caught it.** `MockAuthRepository.me(accessToken)` honours the
+argument, as any sane in-memory implementation would; `ApiAuthRepository.me`
+took the same argument and dropped it. Every auth test passed against the
+mock. The lesson is in the shape of the signature: a parameter that one
+implementation ignores is a parameter the interface should not have had —
+short of that, it needs a test at the HTTP layer, which `api_client_test.dart`
+now has.

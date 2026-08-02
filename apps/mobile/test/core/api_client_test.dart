@@ -286,4 +286,65 @@ void main() {
       expect(sent.keys, ['q', 'limit']);
     });
   });
+
+  group('signing in, before the session exists', () {
+    test('a caller-supplied bearer is sent when the source has none', () async {
+      final adapter = _FakeAdapter((_) => _json(200, {'id': 'usr-1'}));
+      final client = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'https://x/api', validateStatus: (_) => true))
+          ..httpClientAdapter = adapter,
+        // Signed out: this is exactly the moment a code has just been
+        // accepted and the app has not adopted the session yet.
+        tokens: _Tokens(accessToken: null),
+      );
+
+      await client.get<void>('/auth/me', decode: (_) {}, bearer: 'fresh-token');
+
+      // Without this the request goes out with no Authorization header at
+      // all, the server answers 401, and the login screen reports it as
+      // though the code had been wrong.
+      expect(
+        adapter.requests.single.headers['Authorization'],
+        'Bearer fresh-token',
+      );
+    });
+
+    test('the session token is used when no bearer is given', () async {
+      final adapter = _FakeAdapter((_) => _json(200, {'ok': true}));
+      final client = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'https://x/api', validateStatus: (_) => true))
+          ..httpClientAdapter = adapter,
+        tokens: _Tokens(accessToken: 'session-token'),
+      );
+
+      await client.get<void>('/listings', decode: (_) {});
+
+      expect(
+        adapter.requests.single.headers['Authorization'],
+        'Bearer session-token',
+      );
+    });
+
+    test('a bearer wins over the session token', () async {
+      final adapter = _FakeAdapter((_) => _json(200, {'ok': true}));
+      final client = ApiClient(
+        dio: Dio(BaseOptions(baseUrl: 'https://x/api', validateStatus: (_) => true))
+          ..httpClientAdapter = adapter,
+        tokens: _Tokens(accessToken: 'session-token'),
+      );
+
+      // Sign-out sends the token it is ending, which by then is no longer the
+      // session's.
+      await client.post<void>(
+        '/auth/logout',
+        decode: (_) {},
+        bearer: 'ending-token',
+      );
+
+      expect(
+        adapter.requests.single.headers['Authorization'],
+        'Bearer ending-token',
+      );
+    });
+  });
 }
